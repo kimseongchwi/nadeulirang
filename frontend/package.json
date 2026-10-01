@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "check": "npm run lint && npm run typecheck && npm run build"
+    "check:quick": "npm run lint && npm run typecheck",
+    "check": "npm run check:quick && npm run build"
   },
   "dependencies": {
     "next": "16.3.8",

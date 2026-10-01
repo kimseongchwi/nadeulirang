@@ -1,4 +1,6 @@
 import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 export function validateMessage(message) {
   const [title, separator, ...body] = message.trimEnd().split(/\r?\n/);
@@ -17,9 +19,11 @@ export function validateMessage(message) {
   }
 }
 
-try {
-  validateMessage(readFileSync(process.argv[2], "utf8"));
-} catch (error) {
-  console.error(error.message);
-  process.exitCode = 1;
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try {
+    validateMessage(readFileSync(process.argv[2], "utf8"));
+  } catch (error) {
+    console.error(error.message);
+    process.exitCode = 1;
+  }
 }
