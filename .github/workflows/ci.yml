@@ -1,0 +1,30 @@
+name: 개발 검사
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    name: 문서·커밋 도구·프론트 검사
+    runs-on: ubuntu-latest
+    steps:
+      - name: 저장소 가져오기
+        uses: actions/checkout@v7
+      - name: Node.js 준비
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: 커밋 차단 테스트
+        run: npm test
+      - name: 문서·계획·작업 기록 검사
+        run: npm run check:docs
+      - name: 프론트 의존성 설치
+        run: npm ci --prefix frontend
+      - name: 프론트 코드·타입·빌드 검사
+        run: npm --prefix frontend run check
