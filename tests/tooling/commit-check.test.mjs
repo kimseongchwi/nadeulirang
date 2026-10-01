@@ -5,7 +5,7 @@ import { chmodSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:f
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { validateMessage } from "./check-message.mjs";
+import { validateMessage } from "../../scripts/check-message.mjs";
 
 test("한국어 제목과 본문이 있는 정상 메시지를 허용한다", () => {
   assert.doesNotThrow(() => validateMessage("chore(repo): 개발 규칙 정리\n\n이유·내용: 개발 기준 정리.\n검증: 도구 테스트 통과."));
@@ -42,7 +42,7 @@ test("코드 검사 실패가 실제 Git 커밋을 차단한다", (t) => {
   okGit("config", "user.email", "test@example.invalid");
   okGit("config", "core.hooksPath", ".test-hooks");
   const shellQuote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
-  const script = fileURLToPath(new URL("./check-commit.mjs", import.meta.url));
+  const script = fileURLToPath(new URL("../../scripts/check-commit.mjs", import.meta.url));
   write(".test-hooks/pre-commit", `#!/bin/sh\nexec ${shellQuote(process.execPath.replaceAll("\\", "/"))} ${shellQuote(script.replaceAll("\\", "/"))}\n`);
   chmodSync(path.join(dir, ".test-hooks/pre-commit"), 0o755);
   write(".gitignore", ".test-hooks/\n");

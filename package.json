@@ -3,7 +3,7 @@
   "private": true,
   "engines": { "node": ">=24" },
   "scripts": {
-    "test": "node --test scripts/commit-check.test.mjs",
+    "test": "node --test tests/tooling/commit-check.test.mjs",
     "check:commit": "node scripts/check-commit.mjs",
     "setup:hooks": "git config --local core.hooksPath .githooks"
   }
