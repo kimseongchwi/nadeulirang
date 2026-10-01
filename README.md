@@ -13,19 +13,22 @@
 | 문서 | 역할 |
 |---|---|
 | [PLAN.md](PLAN.md) | 항목 번호·완료 기준이 있는 작업 체크리스트 |
-| [docs/WORKLOG.md](docs/WORKLOG.md) | PLAN 항목에 연결한 날짜별 결과·검증 |
+| [docs/WORKLOG.md](docs/WORKLOG.md) | PLAN 항목에 연결한 날짜별 결과·검증·리뷰 |
 | [docs/PRD.md](docs/PRD.md) | 제품 요구사항: 무엇을 만들고 어떤 동작을 제공할지 |
 | [DESIGN.md](DESIGN.md) | 디자인 후보와 확정 결과 |
 | [AGENTS.md](AGENTS.md) | 계획에 따른 작업·검증·기록 규칙 |
 | [frontend/AGENTS.md](frontend/AGENTS.md) | Next.js 작업에 필요한 추가 안내 |
+| [frontend/README.md](frontend/README.md) | 프론트 폴더 안내와 공통 문서 연결 |
 
 ## 작업 흐름
 
-PLAN의 항목 선택 → 작업·검증 → 같은 번호로 WORKLOG 기록 → 완료 기준을 충족하면 PLAN에 체크합니다. 미완료 항목은 빈 체크로 유지합니다.
+PLAN의 항목 선택 → 작업·검증·리뷰 → 같은 번호로 WORKLOG 기록 → 완료 기준을 충족하면 PLAN에 ✅를 표시합니다. 미완료 항목은 ⬜로 유지합니다.
 
 일일 계획은 기존 미완료 항목에서 선택합니다. 여러 날에 걸친 작업은 같은 번호를 유지하고 WORKLOG에 날짜별 결과를 남깁니다.
 
 PRD는 제품 기준, DESIGN은 디자인 결정을 담습니다. README와 AGENTS에는 매 작업의 진행 상태를 복사하지 않고 안내·규칙이 바뀔 때만 반영합니다. 구체적인 관리 규칙은 AGENTS를 참고합니다.
+
+커밋 전 변경 diff를 자체 리뷰하고 검토 범위·발견한 문제·처리를 WORKLOG에 짧게 남깁니다. 검증 명령의 성공과 리뷰 결과는 구분하며, 미검토 내용은 완료한 리뷰로 기록하지 않습니다. 리뷰 기준은 [AGENTS](AGENTS.md#코드문서-리뷰)를 따릅니다.
 
 ## 프론트 실행
 
@@ -83,7 +86,7 @@ feat(search): 지역별 행사 검색 추가
 검증: 지역 변경·결과 없음 테스트 및 프론트 검사 통과.
 ```
 
-수동 검사는 루트에서 `npm run check:commit`, 도구 테스트는 `npm test`로 실행합니다. GitHub의 [CI 설정](.github/workflows/ci.yml)은 코드·검사 설정을 변경한 push·PR에서 도구 테스트와 프론트 검사를 실행합니다. 로컬 훅은 사용자 설정으로 우회할 수 있습니다. GitHub에서 병합까지 강제 차단하려면 CI 첫 실행 후 별도로 main 보호 규칙과 필수 검사를 설정해야 합니다.
+수동 검사는 루트에서 `npm run check:commit`, 도구 테스트는 `npm test`로 실행합니다. GitHub의 [CI 설정](.github/workflows/ci.yml)은 코드·검사 설정을 변경한 push·PR에서 도구 테스트와 프론트 검사를 실행합니다. 로컬 훅은 사용자 설정으로 우회할 수 있습니다. main 보호를 설정할 때에는 첫 CI 실행과 문서 전용 PR의 검사 생략 정책도 함께 확인합니다. 경로 필터로 생략된 CI를 그대로 필수 검사로 지정하면 문서 전용 PR의 병합이 대기할 수 있습니다. [GitHub 공식 안내](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onpushpull_requestpull_request_targetpathspaths-ignore)
 
 ## PowerShell에서 npm이 차단될 때
 
