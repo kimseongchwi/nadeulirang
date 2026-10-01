@@ -10,7 +10,7 @@ function git(...args) {
 }
 const splitPaths = (output) => output.split("\0").filter(Boolean);
 const frontendCode = (file) => file.startsWith("frontend/") && !file.endsWith(".md");
-const tooling = (file) => /^(scripts\/|tests\/tooling\/|\.githooks\/|package\.json$)/.test(file);
+const tooling = (file) => !file.endsWith(".md") && /^(scripts\/|tests\/tooling\/|\.githooks\/|package\.json$)/.test(file);
 
 function runNpm(args) {
   const npmCli = process.env.npm_execpath || [

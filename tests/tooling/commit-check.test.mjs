@@ -18,7 +18,7 @@ test("잘못된 유형·본문 누락·영문 설명을 차단한다", () => {
   assert.throws(() => validateMessage("chore(repo): 개발 규칙 정리\n\nUpdate workflow."), /본문은 한국어/);
 });
 
-test("코드 검사 실패가 실제 Git 커밋을 차단한다", (t) => {
+test("코드 검사 실패는 커밋을 차단하고 수정하면 통과한다", (t) => {
   const dir = mkdtempSync(path.join(os.tmpdir(), "nadeulirang-check-"));
   t.after(() => {
     const target = path.resolve(dir);
@@ -48,9 +48,14 @@ test("코드 검사 실패가 실제 Git 커밋을 차단한다", (t) => {
   write(".gitignore", ".test-hooks/\n");
   write("frontend/package.json", JSON.stringify({ scripts: { "check:quick": "node --check bad.js" } }));
   write("frontend/bad.js", "const = ;\n");
-  okGit("add", ".gitignore", "frontend");
+  write("tests/tooling/README.md", "# 임시 검증용 문서\n");
+  okGit("add", ".gitignore", "frontend", "tests/tooling/README.md");
   const result = git("commit", "-m", "chore(frontend): 검증용 변경", "-m", "검증: 실패하는 코드 검사가 커밋을 차단하는지 확인.");
   assert.notEqual(result.status, 0);
   assert.match(result.stderr + result.stdout, /검사 실패: 커밋을 중단/);
   assert.notEqual(git("rev-parse", "--verify", "HEAD").status, 0, "차단한 커밋이 생성되면 안 됩니다.");
+  // 도구 폴더의 문서 때문에 별도 도구 테스트가 실행되면 이 커밋은 실패한다.
+  write("frontend/bad.js", "const value = 1;\n");
+  okGit("add", "frontend/bad.js");
+  okGit("commit", "-m", "chore(frontend): 검증용 코드 수정", "-m", "검증: 코드 수정 후 커밋 성공과 도구 문서의 검사 제외 확인.");
 });

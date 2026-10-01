@@ -2,10 +2,10 @@ name: 개발 검사
 on:
   push:
     branches: [main, 'codex/**']
-    paths: ['frontend/**', '!frontend/**/*.md', 'scripts/**', 'tests/tooling/**', '.githooks/**', 'package.json', '.github/workflows/ci.yml']
+    paths: ['frontend/**', 'scripts/**', 'tests/tooling/**', '.githooks/**', 'package.json', '.github/workflows/ci.yml', '!**/*.md']
   pull_request:
     branches: [main]
-    paths: ['frontend/**', '!frontend/**/*.md', 'scripts/**', 'tests/tooling/**', '.githooks/**', 'package.json', '.github/workflows/ci.yml']
+    paths: ['frontend/**', 'scripts/**', 'tests/tooling/**', '.githooks/**', 'package.json', '.github/workflows/ci.yml', '!**/*.md']
   workflow_dispatch:
 permissions:
   contents: read
