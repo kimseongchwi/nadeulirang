@@ -30,7 +30,7 @@ PRD는 제품 기준, DESIGN은 디자인 결정을 담습니다. README와 AGEN
 
 커밋 전 변경 diff를 자체 리뷰하고 검토 범위·발견한 문제·처리를 WORKLOG에 짧게 남깁니다. 검증 명령의 성공과 리뷰 결과는 구분하며, 미검토 내용은 완료한 리뷰로 기록하지 않습니다. 리뷰 기준은 [AGENTS](AGENTS.md#코드문서-리뷰)를 따릅니다.
 
-“리뷰 후 PR·자동 머지까지” 요청하면 검토·필요한 수정·검증 후, 미커밋 변경을 저장하고 푸시·PR·조건 충족 후 머지까지 진행합니다. 리뷰만 요청했을 때의 작업 범위와 상세 규칙은 [브랜치와 커밋](AGENTS.md#브랜치와-커밋)을 참고합니다. 자동 머지는 저장소에서 활성화하고 필수 검사·리뷰 조건을 충족해야 합니다. [GitHub 자동 머지 안내](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/automatically-merging-a-pull-request)
+“리뷰 후 PR·자동 머지까지” 요청하면 검토·필요한 수정·검증 후, 미커밋 변경을 저장하고 푸시·PR·조건 충족 후 머지까지 진행합니다. 머지 성공을 확인하면 main으로 돌아오고 해당 작업의 로컬·원격 브랜치도 정리합니다. 반영되지 않은 변경이 있으면 보존하고 정리를 보류합니다. 리뷰만 요청했을 때의 작업 범위와 상세 규칙은 [브랜치와 커밋](AGENTS.md#브랜치와-커밋)을 참고합니다. 자동 머지는 저장소에서 활성화하고 필수 검사·리뷰 조건을 충족해야 합니다. [GitHub 자동 머지 안내](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/automatically-merging-a-pull-request)
 
 ## 프론트 실행
 
