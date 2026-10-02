@@ -15,6 +15,7 @@
 | [PLAN.md](PLAN.md) | 항목 번호·완료 기준이 있는 작업 체크리스트 |
 | `docs/WORKLOG.md` (로컬 전용) | PLAN 항목에 연결한 날짜별 결과·검증·리뷰. Git 추적 제외 |
 | [docs/PRD.md](docs/PRD.md) | 제품 요구사항: 무엇을 만들고 어떤 동작을 제공할지 |
+| [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) | 원천별 제공 항목·표본·이용 조건과 수집 전 검증 사항 |
 | [DESIGN.md](DESIGN.md) | 디자인 후보와 확정 결과 |
 | [AGENTS.md](AGENTS.md) | 계획에 따른 작업·검증·기록 규칙 |
 | [frontend/AGENTS.md](frontend/AGENTS.md) | Next.js 작업에 필요한 추가 안내 |
