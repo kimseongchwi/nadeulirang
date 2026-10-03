@@ -83,4 +83,10 @@ test("프론트·백엔드 검사 실패와 부분 스테이징을 차단하고 
   write("backend/README.md", "# 백엔드 문서\n");
   okGit("add", "backend/README.md");
   okGit("commit", "-m", "docs(backend): 검증용 문서", "-m", "검증: 백엔드 문서만 변경하면 코드 검사를 생략.");
+
+  write("scripts/collect-data.ps1", "# 수집 실행 테스트\n");
+  okGit("add", "scripts/collect-data.ps1");
+  const collectorPartial = git("commit", "-m", "chore(collection): 수집 실행 검사", "-m", "검증: 수집 스크립트도 백엔드 미스테이징 변경을 차단.");
+  assert.notEqual(collectorPartial.status, 0);
+  assert.match(collectorPartial.stderr + collectorPartial.stdout, /미스테이징 변경.*backend\/bad.js/);
 });

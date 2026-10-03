@@ -230,6 +230,56 @@ health는 애플리케이션과 연결된 구성요소의 상태를 확인하는
 
 선택적 연습으로 새로운 실행 명령, 제품 규칙, 오늘 수행한 결과, 기술 선택 해설을 각각 어느 문서에 기록해야 하는지 구별한다. 새 채팅에서 코드를 설명할 때는 실행 결과를 상상해 채우지 않고 확인 가능한 자료를 연결한다.
 
+## P11 데이터 모델·수집 구현에서 선택한 구조
+
+2026-10-03 구현하고 실제 소량 수집까지 검증한 코드의 설명이다. 공개 후보의 확보 범위는 PLAN에서 관리하며, 이를 전국 데이터 확보나 사용자의 학습 완료로 해석하지 않는다.
+
+### 원문과 제품 항목의 ID를 분리하기
+
+**문제와 선택:** 한 박물관이 여러 API에 나오고 요금·주소·기준일이 다를 수 있다. 최신 조회 응답 하나로 모두 덮어쓰면 충돌 이유를 잃는다. [V2 마이그레이션](../backend/src/main/resources/db/migration/V2__collection_model.sql)은 `outing`의 내부 UUID, `source_record`의 원천별 키, `source_observation`의 원문/해시/기준일, `field_evidence`의 필드 값·출처·확인 시각을 분리한다. 기관 공식 공지의 별도 판단은 `outing_review`, 연결 변경은 `source_link_history`에 남긴다.
+
+[Source](../backend/src/main/java/kr/nadeulirang/backend/collection/Source.java)의 `enum`은 Java 문법으로 고정된 세 원천과 endpoint·keyName·dailyBudget 등을 묶는다. 열거 상수마다 생성자에 다른 값을 전달한다. `Source.TOUR`는 문자열을 임의로 붙여 만든 주소가 아니라 선언한 원천 값이다. DB의 `source_record(source, source_key)` 유일 제약은 같은 원천 항목의 중복 생성을 막고 `outing.id`는 수집할 때 새로 바꾸지 않는다.
+
+[CollectionStore.identity](../backend/src/main/java/kr/nadeulirang/backend/collection/CollectionStore.java)는 표준 시설의 이름·주소·기관을 정리해 연결 후보를 만든다. 주소의 괄호·공백은 정리하되 번지는 유지한다. 축제는 시작·종료일·장소도 넣어 다른 회차를 분리한다. 같은 이름만으로 기관이나 주소가 다른 시설을 합치지 않는다. `relink`는 검토한 연결에만 사용하고 이전/새 ID와 근거를 남긴다. 초기 교차 원천 연결은 P06에서 기관 소개로 확인한 두 시설로 제한했다.
+
+**이점과 비용·대안:** 출처와 충돌을 다시 확인하고 내부 링크를 유지할 수 있지만 테이블·조회가 늘어난다. 원문 JSON만 저장하면 시작은 간단해도 필터·중복·출처 비교를 매번 다시 해석해야 한다. 정규화 값만 저장하면 조회가 간단해도 판단 근거를 잃는다. 지금은 원문 보존과 필요한 제품 필드를 함께 사용한다. 할인·운영 문장의 완전 자동 해석은 채택하지 않았다.
+
+### JDBC 저장과 트랜잭션의 범위를 읽기
+
+**문제와 선택:** 제품 항목만 저장되고 원문 저장이 실패하면 근거 없는 항목이 남을 수 있다. 기존 JDBC 의존성을 사용해 SQL을 직접 작성하고 `TransactionTemplate`으로 한 원천 행의 제품/원문/필드 저장을 묶었다. JPA를 추가하면 객체와 테이블 연결을 관리하는 대안이 되지만, 현재는 SQL·유일 제약·업데이트 범위를 먼저 읽을 수 있는 쪽을 선택했다. SQL을 직접 유지하고 실제 PostgreSQL에서 검증해야 하는 비용이 있다.
+
+`CollectionStore`는 Java **클래스**다. `private final JdbcTemplate jdbc`는 필드이며, **생성자** `CollectionStore(JdbcTemplate jdbc, PlatformTransactionManager manager)`는 외부에서 받은 객체를 필드에 넣고 `TransactionTemplate`을 만든다. `ingest(...)`는 여러 매개변수를 받아 저장하는 **메서드**다. `transactions.executeWithoutResult(status -> { ... })`에서 `status -> { ... }`는 Java 람다 문법이고, 트랜잭션의 시작·커밋·실패 시 롤백은 Spring 라이브러리가 처리한다. DB 제약 위반 예외가 밖으로 전달되면 그 행의 저장을 되돌린다.
+
+`@Repository`의 import는 `org.springframework.stereotype.Repository`이며 클래스에 붙인다. 애플리케이션 시작 때 Spring의 컴포넌트 탐색이 이 클래스를 빈 후보로 등록하고 필요한 생성자 인수를 제공한다. 어노테이션 자체가 SQL을 실행하는 것은 아니다. `JdbcTemplate.update(...)`를 호출할 때 실제 저장이 실행된다. SQL의 `?`와 뒤 인수는 값 바인딩이며 이름·주소를 SQL 문자열에 직접 붙이지 않는다.
+
+호출 예산 `reserve`는 네트워크 요청 **전에 별도 트랜잭션으로 확정**한다. 이후 네트워크나 제품 저장에 실패해도 소비한 요청을 되돌리지 않는다. `source_call`은 시도·정상 0건·실패를 기록하고, `record_operation`은 공통·소개·반복의 성공/실패 시각을 따로 보존한다. 한 상세 요청 성공으로 다른 상세의 실패를 지우지 않는 이유다. 전체 수집을 하나의 트랜잭션으로 묶는 대안은 성공/실패가 단순해지지만 네트워크 대기 동안 잠금이 길어지고 한 오류로 모든 저장을 잃을 수 있다.
+
+### 응답 타입·정책 메서드와 실행기의 역할
+
+[SourceResponse](../backend/src/main/java/kr/nadeulirang/backend/collection/SourceResponse.java)는 Java `record`다. `String outcome`, `String code`, `JsonNode payload`, `List<JsonNode> rows`를 생성자 인수로 갖고 Java 컴파일러가 `outcome()`·`rows()` 같은 접근 메서드를 제공한다. `List<JsonNode>`는 JSON 행을 여러 개 담는 제네릭 컬렉션이고 `JsonNode`/`JsonMapper`는 Jackson 라이브러리 타입이다. Java 문법만으로 JSON 본문이 자동 해석되는 것은 아니다.
+
+`parse`는 HTTP 상태·원천 결과 코드·본문 구조를 함께 확인한다. TourAPI `0000`과 표준 `00`이 정상이며 표준 `03`은 정상 데이터 없음으로 구분한다. 인증·한도 오류의 JSON/XML 코드도 검사하고 민감한 오류 원문을 저장하지 않는다. 성공 본문에 키가 되돌아오는 경우도 JSON 문자열을 해석한 뒤 제거한다. `CollectionPolicy.numericFee`는 빈 값·조건 문장을 `null`로 두고 명확한 숫자 `0`만 무료로 구분한다. `null`은 미확인을 표현하는 값이며 `0`과 다르다. 원천별 값이 충돌하면 일반 요금은 미확인이다. 과거 원문은 그대로 남긴다.
+
+[SourceClient](../backend/src/main/java/kr/nadeulirang/backend/collection/SourceClient.java)는 공식 주소·매개변수·20건 상한·시간/본문 크기를 제한하고 요청을 수행한다. 원천별 PostgreSQL 세션 잠금은 동시에 실행한 수집도 직렬화하고, `CollectionStore.reserve`의 행 잠금은 같은 24시간 예산을 공유하게 한다. DB 연결이 필요한 비용이 있지만 프로세스 메모리의 카운터와 달리 재시작 때 예산이 초기화되지 않는다. `22` 등 중단 코드는 상태에 저장하고 재시도로 소모하지 않는다. `23`도 속도를 무작정 재추정해 즉시 반복하지 않고 다음 실행으로 미룬다.
+
+[CollectionRunner](../backend/src/main/java/kr/nadeulirang/backend/collection/CollectionRunner.java)는 `ApplicationRunner` 인터페이스의 `run(ApplicationArguments)`를 구현한다. `@Component`는 `org.springframework.stereotype.Component`에서 가져와 클래스에 붙인다. `@ConditionalOnProperty`는 `org.springframework.boot.autoconfigure.condition.ConditionalOnProperty`에서 가져오며 `name="collection.run"`, `havingValue="true"` 설정을 Spring Boot가 시작 시 평가해 수집 빈의 등록 여부를 정한다. 등록된 실행기의 `run` 호출은 애플리케이션 초기화 후 Boot의 실행 흐름에서 수행된다. 일반 서버 실행에서는 수집하지 않으며 [수집 스크립트](../scripts/collect-data.ps1)가 해당 옵션을 전달한다. 실행기는 `.env`를 직접 읽되 코드로 평가하거나 원천 키를 명령 인수로 전달하지 않는다.
+
+**확인 방법과 한계:** [정책 테스트](../backend/src/test/java/kr/nadeulirang/backend/collection/CollectionPolicyTests.java)는 종류·요금·서울 날짜 경계·응답 검증을, [저장 테스트](../backend/src/test/java/kr/nadeulirang/backend/collection/CollectionStoreTests.java)는 실제 PostgreSQL에서 중복·충돌·호출 예산·동시 예약·롤백·이관·갱신 정책을 검사한다. 같은 응답에 다른 기준일·요금의 중복 행이 있으면 최신 호출의 모든 값을 비교해 충돌을 남긴다. 정상 소개 0건은 과거 날짜를 현재 확인된 일정으로 계속 쓰지 않고 미확인으로 바꾸며, 원문은 보존한다. 실패 때 마지막 성공을 보존하는 처리와 다르다.
+
+2026-10-03 실제 수집에서 시도 요청에 `lDongListYn=Y`를 넣으면 구·군부터 반환돼 20건에 서울만 담기는 문제가 드러났다. 기본 시도 조회와 주소를 대조해 고쳤고, 두 행사 표본의 축약 이름을 실제 정식 이름으로 보완했다. `needsDetails`는 원천 수정 시각과 상세 성공 기한을 비교해 재실행의 불필요한 상세 호출을 줄였다. 테스트 입력과 실제 API 결과는 구분하며 실제 공개 후보 범위는 PLAN의 P11에서 관리한다. 조회 API는 P12, 날짜별 운영 판단과 화면 시나리오는 P13에서 확인한다.
+
+선택적 연습: `adultChrge`의 `""`, `"0"`, `"1000"`이 각각 어떤 요금 상태가 될지 예상하고 테스트와 비교한다. 서로 다른 원천의 1,000원과 3,000원을 연결했을 때 원문·일반 요금·내부 ID가 어떻게 되는지 찾아본다. 제품 코드를 바꾸지 않아도 테스트 입력과 기대값을 읽으며 확인할 수 있다.
+
+## P22 작업 폴더와 비밀 설정의 수명을 분리하기
+
+**문제와 선택:** `.env`는 Git에서 제외되므로 새 작업 폴더나 복제본에 따라오지 않는다. 2026-10-03 사용자 요청에 따라 API 키·DB 설정의 공통 파일을 사용자 홈 `.nadeulirang/.env`에 보관하고, 폴더별 비어 있지 않은 값만 덮어쓰도록 했다. 보관 명령과 실제 경로는 [README](../README.md#작업-폴더-사이의-로컬-설정-유지-p22)에서 관리한다. 작업 폴더는 일시적으로 바뀌어도 공통 파일은 같은 사용자 홈에 남는다.
+
+[local-settings.mjs](../scripts/local-settings.mjs)의 `loadLocalSettings`와 [local-settings.ps1](../scripts/local-settings.ps1)의 `Get-NadeulirangLocalSettings`는 6개 변수만 읽는다. `CollectionRunner.readKeys(Path, Path)`는 Java의 `Map<String, String>`에 원천 키 3개만 담는다. 공통 파일을 먼저 순회한 뒤 폴더별 값을 순회하므로 같은 이름의 비어 있지 않은 값이 교체되고, 빈 값은 기존 공통 값에 영향을 주지 않는다. 파일 내용을 명령으로 평가하지 않으므로 비밀번호의 `$()`도 문자로 읽는다.
+
+**이점·비용·대안:** 매번 키를 복사하지 않아도 되지만 공통 설정의 변경은 이를 상속하는 다른 작업 폴더에 영향을 준다. 다른 DB가 필요한 폴더는 자체 설정으로 구분한다. 파일 복사만 하는 대안은 기존 실행 코드를 유지할 수 있어도 값이 여러 사본에 남아 변경이 어긋나기 쉽다. 비밀 관리 서비스는 여러 PC·운영 환경의 권한과 교체를 관리하는 대안이지만 이번 로컬 작업에는 추가하지 않았다. 지금은 접근 권한을 제한한 로컬 파일이며 자동 동기화나 암호화 저장소를 구현한 것은 아니다.
+
+**확인 방법:** [도구 테스트](../tests/tooling/local-settings.test.mjs)는 폴더 이동·빈 입력·폴더별 우선순위·문자 그대로 읽기와 Windows 보관 파일의 생성/갱신을 검사한다. [백엔드 설정 테스트](../backend/src/test/java/kr/nadeulirang/backend/collection/CollectionSettingsTests.java)는 공통 키 상속과 기존 폴더만 있는 경우를 검사한다. 실제 키와 파일 권한은 값을 출력하지 않는 별도 로컬 확인으로 검증한다. 선택적 연습으로 공통 `DB_URL`과 폴더별 `DB_URL`이 다를 때 어느 값을 사용할지 예상해 본다.
+
 ## 앞으로 작업하며 배울 내용
 
 다음 표는 학습 연결 제안이다. 구현·기술 선택·사용자의 학습 완료를 의미하지 않는다. 기능 범위와 완료 조건은 기존 PLAN·PRD를 따른다.

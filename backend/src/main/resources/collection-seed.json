@@ -1,0 +1,17 @@
+{
+  "tour": [
+    {"id":"506376", "type":"15", "name":"강경젓갈축제", "kind":"FESTIVAL"},
+    {"id":"4091116", "type":"15", "name":"우리동네 문화아지트 : LH주택전시관 복합문화행사", "kind":"EVENT"},
+    {"id":"4082595", "type":"15", "name":"팔색찬란", "kind":"EXHIBITION"},
+    {"id":"4102351", "type":"15", "name":"안다미로귀때박물관 기획전시 '명화와 티타임(Teatime) : 빛과 색채로 마시는 차 한 잔의 여유'", "kind":"EXHIBITION"},
+    {"id":"130841", "type":"14", "name":"클레이아크 김해미술관", "kind":"MUSEUM", "institutionReviewed":true},
+    {"id":"3456777", "type":"14", "name":"달성화석박물관", "kind":"MUSEUM"},
+    {"id":"126508", "type":"12", "name":"경복궁", "kind":"CULTURAL_SITE"}
+  ],
+  "standard": [
+    {"source":"MUSEUM", "filter":"fcltyNm", "name":"클레이아크 김해미술관", "target":"TOUR:130841"},
+    {"source":"MUSEUM", "filter":"fcltyNm", "name":"달성화석박물관", "target":"TOUR:3456777"},
+    {"source":"MUSEUM", "filter":"fcltyNm", "name":"대구교육박물관"},
+    {"source":"FESTIVAL", "filter":"fstvlNm", "name":"양산삽량문화축전"}
+  ]
+}

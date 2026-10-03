@@ -12,7 +12,7 @@ const splitPaths = (output) => output.split("\0").filter(Boolean);
 const frontendCode = (file) => file.startsWith("frontend/") && !file.endsWith(".md");
 const backendCode = (file) => file.startsWith("backend/") && !file.endsWith(".md");
 const tooling = (file) => !file.endsWith(".md") && /^(scripts\/|tests\/tooling\/|\.githooks\/|package\.json$|\.github\/workflows\/)/.test(file);
-const backendEnvironment = (file) => ["scripts/check-backend.mjs", "scripts/use-local-env.ps1"].includes(file);
+const backendEnvironment = (file) => ["scripts/check-backend.mjs", "scripts/use-local-env.ps1", "scripts/collect-data.ps1", "scripts/local-settings.ps1", "scripts/save-local-settings.ps1"].includes(file);
 
 function runNpm(args) {
   const npmCli = process.env.npm_execpath || [
