@@ -63,6 +63,29 @@ npm run build
 
 백엔드·DB 설치와 실행 안내는 해당 프로젝트를 준비한 뒤 추가합니다.
 
+## 원천 API 표본 검증
+
+P06의 TourAPI 인증·표본 조회는 저장소 루트에서 실행합니다. 처음 설정할 때 `.env.example`을 `.env`로 복사하고 루트 `.env`에 `TOURAPI_SERVICE_KEY=발급받은 Decoding 인증키`를 저장합니다. 이미 키를 넣은 `.env`는 다시 복사해 덮어쓰지 않습니다. 두 파일의 변수 이름은 같고 예시 값은 비워 둡니다. `.env`는 Git에서 제외되며 검증 도구만 명시적으로 읽습니다. 프론트에 키를 넣거나 `NEXT_PUBLIC_` 변수로 노출하지 않습니다.
+
+```powershell
+node scripts/verify-tourapi.mjs
+node scripts/verify-tourapi.mjs searchKeyword2 '{"keyword":"클레이아크","numOfRows":5}'
+node scripts/verify-tourapi.mjs detailIntro2 '{"contentId":"130841","contentTypeId":14}'
+node scripts/verify-tourapi.mjs ldongCode2 '{"numOfRows":1}' xml
+```
+
+두 보완 원천의 활용신청 후 `.env`의 `FESTIVAL_SERVICE_KEY`(축제)·`MUSEUM_SERVICE_KEY`(박물관·미술관)에 각 서비스의 Decoding 키를 저장하고 아래 명령으로 조회합니다.
+
+```powershell
+node scripts/verify-standard-data.mjs festival
+node scripts/verify-standard-data.mjs museum '{"fcltyNm":"클레이아크 김해미술관","numOfRows":5}'
+node scripts/verify-standard-data.mjs festival '{"numOfRows":1}' xml
+```
+
+표준데이터 도구는 두 공식 주소만 호출하며 요청 크기·시간·출력 제한은 TourAPI 도구와 같습니다. 표준 원천의 정상 코드는 `00`이며 데이터 없음 코드 `03`은 인증·조회 실패와 구분합니다. 실제 키를 명령 인수로 전달하지 않습니다.
+
+TourAPI 도구의 기본 요청은 법정동코드 5건 조회입니다. 공식 `KorService2`의 허용된 오퍼레이션만 호출하고 요청당 최대 20건·20초로 제한합니다. 요청은 1회이며 자동 재시도나 전체 수집은 하지 않습니다. HTTP 상태와 원천 결과 코드 `0000` 및 응답 본문 구조를 검사하고 빈 결과와 실패를 구분합니다. 키·요청 URL·원본 오류는 출력하지 않으며 허용한 공개 필드만 요약합니다. XML은 결과 코드·건수만 확인하고 항목 본문을 해석하지 않습니다. 검증한 계정 한도·이용 조건·표본과 P11 수집 기준은 [원천 검토](docs/DATA_SOURCES.md)에 기록합니다. 도구의 조회 성공은 시설의 당일 운영 확인과 구분합니다.
+
 공통 개발 도구의 실행 코드는 `scripts/`, 해당 도구의 테스트는 `tests/tooling/`에 둡니다. 프론트·백엔드 기능 테스트는 각 프로젝트 내부에서 관리합니다.
 
 ## 커밋 검사
@@ -79,7 +102,7 @@ npm run setup:hooks
 |---|---|
 | 문서만 변경 | 생략. 문서 링크·계획·기록은 수정 시 직접 확인 |
 | 프론트 코드·설정 변경 | lint·타입 검사 (`npm --prefix frontend run check:quick`) |
-| 커밋 도구 변경 | 도구 핵심 테스트 3개 (`npm test`) |
+| 공통 도구·검사 설정 변경 | 커밋 차단·API 검증 도구 테스트 (`npm test`) |
 
 검사 대상 코드에는 미스테이징 변경이 없어야 합니다. 전체 빌드는 매 커밋에 실행하지 않고 기능 완료·PR 전 또는 CI에서 `npm --prefix frontend run check`로 확인합니다. 기능 테스트는 실제 로직과 실패 위험이 생길 때 필요한 범위만 추가합니다.
 
