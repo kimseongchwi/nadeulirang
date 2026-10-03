@@ -153,9 +153,9 @@ $env:MAVEN_USER_HOME = Join-Path $PWD '.local/maven'
 
 `npm run dev`는 Next.js 프론트만 시작합니다. 프론트의 `http://localhost:3000/api/health`는 현재 라우트·백엔드 전달 설정이 없어 404이며 Spring health와 다른 주소입니다. Spring도 위 명령으로 별도 실행해야 합니다. 서버·포트·경로와 404·접속 실패·503의 차이는 [학습 문서](docs/LEARNING.md#p10-health-주소와-404를-구별하기)를 참고합니다.
 
-루트 `.env`는 Spring이 직접 읽지 않고 `use-local-env.ps1`이 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`를 현재 세션으로 전달합니다. 실제 비밀번호를 명령 인수에 넣지 않습니다. PostgreSQL JDBC·Flyway·Actuator·Spring MVC를 사용하며 제품 저장 모델은 P11에서 구현합니다. JDBC와 Flyway는 같은 전용 스키마를 사용하며 애플리케이션 DB 세션 시간대는 Asia/Seoul입니다.
+일반 서버 실행에서 루트 `.env`는 Spring이 직접 읽지 않고 `use-local-env.ps1`이 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`를 현재 세션으로 전달합니다. 실제 비밀번호를 명령 인수에 넣지 않습니다. PostgreSQL JDBC·Flyway·Actuator·Spring MVC를 사용합니다. P11 수집 실행은 아래 전용 실행기로 원천 키만 별도로 읽습니다. JDBC와 Flyway는 같은 전용 스키마를 사용하며 애플리케이션 DB 세션 시간대는 Asia/Seoul입니다.
 
-[Flyway](https://docs.spring.io/spring-boot/how-to/data-initialization.html)만 스키마 변경을 관리합니다. 시작 시 `nadeulirang` 스키마와 그 안의 `flyway_schema_history`를 준비하고 `V1__initialize_schema.sql`로 스키마 설명을 기록합니다. 적용한 마이그레이션을 수정하지 않고 다음 버전 SQL을 추가합니다. 자동 `clean`은 금지하며 `schema.sql`·Hibernate 자동 DDL은 함께 사용하지 않습니다.
+[Flyway](https://docs.spring.io/spring-boot/how-to/data-initialization.html)만 스키마 변경을 관리합니다. 시작 시 `nadeulirang` 스키마와 그 안의 `flyway_schema_history`를 준비합니다. `V1__initialize_schema.sql`은 스키마 설명을 기록하고 `V2__collection_model.sql`은 원천 호출·제품 항목·원문·필드 근거·연결/검토 이력을 준비합니다. 적용한 마이그레이션을 수정하지 않고 다음 버전 SQL을 추가합니다. 자동 `clean`은 금지하며 `schema.sql`·Hibernate 자동 DDL은 함께 사용하지 않습니다.
 
 DB가 실행 중인 상태에서 루트에서 검증합니다.
 
@@ -167,13 +167,31 @@ $env:MAVEN_USER_HOME = Join-Path $PWD '.local/maven'
 java -jar backend/target/backend-0.0.1-SNAPSHOT.jar
 ```
 
-`check:backend`는 Windows의 `.local/java`가 있으면 자식 세션에 로컬 환경을 적용하고 Maven `test`를 실행합니다. DB를 자동 시작하지 않으므로 중지 상태에서는 위 시작 명령을 먼저 실행합니다. 테스트는 실제 PostgreSQL 접속·서울 시간대, 초기 마이그레이션·중복 적용 방지, HTTP health와 환경 설정 미노출을 검사합니다. 실행마다 임의의 `p10_test_<UUID>` 스키마를 만들고 테스트 종료 단계에서 해당 스키마만 삭제합니다. 프로세스 강제 종료·DB 장애로 정리되지 않은 테스트 스키마는 앱 스키마와 구별하여 따로 정리합니다. 기존 앱·원천 데이터는 테스트에서 삭제하지 않습니다.
+`check:backend`는 Windows의 `.local/java`가 있으면 자식 세션에 로컬 환경을 적용하고 Maven `test`를 실행합니다. DB를 자동 시작하지 않으므로 중지 상태에서는 위 시작 명령을 먼저 실행합니다. 테스트는 실제 PostgreSQL 접속·서울 시간대, 마이그레이션·중복 적용 방지, HTTP health와 환경 설정 미노출 및 수집의 중복·충돌·실패 보존·예산·갱신 정책을 검사합니다. 실행마다 임의의 `p10_test_<UUID>`·`p11_test_<UUID>` 스키마를 만들고 테스트 종료 단계에서 해당 스키마만 삭제합니다. 프로세스 강제 종료·DB 장애로 정리되지 않은 테스트 스키마는 앱 스키마와 구별하여 따로 정리합니다. 기존 앱·원천 데이터는 테스트에서 삭제하지 않습니다.
 
 `verify`는 같은 테스트와 실행 JAR 빌드를 수행합니다. 테스트 결과는 `backend/target/surefire-reports/`에 있으며 빌드 결과와 로컬 Maven 캐시는 Git에서 제외합니다. Linux에서는 JDK 21과 위 세 DB 환경 변수를 준비하고 `cd backend` 후 `./mvnw -B -ntp verify`로 검증합니다. CI는 PostgreSQL 18.6 서비스를 새로 준비해 이 명령을 실행하며 실제 로컬 비밀번호를 사용하지 않습니다.
 
+## 데이터 수집 (P11)
+
+수집 코드·모델과 세 원천의 실제 수집·저장·재실행 검증을 마쳤습니다. 공개 후보의 지역·종류·건수와 종료/검토 대기 범위는 [PLAN](PLAN.md#기능과-공개-준비)에서 관리합니다. 테스트의 가상 데이터를 공개 확보 건수로 세지 않습니다.
+
+루트 `.env`의 원천 키 3개와 DB 접속 설정을 한 번 저장하면 다음 실행에서도 그대로 사용합니다. 기존 파일을 `.env.example`로 덮어쓰지 않습니다. `.env`는 Git에서 제외되며 수집기는 파일을 코드로 실행하지 않고 원천 키만 읽습니다. 별도 작업 폴더에는 Git에서 제외한 `.env`·실행 환경이 자동 복사되지 않으므로 로컬 설정을 따로 준비해야 합니다.
+
+DB가 실행 중일 때 저장소 루트에서 실행합니다.
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/collect-data.ps1
+```
+
+[collection-seed.json](backend/src/main/resources/collection-seed.json)의 P06 TourAPI 7개 표본과 표준데이터 이름 검색 4개를 수동 조회합니다. 요청당 20건, 실행당 호출 100회 이하·저장 후보 최대 100개로 제한하며 이미지·전국 전량·예약 작업은 수집하지 않습니다. Spring의 웹 서버는 열지 않고 실행 후 종료합니다. 목록 조회 성공이 기관의 당일 운영 확인을 의미하지 않습니다.
+
+원천별 세션 잠금과 최소 1초 시작 간격, DB에 보존하는 24시간 이동 예산을 사용합니다. 성공·실패·실행 중 시도도 차감합니다. `20`·`22`·`23`·`30`·`31`을 받으면 해당 원천을 중단하고 자동 재시도하지 않습니다. `23`도 현재 실행에서 재시도하지 않고 다음 실행으로 이월합니다. 중단 사유는 `collection_source.blocked_reason`에 남으며 인증·기간·한도 또는 속도 설정을 확인한 뒤 그 원천의 중단 상태만 수동 해제해야 합니다. 예산 기록은 삭제하지 않습니다.
+
+수집기는 종류·시도 코드·주소를 재대조한 항목만 공개 후보로 승인하고, 불일치는 검토 대기로 둡니다. 시도 목록은 `ldongCode2`의 기본 조회로 확보하며 `lDongListYn=Y`의 구·군 목록과 구분합니다. 표준데이터 교차 연결은 P06에서 기관 소개로 확인한 두 시설만 사용합니다. 이미 보류 상태로 저장했던 원천도 `CollectionStore.relink`가 검토 근거와 연결 이력을 남깁니다. 다른 이름 중복·이전 ID는 자동 통합하지 않습니다. 원문·수정 시각·기준일·필드별 출처는 보존하고 조건 요금·할인·휴관 문장을 추정해 정규화하지 않습니다. 같은 정상 응답 안의 상충 요금도 한 행을 임의로 채택하지 않습니다. 현재 날짜 운영 검토는 기본 미확인입니다. 변경 목록은 첫 20건의 비표출 표본만 확인하므로 전체 상태 추적과 자동 갱신 스케줄은 P15에서 보완합니다. 화면/API 제공은 후속 항목입니다.
+
 ## 원천 API 표본 검증
 
-P06의 TourAPI 인증·표본 조회는 저장소 루트에서 실행합니다. 처음 설정할 때 `.env.example`을 `.env`로 복사하고 루트 `.env`에 `TOURAPI_SERVICE_KEY=발급받은 Decoding 인증키`를 저장합니다. 이미 키를 넣은 `.env`는 다시 복사해 덮어쓰지 않습니다. 두 파일의 변수 이름은 같고 예시 값은 비워 둡니다. `.env`는 Git에서 제외되며 로컬 환경 스크립트와 검증 도구만 명시적으로 읽습니다. 프론트에 키를 넣거나 `NEXT_PUBLIC_` 변수로 노출하지 않습니다.
+P06의 TourAPI 인증·표본 조회는 저장소 루트에서 실행합니다. 처음 설정할 때 `.env.example`을 `.env`로 복사하고 루트 `.env`에 `TOURAPI_SERVICE_KEY=발급받은 Decoding 인증키`를 저장합니다. 이미 키를 넣은 `.env`는 다시 복사해 덮어쓰지 않습니다. 두 파일의 변수 이름은 같고 예시 값은 비워 둡니다. `.env`는 Git에서 제외되며 로컬 환경 스크립트·검증 도구·P11 수집기만 명시적으로 읽습니다. 프론트에 키를 넣거나 `NEXT_PUBLIC_` 변수로 노출하지 않습니다.
 
 ```powershell
 node scripts/verify-tourapi.mjs
@@ -210,7 +228,7 @@ npm run setup:hooks
 |---|---|
 | 문서만 변경 | 생략. 문서 링크·계획·기록은 수정 시 직접 확인 |
 | 프론트 코드·설정 변경 | lint·타입 검사 (`npm --prefix frontend run check:quick`) |
-| 백엔드 코드·설정, 백엔드 검사 도구·환경 적용 스크립트 변경 | 실제 PostgreSQL 기반 테스트 (`npm run check:backend`). JDK 21·DB 실행·접속 환경 필요 |
+| 백엔드 코드·설정, 백엔드 검사 도구·환경 적용·수집 실행 스크립트 변경 | 실제 PostgreSQL 기반 테스트 (`npm run check:backend`). JDK 21·DB 실행·접속 환경 필요 |
 | 공통 도구·검사 설정 변경 | 커밋 차단·API 검증 도구 테스트 (`npm test`) |
 
 검사 대상 코드에는 미스테이징 변경이 없어야 합니다. 전체 빌드는 매 커밋에 실행하지 않고 기능 완료·PR 전 또는 CI에서 프론트는 `npm --prefix frontend run check`, 백엔드는 Maven `verify`로 확인합니다. 기능 테스트는 실제 로직과 실패 위험이 생길 때 필요한 범위만 추가합니다.
