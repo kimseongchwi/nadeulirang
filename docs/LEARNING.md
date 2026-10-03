@@ -1,6 +1,6 @@
 # 나들이랑 개발 학습 기록
 
-이 문서는 나들이랑을 만들면서 Spring·React의 구조와 선택 이유를 공부하기 위한 설명서다. 해결한 문제, 선택의 이점과 비용, 실제 코드, 확인 방법을 연결한다. 코드를 읽고 작은 변경의 영향을 예상할 수 있는 것을 학습 목표로 삼는다.
+이 문서는 나들이랑을 만들면서 Java·Spring·React의 구조와 선택 이유를 공부하기 위한 설명서다. 해결한 문제, 선택의 이점과 비용, 실제 코드, 확인 방법을 연결한다. Java 코드의 문법을 읽고 Spring이 더하는 동작을 구별하며 작은 변경의 영향을 예상할 수 있는 것을 학습 목표로 삼는다.
 
 작성 기준은 2026-10-03의 코드와 Git 이력이다. **기록된 근거**는 당시 문서·커밋에서 확인한 이유이며, **현재 해설**은 지금 코드의 이점·대안을 설명한 것이다. 과거 이유가 기록되지 않았으면 현재 설명을 당시의 판단으로 바꾸어 적지 않는다. **후속 학습**은 아직 구현·선택하지 않은 내용이다. 아래 연습은 제안이며 사용자의 수행·이해가 확인됐다는 뜻이 아니다.
 
@@ -9,7 +9,7 @@
 ## 읽는 순서
 
 1. 아래 기술 역할 표로 언어·프레임워크·실행 환경·빌드 도구를 구별한다.
-2. P10 설명을 읽으며 애플리케이션 시작부터 DB·health까지 실제 파일을 따라간다.
+2. P10 Java 코드·어노테이션 설명부터 읽고 애플리케이션 시작·DB·health까지 실제 파일을 따라간다.
 3. P03·P04 설명으로 React와 Next.js, TypeScript의 역할을 구별한다.
 4. P05·P06 설명에서 제품 요구사항이 데이터 모델·검증에 어떤 영향을 주는지 살핀다.
 5. 다음 기능을 시작할 때 해당 PLAN 번호의 후속 학습을 읽고, 구현 뒤 실제 코드 설명으로 보완한다.
@@ -83,6 +83,74 @@ Kotlin은 Java와 비교할 수 있는 언어, Gradle은 Maven과 비교할 수 
 
 선택적 연습으로 같은 카드에서 일반 요금·추가 요금·출처·미확인 표시를 어떤 순서로 읽어야 하는지 PRD와 대조한다. 이 기록은 기존 선택을 설명하며 새로운 디자인이나 스타일 변경을 채택하지 않는다.
 
+### P10 Java 시작 코드를 문법부터 읽기
+
+**기록된 근거:** 현재 백엔드 Java 소스는 [시작 클래스](../backend/src/main/java/kr/nadeulirang/backend/NadeulirangApplication.java)와 [통합 테스트](../backend/src/test/java/kr/nadeulirang/backend/NadeulirangApplicationTests.java)다. 제품의 수집·조회 클래스는 아직 없으므로 이 두 파일로 언어의 기본을 읽는다.
+
+시작 클래스의 핵심은 다음과 같다. 기존 코드의 발췌이며 새 기능이나 실행 과제가 아니다.
+
+```java
+@SpringBootApplication
+public class NadeulirangApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(NadeulirangApplication.class, args);
+    }
+}
+```
+
+| 실제 표현 | Java에서 읽는 뜻 |
+|---|---|
+| `package kr.nadeulirang.backend;` | 이 클래스가 속한 이름 공간이다. 서로 다른 패키지에서 같은 클래스 이름을 사용할 수 있다. |
+| `import ...SpringApplication;` | 다른 패키지의 타입을 짧은 이름으로 참조한다. import 자체가 서버를 실행하거나 객체를 만들지는 않는다. |
+| `public class NadeulirangApplication` | 외부에서 참조할 수 있는 클래스를 선언한다. 클래스는 객체의 타입·구조·동작을 정의하고 객체는 그 타입의 인스턴스다. 이 시작 코드는 `new`로 인스턴스를 먼저 만들 필요가 없다. |
+| `public static void main(...)` | 메서드 선언이다. `public`은 접근 범위, `static`은 인스턴스 없이 클래스에 속한 메서드, `void`는 반환값이 없다는 뜻이다. `main`은 현재 Java 실행 진입점이다. |
+| `String[] args` | `String` 배열 타입의 매개변수 `args`다. 실행할 때 전달받은 인수를 이 이름으로 사용한다. `[]`는 배열이며 `List<String>` 같은 컬렉션과 다른 타입이다. |
+| `SpringApplication.run(...)` | 클래스에 속한 `run` 메서드를 호출한다. 괄호 안은 전달할 인수다. 이 호출부터 Spring Boot의 시작 처리가 진행된다. |
+| `NadeulirangApplication.class` | 이 타입을 나타내는 `Class` 객체를 전달한다. `new NadeulirangApplication()`으로 만든 앱 인스턴스와 다르다. |
+| `{ ... }`, `;` | 중괄호는 클래스·메서드의 몸체 범위를 감싸고 세미콜론은 이 코드의 선언·호출 문장을 끝낸다. |
+
+**현재 해설:** 클래스 선언과 객체 생성, 메서드 선언과 호출을 구별하면 누가 언제 실행하는지 추적할 수 있다. 객체마다 상태가 필요한 메서드는 인스턴스와 연결하고 `static` 메서드는 클래스와 연결한다. 모든 메서드를 `static`으로 만드는 방식은 객체의 상태·의존성을 다루는 설계와 맞지 않을 수 있다. 관련 문법은 [Java 21 클래스·필드·메서드 명세](https://docs.oracle.com/javase/specs/jls/se21/html/jls-8.html)에서 확인할 수 있다.
+
+테스트의 `private JdbcTemplate jdbc;`도 세 부분으로 읽는다. `private`는 접근 범위, `JdbcTemplate`은 타입, `jdbc`는 필드 이름이다. `jdbc.queryForObject(...)`는 필드가 참조하는 객체의 메서드를 호출한다. `@Autowired`가 이 필드에 객체를 연결하는 부분은 Java의 변수 선언과 별도로 Spring이 처리한다. 타입을 선언했다고 DB 접속 객체가 자동으로 생기는 것은 아니다.
+
+선택적 연습으로 `main`에서 메서드 선언·호출·매개변수·인수를 각각 표시하고, `static`이 있어서 어떤 인스턴스 생성 없이 호출할 수 있는지 설명해 본다. 힌트는 `SpringApplication.run`의 점 왼쪽과 테스트의 `jdbc.queryForObject`의 점 왼쪽을 비교하는 것이다. 서버 코드를 바꾸거나 연습 답을 제출해야 다음 작업을 진행하는 절차는 없다.
+
+시작 코드를 읽은 뒤에는 같은 테스트 파일에서 다음 표현을 하나씩 찾아본다. 처음부터 모두 외우는 목록이 아니라 코드가 나올 때 돌아올 설명이다.
+
+| 실제 테스트 표현 | Java 문법과 이 코드의 역할 |
+|---|---|
+| `private static final String TEST_SCHEMA = ...` | 클래스에 속한 `String` 필드를 초기화하고 다시 대입하지 못하게 한다. `final`만으로 모든 객체의 내부 상태까지 불변이 되는 것은 아니다. 여기서는 한 실행의 스키마 이름을 유지한다. |
+| `() -> TEST_SCHEMA` | 매개변수 없이 스키마 이름을 반환하는 람다다. 지금 문자열을 반환하는 호출문이 아니라, 설정 등록 API가 필요할 때 호출할 함수를 전달한다. |
+| `var health = client.send(...)` | 초기값을 기준으로 지역 변수의 타입을 컴파일러가 추론한다. 타입이 사라지거나 아무 값이나 넣을 수 있는 변수가 되는 것은 아니다. 여기서는 HTTP 응답 객체를 받는다. |
+| `throws Exception` | 메서드에서 예외가 호출자에게 전달될 수 있음을 선언한다. 예외를 잡거나 무시하는 코드가 아니다. HTTP 호출 실패가 테스트 실패로 드러나게 한다. |
+| `try (HttpClient client = ...) { ... }` | 자원을 선언하는 try-with-resources다. 블록을 벗어날 때 `close()`를 호출한다. 현재 Java 21의 `HttpClient`를 사용 후 닫으며 `catch` 없이도 자원 정리가 가능하다. |
+
+람다는 [Java 21 람다 명세](https://docs.oracle.com/javase/specs/jls/se21/html/jls-15.html#jls-15.27), 타입 추론·자원 정리는 [Java 21 지역 변수·try 명세](https://docs.oracle.com/javase/specs/jls/se21/html/jls-14.html)에서 확인할 수 있다. 선택적 연습으로 `throws`가 오류를 처리하는지, `final`과 `var`가 각각 무엇을 제한·추론하는지 말로 구별한다. 힌트는 예외 처리·변수 재대입·타입 추론이 서로 다른 역할이라는 점이다.
+
+### P10 골뱅이 어노테이션은 누가 해석하는가
+
+**현재 해설:** `@이름`은 Java의 어노테이션 문법이다. 클래스·필드·메서드 등에 정보를 붙이고 컴파일러·도구·프레임워크가 그 정보를 읽어 처리한다. 어노테이션 자체가 메서드를 호출하는 실행문은 아니다. 종류에 따라 컴파일 때만 쓰이거나 실행 중에도 읽을 수 있으므로 모든 어노테이션의 동작 시점이 같지는 않다. [Java 21 어노테이션 명세](https://docs.oracle.com/javase/specs/jls/se21/html/jls-9.html#jls-9.7)
+
+**기록된 근거:** 아래 표는 현재 시작 클래스·테스트에 실제로 붙은 어노테이션이다. 파일 위의 import를 보면 어떤 라이브러리가 정의했는지 알 수 있다.
+
+| 실제 어노테이션·대상 | 읽는 도구와 역할 | 현재 코드에서 쓰는 이유 |
+|---|---|---|
+| `@SpringBootApplication` · 시작 클래스 | Spring Boot. 구성 클래스 표시·자동 구성·컴포넌트 탐색을 묶는다. 기본 탐색 범위는 이 클래스의 패키지와 하위 패키지다. | 의존성·설정에 따라 앱을 구성하는 출발점을 지정한다. |
+| `@SpringBootTest(webEnvironment = ...RANDOM_PORT)` · 테스트 클래스 | Spring 테스트 지원. 실제 애플리케이션 컨텍스트와 임의 포트의 웹 서버를 준비한다. | DB·마이그레이션과 실제 HTTP 요청을 함께 검사한다. |
+| `@Autowired` · `jdbc`, `flyway` 필드 | Spring 테스트 지원과 컨테이너. 관리하는 Bean을 테스트 필드에 주입한다. | 테스트가 이미 구성된 DB 접근·Flyway 객체를 사용한다. |
+| `@LocalServerPort` · `port` 필드 | Spring Boot 테스트 지원. 실제 할당된 서버 포트를 넣는다. | 테스트가 고정된 8080이나 다른 실행 앱에 요청하지 않도록 한다. |
+| `@DynamicPropertySource` · `isolatedSchema` 메서드 | Spring 테스트 지원. 컨텍스트 준비에 사용할 동적 설정을 등록한다. | 이번 실행의 UUID 스키마를 JDBC·Flyway에 지정한다. |
+| `@Test` · 세 검사 메서드 | JUnit. 테스트할 메서드를 표시한다. | 테스트 도구가 일반 메서드와 검사를 구별한다. |
+| `@DisplayName("...")` · 검사 메서드 | JUnit. 결과에 표시할 설명을 지정한다. | 한국어로 검사 목적을 읽게 한다. 검사 내용 자체는 바꾸지 않는다. |
+| `@TestInstance(...PER_CLASS)` · 테스트 클래스 | JUnit. 테스트 클래스당 하나의 인스턴스를 사용한다. | 비정적 `@AfterAll` 메서드에서도 주입받은 `jdbc`를 사용할 수 있다. |
+| `@AfterAll` · `removeTestSchema` 메서드 | JUnit. 해당 클래스의 테스트를 마친 뒤 정리 메서드를 실행한다. | 이번 실행에서 만든 테스트 스키마만 삭제한다. 강제 종료 시 실행 보장은 없다. |
+
+`@SpringBootTest(webEnvironment = ...)`의 괄호는 어노테이션의 설정 값이며 테스트 메서드에 넘기는 일반 인수가 아니다. 어노테이션 이름뿐 아니라 대상·설정 값·해석하는 도구를 함께 읽어야 한다. [Spring Boot 구성 설명](https://docs.spring.io/spring-boot/reference/using/using-the-springbootapplication-annotation.html), [JUnit 어노테이션 설명](https://docs.junit.org/6.1.3/writing-tests/annotations.html)
+
+필드 주입은 현재 통합 테스트의 선택이다. 제품 클래스에서 필요한 객체를 생성자의 매개변수로 받는 생성자 주입도 가능한 대안이다. Spring이 관리하는 클래스에 생성자가 하나라면 `@Autowired` 없이 그 생성자를 사용할 수 있다. 따라서 모든 의존성에 반드시 골뱅이를 붙이는 규칙은 아니다. 제품 클래스의 실제 형태는 P11·P12에서 선택하고 기록한다. [Spring 주입 설명](https://docs.spring.io/spring-framework/reference/core/beans/annotation-config/autowired.html)
+
+선택적 연습으로 `@Test`·`@Autowired`의 import가 각각 어디에서 오는지 찾아보고, `@DisplayName`의 문구만 바꾸면 HTTP 응답이 바뀌는지 예상한다. 힌트는 응답 검사를 수행하는 메서드 몸체와 결과 설명을 붙이는 어노테이션의 역할을 구별하는 것이다.
+
 ### P10 Spring Boot가 시작될 때 일어나는 일
 
 **기록된 근거:** [README](../README.md#백엔드-실행검증)는 새 프로젝트의 안정판과 Java 21 지원, 단일 프로젝트의 표준 빌드 흐름·Windows/Linux 실행을 기준으로 Spring Boot 4.1.1·Maven Wrapper 3.9.16을 선택했다고 설명한다.
@@ -111,6 +179,24 @@ Kotlin은 Java와 비교할 수 있는 언어, Gradle은 Maven과 비교할 수 
 수동 SQL 적용은 시작하기 쉽지만 적용 이력을 따로 맞춰야 한다. Hibernate 자동 DDL도 가능한 대안이나 현재 JPA/Hibernate 저장 모델은 채택하지 않았다. P11에서 저장 접근 방식을 선택할 때 기능·복잡도·학습 비용을 비교한다.
 
 선택적 연습으로 같은 앱을 다시 시작할 때 V1이 다시 실행돼야 하는지 예상하고, [migratesSchemaOnce](../backend/src/test/java/kr/nadeulirang/backend/NadeulirangApplicationTests.java)에서 재실행·이력 검사를 찾아본다. 적용된 V1이나 앱 데이터를 수정하는 실험은 하지 않는다.
+
+### P10 health 주소와 404를 구별하기
+
+**기록된 근거:** [README 실행 안내](../README.md#백엔드-실행검증)는 Spring의 기본 포트 8080과 `/actuator/health`를 사용한다. [테스트](../backend/src/test/java/kr/nadeulirang/backend/NadeulirangApplicationTests.java)의 `servesHealthWithoutDetails`도 이 경로를 요청한다. 프론트의 [app 폴더](../frontend/src/app)에는 `/api/health` 라우트가 없으며 [next.config.ts](../frontend/next.config.ts)에도 Spring으로 전달하는 rewrite 설정이 없다.
+
+| 요청 주소 | 요청을 받는 서버·현재 동작 |
+|---|---|
+| `http://localhost:3000/api/health` | 기본 개발 포트의 Next.js. 해당 라우트·전달 설정이 없어 404다. |
+| `http://localhost:8080/actuator/health` | 기본 포트의 Spring. 앱·DB가 정상일 때 200과 `{"status":"UP"}`이다. |
+| `http://localhost:8080/api/health` | Spring이 실행 중이어도 현재 이 경로를 만들지 않았으므로 404다. |
+
+**현재 해설:** URL은 서버 주소·포트·경로를 함께 읽는다. 브라우저에서 상대 주소 `/api/health`로 요청하면 현재 페이지의 서버로 간다. `npm run dev`는 Next.js만 시작하고 Spring·PostgreSQL을 함께 시작하지 않는다. `GET /api/health 404 ... (next.js: ...)` 로그는 Next.js가 처리한 요청에서 그 경로를 찾지 못했다는 뜻이며 Spring의 health 검사 결과와 구분해야 한다. 이 로그만으로 요청을 누가 만들었는지는 알 수 없다.
+
+404는 응답한 서버에 그 경로가 없다는 뜻이다. 접속 거부·연결 실패는 서버 미실행·포트 등 연결 상태부터 확인한다. 올바른 health 경로의 503은 서버에 연결됐지만 health 상태가 정상으로 판정되지 않은 경우이며 DB 상태 등을 살펴야 한다. 현재 health는 Actuator가 제공하므로 사용자가 작성한 `/api/health` Controller는 없다. [Actuator 공식 설명](https://docs.spring.io/spring-boot/reference/actuator/endpoints.html)
+
+확인은 [README](../README.md#백엔드-실행검증)의 DB·Spring 실행 뒤 `Invoke-RestMethod http://localhost:8080/actuator/health`로 한다. 테스트가 통과했다는 사실은 서버가 이후에도 계속 실행된다는 뜻은 아니다. 같은 프론트 주소에서 백엔드 health를 제공하는 프록시도 가능한 대안이지만 별도 전달·오류 처리 설정이 필요하다. 현재 연결은 구현하지 않았으며 학습 설명을 맞추기 위해 성공 값만 반환하는 라우트를 추가하지 않는다.
+
+선택적 연습으로 위 세 주소의 서버·포트·경로를 표시하고, Spring을 끈 상태와 DB 장애 상태의 예상 결과를 비교해 본다. 힌트는 HTTP 상태 코드를 받았는지와 서버에 연결 자체가 됐는지를 먼저 구별하는 것이다.
 
 ### P10 실제 DB 테스트와 health의 역할
 
@@ -150,8 +236,8 @@ health는 애플리케이션과 연결된 구성요소의 상태를 확인하는
 
 | PLAN | 기능과 연결할 개념 | 구현 전에 비교할 선택 | 구현 뒤 찾아볼 근거 |
 |---|---|---|---|
-| P11 | 원천 응답 변환, 데이터 모델, DB 제약, 트랜잭션, 중복 방지 | JDBC/JPA 등 저장 접근, 원문·정규화 값의 분리, 저장 실패 범위 | 실제 수집 진입점·변환 함수·저장 SQL/객체·중복/실패 테스트 |
-| P12 | 요청·응답 DTO, 의존성 주입, 조회 SQL, 오류 응답 | HTTP 처리·제품 규칙·저장 접근을 나눌 범위, 페이징·정렬 방식 | 실제 Controller·처리/저장 코드와 요청부터 응답까지의 흐름 |
+| P11 | Java 타입·객체·생성자·컬렉션·예외, 원천 응답 변환, 데이터 모델, DB 제약, 트랜잭션, 중복 방지 | JDBC/JPA 등 저장 접근, 원문·정규화 값의 분리, 저장 실패 범위 | 실제 Java 클래스·변환 메서드·컬렉션의 순회·저장 SQL/객체·중복/실패 테스트 |
+| P12 | Java 인터페이스·매개변수·반환 타입·제네릭, 요청·응답 DTO, 의존성 주입, 조회 SQL, 오류 응답 | HTTP 처리·제품 규칙·저장 접근을 나눌 범위, 페이징·정렬 방식 | 실제 Controller·생성자·메서드 선언/호출과 요청부터 응답까지의 흐름 |
 | P13 | 컴포넌트, props/state, URL 상태, 비동기 조회, 오류 UI | 상태를 둘 위치, Server/Client Component 경계, 데이터 조회 위치 | 실제 컴포넌트·Hook·API 연결·상태/URL 복원 검증 |
 | P14 | HTML 렌더링, 메타데이터, 색인 정책 | 정적/동적 렌더링·갱신, canonical·sitemap 범위 | 실제 페이지 응답·메타데이터·색인 대상 검증 |
 | P15 | 설정·운영 관측, 백업·복구 | 배포 환경·비용, 데이터 갱신과 장애 대응 | 실제 운영 설정·복구 검증과 확인한 이용 조건 |
@@ -166,7 +252,7 @@ health는 애플리케이션과 연결된 구성요소의 상태를 확인하는
 - **선택과 근거:** 실제 선택은 무엇이고 근거가 기록·코드·공식 자료 중 어디에 있는가. 당시 이유가 없으면 현재 해설이라고 표시한다.
 - **이점과 비용:** 바뀌는 동작, 줄어드는 문제, 늘어나는 복잡도·제약을 설명한다.
 - **대안과 적용 조건:** 다른 방법과 그 방법을 택할 만한 조건을 비교한다. 미정 선택은 확정으로 쓰지 않는다.
-- **실제 코드와 흐름:** 파일 링크·핵심 식별자로 입력부터 결과까지 연결한다. 없는 파일·계층을 이미 구현했다고 적지 않는다.
+- **실제 코드와 흐름:** 파일 링크·핵심 식별자로 입력부터 결과까지 연결한다. Java는 타입·변수·메서드 선언과 호출을 먼저 읽고 어노테이션의 출처·대상·설정·해석 주체를 설명한다. 언어 문법과 Spring/라이브러리의 처리를 구별하며 없는 파일·계층을 이미 구현했다고 적지 않는다.
 - **확인 방법과 한계:** 관련 테스트·수동 확인을 소개하고 실제 결과는 PLAN·WORKLOG에 연결한다. 미실행은 구분한다.
 - **선택적 연습:** 작은 변경·결과 예측·오류 찾기를 제안하고 확인할 근거·힌트를 제공한다. 실제 사용자가 한 결과만 수행 기록으로 남긴다.
 

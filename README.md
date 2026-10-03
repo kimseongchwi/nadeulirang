@@ -2,7 +2,7 @@
 
 전국 축제·행사·전시·박물관·문화관광지의 일정, 요금, 할인 조건을 검색·비교하는 개인 웹 서비스입니다. 검색 유입과 광고 수익을 목표로 합니다.
 
-서비스를 만들고 운영하면서 Spring·React를 학습하는 것도 개발 목적입니다. 기능의 선택 이유·동작 흐름·대안과 실제 코드를 [학습 문서](docs/LEARNING.md)에 연결해 설명하고, 작은 변경·결과 예측으로 이해를 확인합니다. 학습 협업 방식은 [AGENTS](AGENTS.md#개발과-학습)를 따릅니다.
+서비스를 만들고 운영하면서 Java·Spring·React를 학습하는 것도 개발 목적입니다. Java 문법·어노테이션부터 기능의 선택 이유·동작 흐름·대안과 실제 코드를 [학습 문서](docs/LEARNING.md)에 연결해 설명하고, 작은 변경·결과 예측으로 이해를 확인합니다. 학습 협업 방식은 [AGENTS](AGENTS.md#개발과-학습)를 따릅니다.
 
 ## 기술 구성
 
@@ -150,6 +150,8 @@ $env:MAVEN_USER_HOME = Join-Path $PWD '.local/maven'
 ```
 
 기본 포트는 8080이며 종료는 Ctrl+C입니다. [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)는 DB가 연결되면 HTTP 200과 `{"status":"UP"}`을 반환하고 DB 장애 시 HTTP 503을 반환합니다. 공개 엔드포인트는 health만 사용하며 DB·환경 설정 상세는 공개하지 않습니다. 실행 중 포트 충돌이 있으면 `"-Dspring-boot.run.arguments=--server.port=8081"`을 추가합니다.
+
+`npm run dev`는 Next.js 프론트만 시작합니다. 프론트의 `http://localhost:3000/api/health`는 현재 라우트·백엔드 전달 설정이 없어 404이며 Spring health와 다른 주소입니다. Spring도 위 명령으로 별도 실행해야 합니다. 서버·포트·경로와 404·접속 실패·503의 차이는 [학습 문서](docs/LEARNING.md#p10-health-주소와-404를-구별하기)를 참고합니다.
 
 루트 `.env`는 Spring이 직접 읽지 않고 `use-local-env.ps1`이 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`를 현재 세션으로 전달합니다. 실제 비밀번호를 명령 인수에 넣지 않습니다. PostgreSQL JDBC·Flyway·Actuator·Spring MVC를 사용하며 제품 저장 모델은 P11에서 구현합니다. JDBC와 Flyway는 같은 전용 스키마를 사용하며 애플리케이션 DB 세션 시간대는 Asia/Seoul입니다.
 
