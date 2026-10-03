@@ -10,7 +10,9 @@ function git(...args) {
 }
 const splitPaths = (output) => output.split("\0").filter(Boolean);
 const frontendCode = (file) => file.startsWith("frontend/") && !file.endsWith(".md");
-const tooling = (file) => !file.endsWith(".md") && /^(scripts\/|tests\/tooling\/|\.githooks\/|package\.json$)/.test(file);
+const backendCode = (file) => file.startsWith("backend/") && !file.endsWith(".md");
+const tooling = (file) => !file.endsWith(".md") && /^(scripts\/|tests\/tooling\/|\.githooks\/|package\.json$|\.github\/workflows\/)/.test(file);
+const backendEnvironment = (file) => ["scripts/check-backend.mjs", "scripts/use-local-env.ps1"].includes(file);
 
 function runNpm(args) {
   const npmCli = process.env.npm_execpath || [
@@ -38,14 +40,17 @@ try {
   git("diff", "--cached", "--check");
   const needsFrontend = staged.some(frontendCode);
   const needsTooling = staged.some(tooling);
+  const needsBackend = staged.some((file) => backendCode(file) || backendEnvironment(file));
   const changed = splitPaths(git("diff", "--name-only", "-z"))
     .concat(splitPaths(git("ls-files", "--others", "--exclude-standard", "-z")));
-  const unstaged = changed.filter((file) => (needsFrontend && frontendCode(file)) || (needsTooling && tooling(file)));
+  const unstaged = changed.filter((file) => (needsFrontend && frontendCode(file)) || (needsTooling && tooling(file))
+    || (needsBackend && (backendCode(file) || backendEnvironment(file))));
   if (unstaged.length) throw new Error(`검사 대상 코드에 미스테이징 변경이 있습니다: ${unstaged.join(", ")}`);
   if (needsTooling) runNpm(["test"]);
   if (needsFrontend) runNpm(["--prefix", "frontend", "run", "check:quick"]);
+  if (needsBackend) runNpm(["run", "check:backend"]);
   if (git("ls-files", "--stage", "-z") !== before) throw new Error("검사 도중 스테이징 내용이 바뀌었습니다. 다시 검사하세요.");
-  console.log(needsFrontend || needsTooling ? "변경 코드 검사 통과" : "코드 변경 없음: 기본 커밋 검사 통과");
+  console.log(needsFrontend || needsTooling || needsBackend ? "변경 코드 검사 통과" : "코드 변경 없음: 기본 커밋 검사 통과");
 } catch (error) {
   console.error(error.message);
   process.exitCode = 1;

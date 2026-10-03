@@ -5,7 +5,7 @@
 ## 기술 구성
 
 - 프론트엔드: React 기반 Next.js + TypeScript
-- 백엔드: Spring Boot + Java 21
+- 백엔드: Spring Boot 4.1.1 + Java 21 + Maven Wrapper 3.9.16
 - 데이터베이스: PostgreSQL
 
 ## 문서 안내
@@ -20,6 +20,7 @@
 | [AGENTS.md](AGENTS.md) | 계획에 따른 작업·검증·기록 규칙 |
 | [frontend/AGENTS.md](frontend/AGENTS.md) | Next.js 작업에 필요한 추가 안내 |
 | [frontend/README.md](frontend/README.md) | 프론트 폴더 안내와 공통 문서 연결 |
+| [backend/README.md](backend/README.md) | 백엔드 폴더·마이그레이션 안내와 공통 문서 연결 |
 
 ## 작업 흐름
 
@@ -63,7 +64,7 @@ npm run build
 
 ## 백엔드 개발 환경
 
-Windows용 프로젝트 전용 환경을 사용합니다. JDK·PostgreSQL 실행 파일, DB 데이터·로그·접속 파일은 Git에서 제외한 `.local/`에 보관합니다. 시스템 PATH·사용자 환경 변수·Windows 서비스는 등록하지 않으며 새 터미널에서 아래 스크립트를 다시 적용합니다. 백엔드 프로젝트의 생성·실행·검증은 P10에서 추가합니다.
+Windows용 프로젝트 전용 환경을 사용합니다. JDK·PostgreSQL 실행 파일, DB 데이터·로그·접속 파일은 Git에서 제외한 `.local/`에 보관합니다. 시스템 PATH·사용자 환경 변수·Windows 서비스는 등록하지 않으며 새 터미널에서 아래 스크립트를 다시 적용합니다.
 
 ### JDK 21
 
@@ -132,9 +133,42 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/local-db.ps1 sto
 
 데이터는 `.local/postgres-data/`, 서버 로그는 `.local/postgres-server.log`에 보관합니다. `.local/`은 재생성 가능한 실행 파일뿐 아니라 DB 데이터와 접속 정보를 포함하므로 환경 정리 목적으로 폴더 전체를 삭제하지 않습니다.
 
+## 백엔드 실행·검증
+
+공식 [Spring Initializr](https://start.spring.io/)로 Spring Boot 4.1.1 프로젝트를 생성했습니다. 새 프로젝트이므로 안정판 4.1 계열을 사용하고, [공식 요구사항](https://docs.spring.io/spring-boot/system-requirements.html)에서 Java 21 지원을 확인했습니다. Maven은 단일 프로젝트의 표준 `test`·`verify` 흐름과 Windows·Linux 실행을 위해 선택했으며 Wrapper에서 3.9.16으로 고정합니다. 별도 Maven 설치는 필요하지 않습니다. 배포 ZIP을 공식 SHA512와 대조하고 Wrapper에 SHA256 검증을 설정했습니다. 최초 실행에는 Maven Central 다운로드가 필요합니다.
+
+저장소 루트의 PowerShell에서 환경과 DB를 준비하고 실행합니다.
+
+```powershell
+. ./scripts/use-local-env.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/local-db.ps1 start
+$env:MAVEN_USER_HOME = Join-Path $PWD '.local/maven'
+./backend/mvnw.cmd -B -ntp -f backend/pom.xml "-Dmaven.repo.local=$PWD/.local/maven/repository" spring-boot:run
+```
+
+기본 포트는 8080이며 종료는 Ctrl+C입니다. [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)는 DB가 연결되면 HTTP 200과 `{"status":"UP"}`을 반환하고 DB 장애 시 HTTP 503을 반환합니다. 공개 엔드포인트는 health만 사용하며 DB·환경 설정 상세는 공개하지 않습니다. 실행 중 포트 충돌이 있으면 `"-Dspring-boot.run.arguments=--server.port=8081"`을 추가합니다.
+
+루트 `.env`는 Spring이 직접 읽지 않고 `use-local-env.ps1`이 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`를 현재 세션으로 전달합니다. 실제 비밀번호를 명령 인수에 넣지 않습니다. PostgreSQL JDBC·Flyway·Actuator·Spring MVC를 사용하며 제품 저장 모델은 P11에서 구현합니다. JDBC와 Flyway는 같은 전용 스키마를 사용하며 애플리케이션 DB 세션 시간대는 Asia/Seoul입니다.
+
+[Flyway](https://docs.spring.io/spring-boot/how-to/data-initialization.html)만 스키마 변경을 관리합니다. 시작 시 `nadeulirang` 스키마와 그 안의 `flyway_schema_history`를 준비하고 `V1__initialize_schema.sql`로 스키마 설명을 기록합니다. 적용한 마이그레이션을 수정하지 않고 다음 버전 SQL을 추가합니다. 자동 `clean`은 금지하며 `schema.sql`·Hibernate 자동 DDL은 함께 사용하지 않습니다.
+
+DB가 실행 중인 상태에서 루트에서 검증합니다.
+
+```powershell
+npm run check:backend
+. ./scripts/use-local-env.ps1
+$env:MAVEN_USER_HOME = Join-Path $PWD '.local/maven'
+./backend/mvnw.cmd -B -ntp -f backend/pom.xml "-Dmaven.repo.local=$PWD/.local/maven/repository" verify
+java -jar backend/target/backend-0.0.1-SNAPSHOT.jar
+```
+
+`check:backend`는 Windows의 `.local/java`가 있으면 자식 세션에 로컬 환경을 적용하고 Maven `test`를 실행합니다. DB를 자동 시작하지 않으므로 중지 상태에서는 위 시작 명령을 먼저 실행합니다. 테스트는 실제 PostgreSQL 접속·서울 시간대, 초기 마이그레이션·중복 적용 방지, HTTP health와 환경 설정 미노출을 검사합니다. 실행마다 임의의 `p10_test_<UUID>` 스키마를 만들고 테스트 종료 단계에서 해당 스키마만 삭제합니다. 프로세스 강제 종료·DB 장애로 정리되지 않은 테스트 스키마는 앱 스키마와 구별하여 따로 정리합니다. 기존 앱·원천 데이터는 테스트에서 삭제하지 않습니다.
+
+`verify`는 같은 테스트와 실행 JAR 빌드를 수행합니다. 테스트 결과는 `backend/target/surefire-reports/`에 있으며 빌드 결과와 로컬 Maven 캐시는 Git에서 제외합니다. Linux에서는 JDK 21과 위 세 DB 환경 변수를 준비하고 `cd backend` 후 `./mvnw -B -ntp verify`로 검증합니다. CI는 PostgreSQL 18.6 서비스를 새로 준비해 이 명령을 실행하며 실제 로컬 비밀번호를 사용하지 않습니다.
+
 ## 원천 API 표본 검증
 
-P06의 TourAPI 인증·표본 조회는 저장소 루트에서 실행합니다. 처음 설정할 때 `.env.example`을 `.env`로 복사하고 루트 `.env`에 `TOURAPI_SERVICE_KEY=발급받은 Decoding 인증키`를 저장합니다. 이미 키를 넣은 `.env`는 다시 복사해 덮어쓰지 않습니다. 두 파일의 변수 이름은 같고 예시 값은 비워 둡니다. `.env`는 Git에서 제외되며 검증 도구만 명시적으로 읽습니다. 프론트에 키를 넣거나 `NEXT_PUBLIC_` 변수로 노출하지 않습니다.
+P06의 TourAPI 인증·표본 조회는 저장소 루트에서 실행합니다. 처음 설정할 때 `.env.example`을 `.env`로 복사하고 루트 `.env`에 `TOURAPI_SERVICE_KEY=발급받은 Decoding 인증키`를 저장합니다. 이미 키를 넣은 `.env`는 다시 복사해 덮어쓰지 않습니다. 두 파일의 변수 이름은 같고 예시 값은 비워 둡니다. `.env`는 Git에서 제외되며 로컬 환경 스크립트와 검증 도구만 명시적으로 읽습니다. 프론트에 키를 넣거나 `NEXT_PUBLIC_` 변수로 노출하지 않습니다.
 
 ```powershell
 node scripts/verify-tourapi.mjs
@@ -171,9 +205,10 @@ npm run setup:hooks
 |---|---|
 | 문서만 변경 | 생략. 문서 링크·계획·기록은 수정 시 직접 확인 |
 | 프론트 코드·설정 변경 | lint·타입 검사 (`npm --prefix frontend run check:quick`) |
+| 백엔드 코드·설정, 백엔드 검사 도구·환경 적용 스크립트 변경 | 실제 PostgreSQL 기반 테스트 (`npm run check:backend`). JDK 21·DB 실행·접속 환경 필요 |
 | 공통 도구·검사 설정 변경 | 커밋 차단·API 검증 도구 테스트 (`npm test`) |
 
-검사 대상 코드에는 미스테이징 변경이 없어야 합니다. 전체 빌드는 매 커밋에 실행하지 않고 기능 완료·PR 전 또는 CI에서 `npm --prefix frontend run check`로 확인합니다. 기능 테스트는 실제 로직과 실패 위험이 생길 때 필요한 범위만 추가합니다.
+검사 대상 코드에는 미스테이징 변경이 없어야 합니다. 전체 빌드는 매 커밋에 실행하지 않고 기능 완료·PR 전 또는 CI에서 프론트는 `npm --prefix frontend run check`, 백엔드는 Maven `verify`로 확인합니다. 기능 테스트는 실제 로직과 실패 위험이 생길 때 필요한 범위만 추가합니다.
 
 제목은 `type(scope): 한국어 설명` 형식이며 72자 이내입니다. 제목 뒤 빈 줄과 한국어 본문이 필요합니다. 본문에는 변경 이유·내용·검증 결과를 적습니다. 분류 코드와 범위는 영문을 유지하고 설명은 한국어로 작성합니다. 테스트 이름·주석·직접 작성하는 검사 안내도 한국어로 작성합니다. 유형·브랜치·묶음 기준은 [AGENTS](AGENTS.md#브랜치와-커밋)에서 관리합니다.
 
@@ -185,7 +220,7 @@ feat(search): 지역별 행사 검색 추가
 검증: 지역 변경·결과 없음 테스트 및 프론트 검사 통과.
 ```
 
-수동 검사는 루트에서 `npm run check:commit`, 도구 테스트는 `npm test`로 실행합니다. GitHub의 [CI 설정](.github/workflows/ci.yml)은 코드·검사 설정을 변경한 push·PR에서 도구 테스트와 프론트 검사를 실행합니다. 로컬 훅은 사용자 설정으로 우회할 수 있습니다. main 보호를 설정할 때에는 첫 CI 실행과 문서 전용 PR의 검사 생략 정책도 함께 확인합니다. 경로 필터로 생략된 CI를 그대로 필수 검사로 지정하면 문서 전용 PR의 병합이 대기할 수 있습니다. [GitHub 공식 안내](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onpushpull_requestpull_request_targetpathspaths-ignore)
+수동 검사는 루트에서 `npm run check:commit`, 도구 테스트는 `npm test`로 실행합니다. GitHub의 [CI 설정](.github/workflows/ci.yml)은 코드·검사 설정을 변경한 push·PR에서 도구 테스트와 프론트·백엔드 검사를 실행합니다. 로컬 훅은 사용자 설정으로 우회할 수 있습니다. main 보호를 설정할 때에는 첫 CI 실행과 문서 전용 PR의 검사 생략 정책도 함께 확인합니다. 경로 필터로 생략된 CI를 그대로 필수 검사로 지정하면 문서 전용 PR의 병합이 대기할 수 있습니다. [GitHub 공식 안내](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onpushpull_requestpull_request_targetpathspaths-ignore)
 
 ## PowerShell에서 npm이 차단될 때
 

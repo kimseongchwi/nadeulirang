@@ -18,7 +18,7 @@ test("잘못된 유형·본문 누락·영문 설명을 차단한다", () => {
   assert.throws(() => validateMessage("chore(repo): 개발 규칙 정리\n\nUpdate workflow."), /본문은 한국어/);
 });
 
-test("코드 검사 실패는 커밋을 차단하고 수정하면 통과한다", (t) => {
+test("프론트·백엔드 검사 실패와 부분 스테이징을 차단하고 문서는 검사를 생략한다", (t) => {
   const dir = mkdtempSync(path.join(os.tmpdir(), "nadeulirang-check-"));
   t.after(() => {
     const target = path.resolve(dir);
@@ -58,4 +58,29 @@ test("코드 검사 실패는 커밋을 차단하고 수정하면 통과한다",
   write("frontend/bad.js", "const value = 1;\n");
   okGit("add", "frontend/bad.js");
   okGit("commit", "-m", "chore(frontend): 검증용 코드 수정", "-m", "검증: 코드 수정 후 커밋 성공과 도구 문서의 검사 제외 확인.");
+
+  // 백엔드 검사 명령은 임시 코드 검사로 대체해 실제 DB·JDK 없이 훅 분기를 검증한다.
+  write("package.json", JSON.stringify({ scripts: {
+    test: "node --check frontend/bad.js",
+    "check:backend": "node --check backend/bad.js",
+  } }));
+  write("backend/bad.js", "const = ;\n");
+  okGit("add", "package.json", "backend/bad.js");
+  const backendFailure = git("commit", "-m", "chore(backend): 검증용 오류", "-m", "검증: 백엔드 검사 실패 차단.");
+  assert.notEqual(backendFailure.status, 0);
+  assert.match(backendFailure.stderr + backendFailure.stdout, /검사 실패: 커밋을 중단/);
+
+  write("backend/bad.js", "const value = 1;\n");
+  okGit("add", "backend/bad.js");
+  write("backend/bad.js", "const value = 2;\n");
+  const partial = git("commit", "-m", "chore(backend): 부분 변경", "-m", "검증: 백엔드 부분 스테이징 차단.");
+  assert.notEqual(partial.status, 0);
+  assert.match(partial.stderr + partial.stdout, /미스테이징 변경.*backend\/bad.js/);
+  okGit("add", "backend/bad.js");
+  okGit("commit", "-m", "chore(backend): 검증용 코드 수정", "-m", "검증: 백엔드 검사 성공 후 커밋 통과.");
+
+  write("backend/bad.js", "const = ;\n");
+  write("backend/README.md", "# 백엔드 문서\n");
+  okGit("add", "backend/README.md");
+  okGit("commit", "-m", "docs(backend): 검증용 문서", "-m", "검증: 백엔드 문서만 변경하면 코드 검사를 생략.");
 });
