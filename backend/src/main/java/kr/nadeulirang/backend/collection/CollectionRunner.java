@@ -138,17 +138,26 @@ public class CollectionRunner implements ApplicationRunner {
     }
 
     static Map<String, String> readKeys(Path path) throws java.io.IOException {
+        String profile = System.getenv("USERPROFILE");
+        String home = profile == null || profile.isBlank() ? System.getProperty("user.home") : profile;
+        return readKeys(path, Path.of(home, ".nadeulirang", ".env"));
+    }
+
+    static Map<String, String> readKeys(Path path, Path sharedFile) throws java.io.IOException {
         Map<String, String> keys = new HashMap<>();
-        for (String line : Files.readAllLines(path)) {
-            int separator = line.indexOf('=');
-            if (separator < 1) continue;
-            String name = line.substring(0, separator).strip();
-            if (java.util.Arrays.stream(Source.values()).noneMatch(source -> source.keyName.equals(name))) continue;
-            String value = line.substring(separator + 1).strip();
-            if (value.length() >= 2 && (value.startsWith("\"") && value.endsWith("\"") || value.startsWith("'") && value.endsWith("'"))) {
-                value = value.substring(1, value.length() - 1);
+        for (Path file : java.util.List.of(sharedFile, path)) {
+            if (!Files.exists(file)) continue;
+            for (String line : Files.readAllLines(file)) {
+                int separator = line.indexOf('=');
+                if (separator < 1) continue;
+                String name = line.substring(0, separator).strip();
+                if (java.util.Arrays.stream(Source.values()).noneMatch(source -> source.keyName.equals(name))) continue;
+                String value = line.substring(separator + 1).strip();
+                if (value.length() >= 2 && (value.startsWith("\"") && value.endsWith("\"") || value.startsWith("'") && value.endsWith("'"))) {
+                    value = value.substring(1, value.length() - 1);
+                }
+                if (!value.isBlank()) keys.put(name, value);
             }
-            keys.put(name, value);
         }
         return keys;
     }

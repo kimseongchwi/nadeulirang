@@ -81,7 +81,7 @@ java -version
 javac -version
 ```
 
-스크립트는 현재 세션의 `JAVA_HOME`·PATH를 설정하고 `.env`에서 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`만 환경 변수로 전달합니다. API 키를 환경 변수로 전달하거나 값에 포함된 코드를 실행하지 않습니다. 반복 적용해도 PATH 항목을 중복 추가하지 않습니다.
+스크립트는 현재 세션의 `JAVA_HOME`·PATH를 설정하고 아래 [공통 로컬 설정](#작업-폴더-사이의-로컬-설정-유지-p22)과 폴더별 `.env`에서 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`만 환경 변수로 전달합니다. API 키를 환경 변수로 전달하거나 값에 포함된 코드를 실행하지 않습니다. 반복 적용해도 PATH 항목을 중복 추가하지 않습니다.
 
 ### PostgreSQL
 
@@ -153,7 +153,7 @@ $env:MAVEN_USER_HOME = Join-Path $PWD '.local/maven'
 
 `npm run dev`는 Next.js 프론트만 시작합니다. 프론트의 `http://localhost:3000/api/health`는 현재 라우트·백엔드 전달 설정이 없어 404이며 Spring health와 다른 주소입니다. Spring도 위 명령으로 별도 실행해야 합니다. 서버·포트·경로와 404·접속 실패·503의 차이는 [학습 문서](docs/LEARNING.md#p10-health-주소와-404를-구별하기)를 참고합니다.
 
-일반 서버 실행에서 루트 `.env`는 Spring이 직접 읽지 않고 `use-local-env.ps1`이 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`를 현재 세션으로 전달합니다. 실제 비밀번호를 명령 인수에 넣지 않습니다. PostgreSQL JDBC·Flyway·Actuator·Spring MVC를 사용합니다. P11 수집 실행은 아래 전용 실행기로 원천 키만 별도로 읽습니다. JDBC와 Flyway는 같은 전용 스키마를 사용하며 애플리케이션 DB 세션 시간대는 Asia/Seoul입니다.
+일반 서버 실행에서 설정 파일은 Spring이 직접 읽지 않고 `use-local-env.ps1`이 공통/폴더별 설정의 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`를 현재 세션으로 전달합니다. 실제 비밀번호를 명령 인수에 넣지 않습니다. PostgreSQL JDBC·Flyway·Actuator·Spring MVC를 사용합니다. P11 수집 실행은 아래 전용 실행기로 원천 키만 별도로 읽습니다. JDBC와 Flyway는 같은 전용 스키마를 사용하며 애플리케이션 DB 세션 시간대는 Asia/Seoul입니다.
 
 [Flyway](https://docs.spring.io/spring-boot/how-to/data-initialization.html)만 스키마 변경을 관리합니다. 시작 시 `nadeulirang` 스키마와 그 안의 `flyway_schema_history`를 준비합니다. `V1__initialize_schema.sql`은 스키마 설명을 기록하고 `V2__collection_model.sql`은 원천 호출·제품 항목·원문·필드 근거·연결/검토 이력을 준비합니다. 적용한 마이그레이션을 수정하지 않고 다음 버전 SQL을 추가합니다. 자동 `clean`은 금지하며 `schema.sql`·Hibernate 자동 DDL은 함께 사용하지 않습니다.
 
@@ -171,11 +171,27 @@ java -jar backend/target/backend-0.0.1-SNAPSHOT.jar
 
 `verify`는 같은 테스트와 실행 JAR 빌드를 수행합니다. 테스트 결과는 `backend/target/surefire-reports/`에 있으며 빌드 결과와 로컬 Maven 캐시는 Git에서 제외합니다. Linux에서는 JDK 21과 위 세 DB 환경 변수를 준비하고 `cd backend` 후 `./mvnw -B -ntp verify`로 검증합니다. CI는 PostgreSQL 18.6 서비스를 새로 준비해 이 명령을 실행하며 실제 로컬 비밀번호를 사용하지 않습니다.
 
+## 작업 폴더 사이의 로컬 설정 유지 (P22)
+
+API 키 3개와 DB 접속 설정 3개는 저장소 밖 사용자 홈의 `.nadeulirang/.env`에 보관합니다. 현재 Windows 경로는 `%USERPROFILE%\.nadeulirang\.env`입니다. 같은 PC의 새 브랜치·작업 폴더에서는 설정을 다시 입력하지 않고 공통 파일을 읽습니다. 저장소의 `.env`·공통 파일은 Git으로 관리하지 않습니다.
+
+기존 루트 `.env`에 6개 값을 준비한 뒤 한 번 보관합니다. 루트 `.env`의 값을 바꾼 뒤에도 같은 명령으로 공통 파일을 갱신할 수 있습니다.
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/save-local-settings.ps1
+```
+
+보관 스크립트는 기존 공통 값과 폴더별 값을 합치고 6개 항목이 모두 있어야 저장합니다. 임시 파일에서 교체하며 값은 출력하지 않습니다. Windows 파일 권한은 현재 사용자·SYSTEM으로 제한합니다. 새 보관 파일을 만들 때와 기존 파일을 갱신할 때 모두 같은 제한을 적용합니다. 값은 한 줄로 쓰며 따옴표 안의 내용도 코드·이스케이프로 실행하지 않습니다.
+
+읽기 우선순위는 **공통 파일 → 폴더별 `.env`의 비어 있지 않은 값**입니다. 폴더별 빈 입력란은 공통 값을 지우지 않습니다. 다른 DB를 사용하는 폴더는 자체 `.env`에 접속 설정을 넣을 수 있습니다. 공통 파일을 직접 수정했다면 기존 폴더의 같은 항목에 값이 남아 있는지 확인합니다. `use-local-env.ps1`·P06 검증 도구·P11 수집기가 이 순서를 사용하며 `.env.example`은 실행에 사용하지 않습니다.
+
+공통 설정은 같은 PC에서 유지하는 파일이며 다른 PC·배포 서버에 자동 동기화되지 않습니다. 다른 PC는 접근을 제한한 공통 설정 파일을 별도로 준비하고, 실제 운영 서버의 승인된 원천 키·운영 DB 정보는 P15에서 배포 환경의 비밀 설정으로 등록·검증합니다. JDK·PostgreSQL 설치와 DB 데이터·관리자 접속 파일은 이 6개 설정 보관에 포함하지 않습니다.
+
 ## 데이터 수집 (P11)
 
 수집 코드·모델과 세 원천의 실제 수집·저장·재실행 검증을 마쳤습니다. 공개 후보의 지역·종류·건수와 종료/검토 대기 범위는 [PLAN](PLAN.md#기능과-공개-준비)에서 관리합니다. 테스트의 가상 데이터를 공개 확보 건수로 세지 않습니다.
 
-루트 `.env`의 원천 키 3개와 DB 접속 설정을 한 번 저장하면 다음 실행에서도 그대로 사용합니다. 기존 파일을 `.env.example`로 덮어쓰지 않습니다. `.env`는 Git에서 제외되며 수집기는 파일을 코드로 실행하지 않고 원천 키만 읽습니다. 별도 작업 폴더에는 Git에서 제외한 `.env`·실행 환경이 자동 복사되지 않으므로 로컬 설정을 따로 준비해야 합니다.
+원천 키 3개와 DB 접속 설정은 아래 공통 로컬 설정으로 작업 폴더 사이에서 유지할 수 있습니다. 기존 `.env`를 `.env.example`로 덮어쓰지 않습니다. `.env`는 Git에서 제외되며 수집기는 파일을 코드로 실행하지 않고 원천 키만 읽습니다. 실행 파일·DB 데이터는 별도로 준비하며 공통 설정 보관이 이를 복사하거나 DB를 시작하지는 않습니다.
 
 DB가 실행 중일 때 저장소 루트에서 실행합니다.
 
@@ -190,6 +206,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/collect-data.ps1
 수집기는 종류·시도 코드·주소를 재대조한 항목만 공개 후보로 승인하고, 불일치는 검토 대기로 둡니다. 시도 목록은 `ldongCode2`의 기본 조회로 확보하며 `lDongListYn=Y`의 구·군 목록과 구분합니다. 표준데이터 교차 연결은 P06에서 기관 소개로 확인한 두 시설만 사용합니다. 이미 보류 상태로 저장했던 원천도 `CollectionStore.relink`가 검토 근거와 연결 이력을 남깁니다. 다른 이름 중복·이전 ID는 자동 통합하지 않습니다. 원문·수정 시각·기준일·필드별 출처는 보존하고 조건 요금·할인·휴관 문장을 추정해 정규화하지 않습니다. 같은 정상 응답 안의 상충 요금도 한 행을 임의로 채택하지 않습니다. 현재 날짜 운영 검토는 기본 미확인입니다. 변경 목록은 첫 20건의 비표출 표본만 확인하므로 전체 상태 추적과 자동 갱신 스케줄은 P15에서 보완합니다. 화면/API 제공은 후속 항목입니다.
 
 ## 원천 API 표본 검증
+
+P06 검증 도구도 수집기·환경 적용 스크립트와 같은 공통/폴더별 설정을 읽습니다.
 
 P06의 TourAPI 인증·표본 조회는 저장소 루트에서 실행합니다. 처음 설정할 때 `.env.example`을 `.env`로 복사하고 루트 `.env`에 `TOURAPI_SERVICE_KEY=발급받은 Decoding 인증키`를 저장합니다. 이미 키를 넣은 `.env`는 다시 복사해 덮어쓰지 않습니다. 두 파일의 변수 이름은 같고 예시 값은 비워 둡니다. `.env`는 Git에서 제외되며 로컬 환경 스크립트·검증 도구·P11 수집기만 명시적으로 읽습니다. 프론트에 키를 넣거나 `NEXT_PUBLIC_` 변수로 노출하지 않습니다.
 
@@ -228,7 +246,7 @@ npm run setup:hooks
 |---|---|
 | 문서만 변경 | 생략. 문서 링크·계획·기록은 수정 시 직접 확인 |
 | 프론트 코드·설정 변경 | lint·타입 검사 (`npm --prefix frontend run check:quick`) |
-| 백엔드 코드·설정, 백엔드 검사 도구·환경 적용·수집 실행 스크립트 변경 | 실제 PostgreSQL 기반 테스트 (`npm run check:backend`). JDK 21·DB 실행·접속 환경 필요 |
+| 백엔드 코드·설정, 백엔드 검사 도구·환경 적용·공통 설정/보관·수집 실행 스크립트 변경 | 실제 PostgreSQL 기반 테스트 (`npm run check:backend`). JDK 21·DB 실행·접속 환경 필요 |
 | 공통 도구·검사 설정 변경 | 커밋 차단·API 검증 도구 테스트 (`npm test`) |
 
 검사 대상 코드에는 미스테이징 변경이 없어야 합니다. 전체 빌드는 매 커밋에 실행하지 않고 기능 완료·PR 전 또는 CI에서 프론트는 `npm --prefix frontend run check`, 백엔드는 Maven `verify`로 확인합니다. 기능 테스트는 실제 로직과 실패 위험이 생길 때 필요한 범위만 추가합니다.

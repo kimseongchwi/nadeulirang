@@ -1,5 +1,4 @@
-import { readFileSync } from "node:fs";
-import { parseEnv } from "node:util";
+import { loadLocalSettings } from "./local-settings.mjs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -126,7 +125,7 @@ export async function verify(operation, query, key, format = "json", fetchImpl =
 
 async function main() {
   const [operation = "ldongCode2", queryText = "{}", format = "json"] = process.argv.slice(2);
-  const env = parseEnv(readFileSync(new URL("../.env", import.meta.url), "utf8"));
+  const env = loadLocalSettings(fileURLToPath(new URL("..", import.meta.url)));
   const key = env.TOURAPI_SERVICE_KEY?.trim();
   const result = await verify(operation, JSON.parse(queryText), key, format);
   console.log(JSON.stringify(result, null, 2));

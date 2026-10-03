@@ -15,12 +15,9 @@ $remainingPaths = @($env:Path -split ';' | Where-Object { $_ -and $_ -notin $loc
 $env:Path = ($localBins + $remainingPaths) -join ';'
 
 # API 키를 환경 변수로 전달하지 않는다. 허용한 DB 값만 실행 없이 전달한다.
-$envFile = Join-Path $projectRoot '.env'
-if (Test-Path -LiteralPath $envFile) {
-    foreach ($line in [System.IO.File]::ReadAllLines($envFile)) {
-        if ($line -match '^\s*(DB_URL|DB_USERNAME|DB_PASSWORD)=(.*)$') {
-            [Environment]::SetEnvironmentVariable($Matches[1], $Matches[2].Trim(), 'Process')
-        }
-    }
+. (Join-Path $PSScriptRoot 'local-settings.ps1')
+$settings = Get-NadeulirangLocalSettings -ProjectRoot $projectRoot
+foreach ($name in @('DB_URL', 'DB_USERNAME', 'DB_PASSWORD')) {
+    if ($settings.ContainsKey($name)) { [Environment]::SetEnvironmentVariable($name, $settings[$name], 'Process') }
 }
 Write-Host '현재 세션에 로컬 JDK·PostgreSQL 경로와 DB 설정을 적용했습니다.'

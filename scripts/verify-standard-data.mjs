@@ -1,5 +1,4 @@
-import { readFileSync } from "node:fs";
-import { parseEnv } from "node:util";
+import { loadLocalSettings } from "./local-settings.mjs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { redact } from "./verify-tourapi.mjs";
@@ -110,7 +109,7 @@ export async function verifyStandard(sourceName, query, key, format = "json", fe
 async function main() {
   const [sourceName, queryText = "{}", format = "json"] = process.argv.slice(2);
   if (!Object.hasOwn(sources, sourceName)) throw new Error("festival 또는 museum 원천을 지정하세요.");
-  const env = parseEnv(readFileSync(new URL("../.env", import.meta.url), "utf8"));
+  const env = loadLocalSettings(fileURLToPath(new URL("..", import.meta.url)));
   const key = env[sources[sourceName].keyName]?.trim();
   const result = await verifyStandard(sourceName, JSON.parse(queryText), key, format);
   console.log(JSON.stringify(result, null, 2));
