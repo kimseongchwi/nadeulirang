@@ -61,7 +61,76 @@ npm run typecheck
 npm run build
 ```
 
-백엔드·DB 설치와 실행 안내는 해당 프로젝트를 준비한 뒤 추가합니다.
+## 백엔드 개발 환경
+
+Windows용 프로젝트 전용 환경을 사용합니다. JDK·PostgreSQL 실행 파일, DB 데이터·로그·접속 파일은 Git에서 제외한 `.local/`에 보관합니다. 시스템 PATH·사용자 환경 변수·Windows 서비스는 등록하지 않으며 새 터미널에서 아래 스크립트를 다시 적용합니다. 백엔드 프로젝트의 생성·실행·검증은 P10에서 추가합니다.
+
+### JDK 21
+
+[Eclipse Temurin 공식 배포](https://adoptium.net/temurin/releases/?version=21&os=windows&arch=x64)에서 Windows x64 **JDK 21 ZIP**을 받고 배포 페이지의 SHA256과 `Get-FileHash -Algorithm SHA256` 결과를 대조합니다. JRE만 받으면 `javac`가 없습니다. ZIP을 `.local/java/`에 풀어 `.local/java/jdk-21.<버전>/bin/java.exe` 구조로 둡니다. 이 폴더에는 사용할 JDK 21 배포본 하나만 둡니다.
+
+저장소 루트의 PowerShell에서 실행합니다. 실행 정책이 스크립트를 차단할 때만 `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`를 먼저 실행합니다. 적용 범위는 현재 세션입니다.
+
+```powershell
+. ./scripts/use-local-env.ps1
+java -version
+javac -version
+```
+
+스크립트는 현재 세션의 `JAVA_HOME`·PATH를 설정하고 `.env`에서 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`만 환경 변수로 전달합니다. API 키를 환경 변수로 전달하거나 값에 포함된 코드를 실행하지 않습니다. 반복 적용해도 PATH 항목을 중복 추가하지 않습니다.
+
+### PostgreSQL
+
+[PostgreSQL 공식 Windows 안내](https://www.postgresql.org/download/windows/)에서 연결하는 [EDB 바이너리 배포](https://www.enterprisedb.com/download-postgresql-binaries)의 Windows x64 PostgreSQL 18 ZIP을 사용합니다. ZIP의 `pgsql/bin`·`pgsql/lib`·`pgsql/share`를 `.local/postgresql/` 아래에 풀어 `.local/postgresql/pgsql/bin/psql.exe` 구조로 둡니다. pgAdmin·Stack Builder는 이 환경에서 사용하지 않습니다.
+
+**처음 준비할 때만** 저장소 루트에서 초기화합니다. `.local/postgres-data`가 이미 있으면 다시 초기화하거나 삭제하지 않습니다. 5432를 다른 DB가 사용하는 경우 기존 DB를 종료하지 말고 포트와 아래 접속 설정을 함께 조정합니다. 실제 데이터가 생긴 후의 버전 변경은 별도 마이그레이션 작업으로 다룹니다.
+
+```powershell
+. ./scripts/use-local-env.ps1
+initdb -D .local/postgres-data -U postgres --pwprompt --encoding=UTF8 --locale=C --auth=scram-sha-256 --set=listen_addresses=127.0.0.1 --set=port=5432 --set=timezone=Asia/Seoul --set=log_timezone=Asia/Seoul
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/local-db.ps1 start
+psql -X -h 127.0.0.1 -p 5432 -U postgres -d postgres -W
+```
+
+초기화 시 관리자 비밀번호를 입력하고 `psql`에서도 같은 비밀번호를 입력합니다. 관리자 `psql` 안에서 전용 계정·DB를 생성합니다. `\password`의 프롬프트에 앱 계정용 비밀번호를 입력하며 SQL·명령 인수에 비밀번호를 직접 쓰지 않습니다.
+
+```sql
+CREATE ROLE nadeulirang LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE;
+\password nadeulirang
+CREATE DATABASE nadeulirang OWNER nadeulirang ENCODING 'UTF8';
+\q
+```
+
+기존 API 키가 있는 루트 `.env`를 보존하고 다음 세 변수를 따옴표 없이 추가합니다. `.env.example`은 빈 값의 양식입니다. `DB_PASSWORD`에는 방금 지정한 앱 계정 비밀번호를 넣고, 실제 값은 커밋·공유하지 않습니다.
+
+```dotenv
+DB_URL=jdbc:postgresql://127.0.0.1:5432/nadeulirang
+DB_USERNAME=nadeulirang
+DB_PASSWORD=
+```
+
+최초 로컬 준비 과정에서 생성한 관리자·앱 접속 파일은 `.local/postgres-admin-password.txt`·`.local/postgres-admin.pgpass`·`.local/postgres-app.pgpass`입니다. 새 환경에서 위의 프롬프트 방식으로 준비했다면 이 파일들은 자동 생성되지 않으며 `psql -W`로 접속합니다. 현재 준비된 환경에서는 아래 명령으로 비밀번호를 출력하지 않고 앱 계정의 접속을 확인할 수 있습니다.
+
+```powershell
+. ./scripts/use-local-env.ps1
+$env:PGPASSFILE = Join-Path $PWD '.local/postgres-app.pgpass'
+psql -X -w -h 127.0.0.1 -p 5432 -U nadeulirang -d nadeulirang -c "SELECT current_database(), current_user, current_setting('server_encoding'), current_setting('TimeZone');"
+Remove-Item Env:PGPASSFILE
+```
+
+한글 SQL은 UTF-8 파일로 저장하고 `psql -f <파일>`로 실행합니다. Windows 명령 인수의 한글 인코딩과 서버 UTF-8이 다를 수 있으므로 위 접속 검증 명령은 영문 SQL만 사용합니다.
+
+### DB 시작·종료
+
+저장소 루트에서 실행합니다. DB는 PC 재부팅 후 자동으로 시작하지 않습니다. `status`는 실행 중이면 종료 코드 0, 중지 상태이면 3을 반환합니다. `stop`은 진행 중인 접속을 종료하고 데이터를 정상 저장합니다.
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/local-db.ps1 start
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/local-db.ps1 status
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/local-db.ps1 stop
+```
+
+데이터는 `.local/postgres-data/`, 서버 로그는 `.local/postgres-server.log`에 보관합니다. `.local/`은 재생성 가능한 실행 파일뿐 아니라 DB 데이터와 접속 정보를 포함하므로 환경 정리 목적으로 폴더 전체를 삭제하지 않습니다.
 
 ## 원천 API 표본 검증
 
