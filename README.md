@@ -1,6 +1,6 @@
 # 나들이랑 (nadeulirang)
 
-전국 축제·행사·전시·박물관·문화관광지의 일정, 요금, 할인 조건을 검색·비교하는 개인 웹 서비스입니다. 검색 유입과 광고 수익을 목표로 합니다.
+전국 축제·행사·전시·박물관·문화관광지를 발견하고, 관심 있는 곳의 일정·요금·방문 정보를 공식 출처로 확인하는 개인 웹 서비스입니다. 검색 유입과 광고 수익을 목표로 합니다. 현재 제공 범위와 후속 기능은 [PRD](docs/PRD.md)에서 관리합니다.
 
 서비스를 만들고 운영하면서 Java·Spring·React를 학습하는 것도 개발 목적입니다. Java 문법·어노테이션부터 기능의 선택 이유·동작 흐름·대안과 실제 코드를 [학습 문서](docs/LEARNING.md)에 연결해 설명하고, 작은 변경·결과 예측으로 이해를 확인합니다. 학습 협업 방식은 [AGENTS](AGENTS.md#개발과-학습)를 따릅니다.
 
@@ -23,6 +23,7 @@
 | [AGENTS.md](AGENTS.md) | 계획에 따른 작업·검증·기록 규칙 |
 | [frontend/AGENTS.md](frontend/AGENTS.md) | Next.js 작업에 필요한 추가 안내 |
 | [frontend/README.md](frontend/README.md) | 프론트 폴더 안내와 공통 문서 연결 |
+| [design-preview/README.md](design-preview/README.md) | UI 디자인 가이드·홈·검색·상세 검토 시안의 위치와 실행 방법 |
 | [backend/README.md](backend/README.md) | 백엔드 폴더·마이그레이션 안내와 공통 문서 연결 |
 
 ## 작업 흐름
@@ -40,6 +41,10 @@ PRD는 제품 기준, DESIGN은 디자인 결정, 학습 문서는 개념·구�
 커밋 전 변경 diff를 자체 리뷰하고 검토 범위·발견한 문제·처리를 WORKLOG에 짧게 남깁니다. 검증 명령의 성공과 리뷰 결과는 구분하며, 미검토 내용은 완료한 리뷰로 기록하지 않습니다. 리뷰 기준은 [AGENTS](AGENTS.md#코드문서-리뷰)를 따릅니다.
 
 “리뷰 후 PR·자동 머지까지” 요청하면 검토·필요한 수정·검증 후, 미커밋 변경을 저장하고 푸시·PR·조건 충족 후 머지까지 진행합니다. 머지 성공을 확인하면 main으로 돌아오고 해당 작업의 로컬·원격 브랜치도 정리합니다. 반영되지 않은 변경이 있으면 보존하고 정리를 보류합니다. 리뷰만 요청했을 때의 작업 범위와 상세 규칙은 [브랜치와 커밋](AGENTS.md#브랜치와-커밋)을 참고합니다. 자동 머지는 저장소에서 활성화하고 필수 검사·리뷰 조건을 충족해야 합니다. [GitHub 자동 머지 안내](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/automatically-merging-a-pull-request)
+
+## UI 디자인 가이드 확인
+
+사용자 요청으로 현재 검토 시안을 프로젝트의 `design-preview/`에 보관합니다. 저장소 루트에서 `node design-preview/server.cjs`를 실행한 뒤 [UI 디자인 가이드](http://127.0.0.1:8916/ui-design)에 접속합니다. 별도 패키지 설치는 필요 없습니다. 홈·검색도 같은 서버에서 확인할 수 있습니다. 파일 안내와 검토 상태는 [검토 폴더 README](design-preview/README.md)를 참고합니다. 검토용 보관은 디자인 전체의 확정이나 `frontend/` 제품 구현 완료를 뜻하지 않습니다.
 
 ## 프론트 실행
 

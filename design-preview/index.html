@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>나들이랑 · 홈과 스타일 검토</title><link id="brandFavicon" rel="icon" type="image/svg+xml" href="/assets/favicon-forest.svg?v=6"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/brand.css"><script src="/brand.js" defer></script><script src="/app.js" defer></script></head>
+<body>
+<a href="#main" class="skip">본문 바로가기</a>
+<div class="shell">
+  <aside class="pc-intro" aria-label="나들이랑 소개">
+    <a href="/" data-route class="brand"><span class="wordmark" role="img" aria-label="나들이랑"></span></a>
+    <p class="eyebrow">가까운 하루, 새로운 발견</p>
+    <h1>어디든 좋은 날,<br>함께 나들이랑.</h1>
+    <p class="lead">지금 만날 수 있는 전시부터<br>곧 시작할 축제까지.<br>마음이 가는 곳을 천천히 찾아보세요.</p>
+    <ol class="steps"><li><strong>새로운 나들이를 발견해요</strong><span>진행 중인 기간 행사와 다가오는 일정을 둘러봐요.</span></li><li><strong>마음에 드는 곳을 찾아봐요</strong><span>지역과 종류로 관심 있는 곳을 찾아요.</span></li><li><strong>출발 전, 한 번 더 확인해요</strong><span>휴무·요금·예약은 공식 안내에서 확인해요.</span></li></ol>
+    <div class="pc-links"><div class="policy-links"><a href="/policy/privacy" data-route>개인정보처리방침</a><a href="/policy/terms" data-route>이용약관</a><a href="/policy/about" data-route>서비스·데이터 출처</a></div><p class="tiny muted">© 2026 나들이랑 · 정책·로고 확정 전</p></div>
+  </aside>
+  <div class="service">
+    <header class="service-header"><a href="/" data-route class="brand"><span class="wordmark" role="img" aria-label="나들이랑 홈"></span></a><div class="header-actions"><a id="headerSearch" class="icon-button" href="/search" data-route data-icon="search" aria-label="검색 페이지 열기"></a><button id="menuOpen" class="icon-button" data-icon="menu" aria-label="보조 메뉴 열기" aria-haspopup="dialog"></button><button class="button primary login-placeholder" disabled title="로그인 기능 준비 중">로그인</button></div></header>
+    <div class="review-banner">검토 시안 · 로고·스타일 미확정</div>
+    <main id="main" tabindex="-1"></main>
+    <footer><p class="footer-brand">나들이랑</p><p class="small muted">나들이를 발견하고, 출발 전 정보를 확인해요.</p><div class="policy-links"><a href="/policy/privacy" data-route>개인정보처리방침</a><a href="/policy/terms" data-route>이용약관</a><a href="/policy/about" data-route>서비스·데이터 출처</a></div><p class="tiny muted">© 2026 나들이랑 · 운영 정책 준비 중</p></footer>
+    <nav id="bottomNav" class="bottom-nav" aria-label="주요 페이지"></nav>
+  </div>
+</div>
+<dialog id="menuDialog" class="menu-dialog"><div class="dialog-head"><h2>메뉴</h2><button class="icon-button" data-close data-icon="close" aria-label="메뉴 닫기"></button></div><nav id="menuLinks" aria-label="전체 메뉴"></nav></dialog>
+<dialog id="calendarDialog" class="calendar-dialog" aria-labelledby="calendarTitle" aria-describedby="calendarKeys"><div class="dialog-head"><h2 id="calendarTitle">방문 날짜 선택</h2><button class="icon-button" data-close data-icon="close" aria-label="달력 닫기"></button></div>
+  <div id="monthNav" class="month-nav"><button id="prevMonth" class="icon-button" data-icon="back" aria-label="이전 달"></button><button id="monthLabel" class="month-label" aria-controls="calendarYearsPanel" aria-expanded="false"></button><button id="nextMonth" class="icon-button" data-icon="next" aria-label="다음 달"></button></div>
+  <div id="calendarDaysPanel"><div class="weekdays" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div id="calendarGrid" class="calendar-grid" role="grid" aria-label="날짜"></div></div>
+  <div id="calendarYearsPanel" hidden><div class="year-head"><button id="yearReturn" class="icon-button" data-icon="back" aria-label="날짜 달력으로 돌아가기"></button><h3>연도 선택</h3></div><div class="month-nav"><button id="prevYears" class="icon-button" data-icon="back" aria-label="이전 연도 묶음"></button><span id="yearRange" aria-live="polite"></span><button id="nextYears" class="icon-button" data-icon="next" aria-label="다음 연도 묶음"></button></div><div id="yearGrid" class="year-grid" role="group" aria-label="연도"></div></div>
+  <p id="calendarKeys" class="sr-only">방향키로 이동, Enter로 선택, Page Up과 Page Down으로 월 이동, Escape로 취소합니다.</p><div class="calendar-status"><p id="calendarSelection" aria-live="polite"></p></div><div class="calendar-actions"><button id="calendarClear" class="text-button">지우기</button><div class="calendar-actions-right"><button id="calendarCancel" class="button secondary">취소</button><button id="calendarApply" class="button primary">선택 완료</button></div></div></dialog>
+<p id="toast" class="toast" role="status" aria-live="polite" hidden></p>
+<dialog id="policyDialog" class="policy-sheet" aria-labelledby="policyTitle"><div class="policy-sheet-head"><h2 id="policyTitle"></h2><button id="policyClose" class="icon-button" aria-label="정책 안내 닫기" data-icon="close"></button></div><div id="policyBody" class="policy-sheet-body"></div></dialog>
+<dialog id="homeFilterDialog" class="policy-sheet filter-sheet" aria-labelledby="homeFilterTitle"><div class="policy-sheet-head"><h2 id="homeFilterTitle">홈 필터</h2><button id="homeFilterClose" class="icon-button" aria-label="홈 필터 닫기" data-icon="close"></button></div><form id="homeFilterForm" class="filter-sheet-form"><div class="filter-sheet-fields"><div><label for="homeFilterRegion">지역</label><select id="homeFilterRegion" name="region"></select></div><div><label for="homeFilterKind">종류</label><select id="homeFilterKind" name="kind"></select></div></div><div class="filter-sheet-actions"><button id="homeFilterClear" class="text-button" type="button">초기화</button><div class="row"><button id="homeFilterCancel" class="text-button" type="button">취소</button><button class="button primary" type="submit">적용</button></div></div></form></dialog>
+</body></html>
