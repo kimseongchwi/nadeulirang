@@ -23,7 +23,6 @@
 | [AGENTS.md](AGENTS.md) | 계획에 따른 작업·검증·기록 규칙 |
 | [frontend/AGENTS.md](frontend/AGENTS.md) | Next.js 작업에 필요한 추가 안내 |
 | [frontend/README.md](frontend/README.md) | 프론트 폴더 안내와 공통 문서 연결 |
-| [design-preview/README.md](design-preview/README.md) | UI 디자인 가이드·홈·검색·상세 검토 시안의 위치와 실행 방법 |
 | [backend/README.md](backend/README.md) | 백엔드 폴더·마이그레이션 안내와 공통 문서 연결 |
 
 ## 작업 흐름
@@ -44,7 +43,9 @@ PRD는 제품 기준, DESIGN은 디자인 결정, 학습 문서는 개념·구�
 
 ## UI 디자인 가이드 확인
 
-사용자 요청으로 현재 검토 시안을 프로젝트의 `design-preview/`에 보관합니다. 저장소 루트에서 `node design-preview/server.cjs`를 실행한 뒤 [UI 디자인 가이드](http://127.0.0.1:8916/ui-design)에 접속합니다. 별도 패키지 설치는 필요 없습니다. 홈·검색도 같은 서버에서 확인할 수 있습니다. 파일 안내와 검토 상태는 [검토 폴더 README](design-preview/README.md)를 참고합니다. 검토용 보관은 디자인 전체의 확정이나 `frontend/` 제품 구현 완료를 뜻하지 않습니다.
+아래 프론트 개발 서버를 실행한 뒤 [UI 디자인 가이드](http://localhost:3000/ui-design)에 접속합니다. [홈](http://localhost:3000/)·[검색](http://localhost:3000/search)·상세도 같은 서버에서 확인합니다. 별도 디자인 폴더나 검토 서버를 실행할 필요가 없습니다. 개발 서버가 다른 포트를 사용하면 그 주소 뒤에 `/ui-design`을 붙입니다.
+
+가이드는 [ui-design/page.tsx](frontend/src/app/ui-design/page.tsx), 홈·검색·상세·정책은 frontend/src/app의 각 페이지에서 제공합니다. 공통 UI와 기능별 화면·데이터의 위치는 [프론트 폴더 구성](frontend/README.md#폴더-구성)을 참고합니다. 이미지는 [public/images](frontend/public/images/)에서 관리하며 가이드와 검토 화면은 같은 컴포넌트를 사용합니다. 데이터는 검토용 스냅샷이며 실제 조회 API 연결은 P12·P13에서 이어갑니다. 로고·디자인 전체의 확정이나 제품 구현 완료를 뜻하지 않으며 검토 화면에는 noindex 안내를 적용합니다. 검토 상태는 [PLAN](PLAN.md)·[DESIGN](DESIGN.md)을 참고합니다.
 
 ## 프론트 실행
 
@@ -67,8 +68,11 @@ frontend 폴더에서 실행합니다.
 ```powershell
 npm run lint
 npm run typecheck
+npm test
 npm run build
 ```
+
+`npm test`는 서울 날짜 경계·행사 노출 기간·검색 조건을 검사합니다. `npm run check`는 위 검증을 순서대로 실행합니다.
 
 ## 백엔드 개발 환경
 

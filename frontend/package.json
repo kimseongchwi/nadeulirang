@@ -9,7 +9,8 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "check:quick": "npm run lint && npm run typecheck",
-    "check": "npm run check:quick && npm run build"
+    "test": "node --test tests/*.test.mjs",
+    "check": "npm run check:quick && npm test && npm run build"
   },
   "dependencies": {
     "next": "16.3.8",

@@ -47,7 +47,7 @@ Kotlin은 Java와 비교할 수 있는 언어, Gradle은 Maven과 비교할 수 
 
 ### P03 P04 React와 Next.js를 구별해서 읽기
 
-**기록된 근거:** 기술 구성은 React 기반 Next.js·TypeScript이며 P03·P04에서 기본 프로젝트·실행·lint·타입 검사·빌드를 확인했다. React·Next.js·TypeScript 각각의 최초 선택 이유를 상세 비교한 당시 기록은 없다. 현재 페이지는 기본 화면이며 제품 화면 구현은 P13의 범위다.
+**기록된 근거:** 기술 구성은 React 기반 Next.js·TypeScript이며 P03·P04에서 기본 프로젝트·실행·lint·타입 검사·빌드를 확인했다. React·Next.js·TypeScript 각각의 최초 선택 이유를 상세 비교한 당시 기록은 없다. P03·P04 당시 페이지는 기본 화면이었다. 현재 검토 시안의 프론트 구조는 아래 P34·P35를 따르며 제품 화면 구현은 P13의 범위다.
 
 **현재 해설:** 이 프로젝트의 React 컴포넌트는 UI의 한 부분을 표현하는 함수다. props는 전달받는 입력, state는 상호작용에 따라 바뀌는 기억이다. 컴포넌트를 나누고 최소한의 상태를 어디에 둘지 판단하면 데이터 흐름과 수정 범위를 이해하기 쉽다. 컴포넌트를 너무 잘게 나누거나 계산 가능한 값까지 state로 중복 저장하면 관리가 복잡해질 수 있다. [React 공식 설명](https://react.dev/learn/thinking-in-react)
 
@@ -280,19 +280,45 @@ health는 애플리케이션과 연결된 구성요소의 상태를 확인하는
 
 **확인 방법:** [도구 테스트](../tests/tooling/local-settings.test.mjs)는 폴더 이동·빈 입력·폴더별 우선순위·문자 그대로 읽기와 Windows 보관 파일의 생성/갱신을 검사한다. [백엔드 설정 테스트](../backend/src/test/java/kr/nadeulirang/backend/collection/CollectionSettingsTests.java)는 공통 키 상속과 기존 폴더만 있는 경우를 검사한다. 실제 키와 파일 권한은 값을 출력하지 않는 별도 로컬 확인으로 검증한다. 선택적 연습으로 공통 `DB_URL`과 폴더별 `DB_URL`이 다를 때 어느 값을 사용할지 예상해 본다.
 
-## P24·P26·P27 외부 시안에서 살펴볼 두 가지 상태
+## P24·P26·P27 시안의 상태와 화면 검토
 
-2026-10-04 홈·스타일 가이드의 외부 시안을 구현했다. 아래는 검토 도구의 실제 동작 설명이며 제품 구현이나 전체 시안 채택을 뜻하지 않는다. 사용자가 선택한 숲 초록 팔레트·메뉴 방향은 DESIGN에 반영했고 다른 시안의 세부 배치는 미확정으로 유지한다. 최초 외부 `app.js`·`index.html`·`style.css`와 과거 시안의 경로는 로컬 `docs/WORKLOG.md`에 보존한다. 같은 날 사용자의 프로젝트 내부 보관 요청으로 현재 파일은 `design-preview/`에 복사했으며 접속 방법은 [검토 폴더 README](../design-preview/README.md)를 따른다. 제품 적용 기준은 [PLAN](../PLAN.md#기능과-공개-준비)과 사용자 검토 후의 [DESIGN](../DESIGN.md)을 따른다.
+2026-10-04 외부 HTML 시안에서 홈·스타일 가이드·달력을 검토했다. 같은 날 프로젝트 내부 보관과 P33 임시 경로 연결을 거쳐 P34에서 실제 Next.js·React 구조로 전환했다. 아래는 현재 코드와 연결한 설명이며 외부 원본·과거 이력 경로는 로컬 docs/WORKLOG.md에 보존한다. 숲 초록 팔레트·메뉴 방향은 DESIGN의 사용자 선택을 따르며 전체 시안·제품 완성·사용자의 이해 완료로 취급하지 않는다.
 
-**페이지와 검토 설정:** route는 History API로 이동 전 주소·스크롤 위치를 보존하고 popstate에서 복귀한다. 1차 시안은 selected·saveSelection·sessionStorage로 비교 후보를 보관했으나 사용자 요청에 따라 현재 시안에서 비교 코드·담기·페이지를 제거했다. 해당 설명의 원본 코드는 외부 history/v1에 보존한다. 현재는 이름/지역/종류 조건을 URL로, 폭·기간 같은 검토 설정을 sessionStorage로 관리한다. 팔레트 전환은 제거하고 선택한 숲 초록만 표시한다. 현재 /ui-design은 검토 도구의 경로이며 제품 공개 경로를 확정한 것은 아니다. URL은 직접 접속·복원에 유리하고 탭 저장은 시안 설정 유지에 편하지만 상태의 수명을 정해야 한다. 홈의 적용 조건은 URL에, 이동 후 돌아올 홈 주소는 sessionStorage의 `homeFilterQuery`에 보관한다. 바텀시트 폼은 선택 중인 값이며 적용 전에는 목록을 바꾸지 않는다. `syncHomeFilter`는 `#filters` 주소와 시트 표시를 연결해 뒤로 가기로 취소하고, 적용 시 URL·세 섹션·내비게이션을 함께 갱신한다. `sectionSearchUrl`은 지역·종류와 기간 구분을 별도 검색 페이지로 전달한다. 검토 경로는 `/search`로 정리하고 이전 `/find`는 조건을 보존해 리다이렉트한다. P13 React 구조는 아직 선택하지 않았다.
+**적용 조건과 선택 중인 값:** [HomeFilter](../frontend/src/features/outings/home-filter.tsx)는 URL의 지역·종류를 폼의 React state에 복사한다. 폼에서 선택해도 목록은 바뀌지 않고 적용할 때만 주소와 목록을 갱신한다. 취소·Esc·뒤로 가기는 선택 중인 값을 버린다. [DateField·Calendar](../frontend/src/features/ui-design/calendar.tsx)도 적용 값과 pending 값을 분리해 선택 완료에서만 입력을 바꾼다. 지우기 후 취소하면 기존 날짜를 유지한다. 즉시 적용보다 한 단계가 늘지만 취소 의미가 분명하다. 최초 DOM 시안의 calendarPending·setDate·syncHomeFilter는 외부 보존본에서만 확인한다.
 
-**가이드 폭과 모바일 화면 폭:** 가이드를 서비스의 모바일 컨테이너 안에 두면 여러 요소를 비교하기 위해 스크롤을 반복해야 한다. 외부 `render`는 `/ui-design`에서만 `guide-mode`를 적용하고 `renderGuide`는 목차·여러 열의 요소·홈/검색/상세 iframe을 구성한다. 가이드는 데스크톱 공간을 사용하고 iframe은 320/390/430px의 별도 viewport에서 기존 모바일 화면을 그대로 실행한다. `guidePreviewWidth`는 달력 선택 후 가이드를 다시 그려도 너비 표시와 실제 크기를 맞춘다. 화면을 복사한 정적 예시보다 변경을 동시에 확인하기 쉽지만 세 페이지의 로딩과 각각의 스크롤·포커스 검증 비용이 생긴다. 같은 출처의 iframe은 부모와 탭 저장을 공유하므로 `isEmbeddedPreview`에서 홈 조건의 저장을 막아 미리보기 조작이 원래 홈 조건을 덮어쓰지 않게 했다. 확인 방법은 가이드에서 너비를 바꾸고 미리보기 안에서 필터·검색을 조작한 뒤 홈으로 돌아가 원래 조건을 확인하는 것이다. 선택적 연습으로 iframe 너비와 가이드 전체 너비를 각각 바꿨을 때 모바일 전환이 어느 쪽을 따르는지 예측할 수 있다. 이 검토 도구 구성을 제품 React 구조나 디자인 전체의 최종 채택으로 해석하지 않는다.
+**가이드와 모바일 화면의 폭:** [GuideReview](../frontend/src/features/ui-design/guide.tsx)는 목차·여러 열의 컴포넌트와 320/390/430px iframe을 제공한다. iframe은 별도 viewport에서 실제 홈·검색·상세 페이지를 실행하므로 화면을 복제하지 않고 변경을 같이 확인할 수 있다. 다만 세 페이지의 로딩·스크롤·포커스를 검증해야 한다. 같은 출처의 iframe은 탭 저장을 공유하므로 [HomeReview](../frontend/src/features/outings/home.tsx)는 window.self와 window.top을 비교해 미리보기에서 원래 홈 조건을 덮어쓰지 않는다. 가이드 전체 폭과 iframe 폭은 별개의 설정이다.
 
-**로딩 움직임과 상태 안내:** `design-preview/app.js`의 `loadingState`·`emptyState`·`errorState`는 가이드와 실제 시안이 같은 상태 표현을 사용하게 한다. 로딩의 `walking-mark`는 파비콘과 같은 PNG를 CSS mask로 표시하고 `outing-walk` keyframes에서 작은 이동·회전을 반복한다. 원본 모양을 다시 그리지 않으며 `transform`으로 움직여 주변 텍스트 배치를 유지한다. 실제 다리 관절을 각각 움직이는 애니메이션은 아니며 더 사실적인 모션에는 별도 벡터 구조나 프레임 작업이 필요하다. `prefers-reduced-motion: reduce`는 심볼과 그림자의 애니메이션을 제거한다. 로딩은 `role=status`로 알리고 장식 아이콘은 읽기에서 제외하며, 결과 없음과 조회 실패의 문구·동작을 구분한다. 검토 방법은 상태 가이드에서 움직임과 재시도 예시를 보고 검색 0건 뒤 조건 초기화로 후보가 복원되는지 확인하는 것이다. 선택적 연습으로 이동 폭이나 주기를 바꿔 읽기 방해 정도를 비교할 수 있다. 실제 OS 설정·스크린리더·제품 적용 검증은 별도다.
+**로딩 움직임과 상태 안내:** [feedback.tsx](../frontend/src/components/ui/feedback.tsx)의 LoadingState·EmptyState·ErrorState를 가이드와 화면이 공유한다. [review.css](../frontend/src/styles/review.css)의 walking-mark·outing-walk는 파비콘과 같은 원본 심볼을 CSS mask로 표시하고 transform으로 작은 이동·회전을 반복한다. 원본 전체가 움직이며 다리 관절 애니메이션은 아니다. prefers-reduced-motion은 움직임을 제거한다. 로딩은 role=status로 알리고 장식 아이콘은 읽기에서 제외한다. 결과 없음과 요청 실패는 문구·다음 동작을 구분한다. 가이드의 오류·재시도는 예시이며 실제 API 오류 주입은 P13에서 확인한다.
 
-**선택 중인 날짜와 적용된 날짜:** `openCalendar`는 적용된 값을 `calendarPending`에 복사한다. 달력에서 날짜·지우기를 눌러도 입력 값은 즉시 바뀌지 않고, 선택 완료에서만 `setDate`를 호출한다. 취소·Esc에서는 기존 입력을 유지한다. 즉시 적용하는 대안보다 한 단계가 늘지만 취소 의미를 분명히 하고 오선택을 되돌리기 쉽다. `renderCalendar`는 오늘·선택·비활성 상태와 키보드 이동을 표시하고, `validDate`는 실제 달력 날짜와 오늘 포함 이후 조건을 확인한다. 최초 시안은 네이티브 `input[type=date]`·`showPicker()`와 날짜 직접 입력을 비교했으나 사용자 요청으로 현재 가이드에서 제거했다. 이전 구현은 외부 history/v1·history/v2에 보존한다. 현재 `calendarView`는 날짜/연도 화면을 구분하며 `showYears`·`setCalendarMonth`는 연도 이동 시 표시 월과 키보드 포커스를 바꾸고 선택 중인 날짜는 유지한다. 오늘 선택 버튼은 사용자 요청으로 제거했으며 오늘은 작은 점으로 표시한다. 날짜 칸은 터치 영역을 유지하고, 선택 배경만 정사각형 가상 요소로 그려 화면 폭과 무관하게 1:1 원을 유지한다. 지우기를 하단 왼쪽에 두어 오른쪽 완료와 구분한다. 직접 제어 방식은 스타일을 맞추기 쉬운 대신 키보드·포커스·스크린리더·기기별 검증 비용이 생긴다. [MDN showPicker](https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/showPicker)와 [WAI 날짜 선택 예시](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/)를 참고하며 예시 열람만으로 접근성 완료로 판단하지 않는다.
+**달력의 비용과 확인 방법:** 날짜·연도 화면을 나누고 연도 이동은 표시 월·포커스만 바꾸며 pending 선택을 유지한다. 오늘은 점으로, 과거는 비활성으로 표시한다. 날짜 칸의 터치 영역과 원형 선택 배경의 크기는 구분한다. 스타일을 직접 제어하면 키보드·포커스·스크린리더·기기별 검증 비용이 생긴다. 네이티브 date/showPicker·직접 입력은 최초 시안에서 비교했으며 현재 가이드에서는 사용자 요청으로 제거했다. [MDN showPicker](https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/showPicker)와 [WAI 날짜 선택 예시](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/)의 열람만으로 접근성을 완료했다고 판단하지 않는다. 선택적 연습으로 날짜 선택·지우기 뒤 취소/완료의 결과를 예측하고, iframe 폭을 바꿔 원형 표시를 확인한다. 달력 가이드와 P32 제품 날짜 필터 활성화는 구분한다.
 
-**확인 방법·선택적 연습:** 가이드에서 날짜 선택 후 취소/선택 완료를 비교하고, 홈 필터→검색→상세→뒤로 가기의 주소·조건·스크롤을 확인한다. 날짜/요금 필터는 현재 첫 공개 축소안에서 보류 제안이므로 달력의 동작을 제품 필터 제공으로 해석하지 않는다. 외부 `brand.js`의 `brandColor`·`brandPalette`를 공통 색상 설정으로 사용한다. `applyPalette`는 CSS 변수와 `updateFavicon`을 함께 갱신한다. 로고·심볼은 원본 PNG의 alpha를 CSS mask로 사용하며, 파비콘은 같은 원본을 Canvas에 그린 뒤 `source-in` 합성으로 브랜드색을 채운다. 투명도·모양은 유지하고 현재 PNG의 data URL을 탭과 가이드 미리보기에 같이 연결한다. 첫 로딩의 `/brand.css`와 SVG 파비콘도 서버에서 같은 설정을 읽으므로 이전 파란 파일 연결이 남지 않는다. CSS만 바꾸는 대안은 파비콘 색상이 따라오지 않는 문제가 있었다. 이 방식은 시안의 동기화를 위한 것으로 출시용 정적 파일·크기·호환성 검증은 P25에서 별도로 수행한다. 원본 파일을 다시 생성하거나 확정한 것이 아니다. 숲 초록 팔레트는 2026-10-04 사용자 선택으로 DESIGN에 기록했다. 원본 모양·웹용 내보내기의 최종 검토는 P25에 남아 있다. 정책 링크의 `openPolicy`는 현재 화면 주소에 정책 해시를 추가하고 `syncPolicy`가 바텀시트를 연다. `popstate`에서 닫으므로 뒤로 가기의 의미를 유지한다. `history.scrollRestoration`을 직접 관리하고 저장한 스크롤로 복귀해 기존 가이드 앵커로 튀는 문제를 막았다. 본문 페이지 대안은 주소 공유·직접 접속이 쉬우므로 `/policy/...`에서 계속 제공한다. 바텀시트는 화면 맥락을 유지하지만 포커스·배경 스크롤·주소 복원의 검증 비용이 있다. 제품·실기기·웹뷰·사용자 이해 검증은 별도다.
+## P33 같은 Next.js 서버에서 기존 시안을 열기 · 이전 구조
+
+**당시 문제와 선택:** 외부 검토 서버에만 있던 /ui-design이 3000번 포트에서 404였다. 기존 시안을 frontend/public/ui-design에 옮기고 next.config.ts의 beforeFiles rewrites로 홈·가이드·검색·상세·정책 주소에 같은 HTML을 제공했다. app.js는 유지된 location.pathname으로 화면을 골랐다. 기존 동작을 빠르게 유지하고 npm run dev 하나로 확인하기 위한 임시 구조였다. 별도 서버를 iframe으로 감싸는 대안은 두 서버·주소 관리를 계속 요구해 선택하지 않았다.
+
+**당시 코드와 한계:** src/app/ui-design/[asset]/route.ts가 brand.ts의 팔레트를 CSS·JS·SVG 파비콘으로 응답했다. app.js의 applyPalette·updateFavicon은 로고 mask와 Canvas source-in 합성 PNG 파비콘을 동기화했다. 원본 alpha와 모양을 유지했지만 페이지는 React 레이아웃을 통과하지 않았고 public의 화면 코드와 app의 리소스 코드가 나뉘었다. 사용자 구조 개선 요청에 따라 P34에서 HTML rewrite·이 route·DOM 스크립트를 제거했다. 삭제한 파일은 외부 작업 폴더에 보존하며 현재 파일처럼 링크하지 않는다. P33의 실제 검증·완료 이력은 PLAN과 로컬 WORKLOG에 유지한다.
+
+## P34 검토 화면을 Next.js 페이지와 React 컴포넌트로 통합
+
+**문제·선택·대안:** HTML 화면과 리소스 응답을 나눠 유지하던 구조를 실제 React 페이지로 정리했다. [ui-design/page.tsx](../frontend/src/app/ui-design/page.tsx)는 GuideReview를, 홈·검색·상세·정책의 page.tsx는 화면 컴포넌트를 제공한다. P35에서 묶여 있던 pages.tsx를 화면별 파일로 분리했으며 현재 연결은 [프론트 폴더 안내](../frontend/README.md#폴더-구성)를 따른다. [layout.tsx](../frontend/src/app/layout.tsx)는 ReviewProvider와 ReviewShell을 한 번 구성한다. public에는 이미지·출처만 두며 HTML 복사나 전체 화면을 iframe으로 감싸는 대안은 사용하지 않는다. 컴포넌트를 공유해 카드·상태·정책 수정이 가이드와 화면에 함께 반영되는 대신 초기 전환과 상호작용 회귀 검증 비용이 생겼다.
+
+**props와 state:** 상세의 서버 페이지는 id에 맞는 검토 자료를 찾아 DetailReview의 item prop으로 전달한다. 사용자 입력·달력 pending·메뉴 열림은 Client Component의 state로 관리한다. JSX가 state를 화면으로 바꾸므로 innerHTML로 화면 전체를 다시 그리지 않는다. [model.ts](../frontend/src/features/outings/model.ts)는 서울 날짜·행사 기간·검색을 담당하며 [review-data.json](../frontend/src/features/outings/data/review-data.json)은 기존 7개 검토 스냅샷이다. 루트의 force-dynamic은 오늘 날짜가 빌드 시점에 고정되지 않도록 한다. 실제 조회 API와 오류 처리는 P12·P13의 후속 범위다.
+
+**URL과 탭 저장:** [review-context.tsx](../frontend/src/providers/review-provider.tsx)는 usePathname·useSearchParams를 읽고 ReviewLink/라우터로 페이지를 이동한다. 필터 적용은 Next.js가 연결한 history.replaceState로 주소와 검색 상태를 같이 갱신한다. 여기에 Next 내부 상태까지 직접 복사하면 라우터가 내부 호출로 인식해 화면 갱신을 건너뛰므로 사용자 상태만 전달한다. 이동 전에 주소별 스크롤을 저장하고, 직접 이동 표시 없는 주소 변경은 복귀로 판별해 스크롤을 복원한다. popstate만 기준으로 삼으면 Next.js의 Navigation API 처리보다 늦을 수 있다. 정책·필터 해시는 원래 페이지를 유지하면서 뒤로 가기로 시트를 닫는다. 폭·기간·홈 조건은 sessionStorage와 useSyncExternalStore로 구독하고 서버 초기값을 따로 둬 서버 렌더링과 탭 설정을 연결한다.
+
+**브랜드와 정책:** [brand.ts](../frontend/src/config/brand.ts)의 한 팔레트를 ReviewShell의 CSS 변수와 [icon.ts](../frontend/src/app/icon.ts)의 첫 파비콘 응답이 공유한다. 파비콘은 기존 PNG alpha를 SVG 필터로 같은 색으로 표시하며 가이드도 /icon을 사용한다. 브랜드 변경 시 개발 서버 갱신·빌드 후 두 표시를 확인한다. React 정책 본문은 바텀시트와 직접 접속 페이지가 공유한다. 출시용 내보내기·정책 확정·실기기 호환성은 각각 P25·P15에 남아 있다.
+
+**확인 방법·선택적 연습:** npm test로 서울 자정·윤년·종료일 포함 경계·7/14일 노출·검색 조건을 확인한다. 브라우저에서 필터 적용/취소, 검색 0건/초기화, 상세 새로고침·뒤로 가기·스크롤, 달력 취소/완료/키보드·정책 복귀·가이드 폭을 확인한다. 선택적 연습으로 카드 문구를 outing-card.tsx에서 바꿀 때 가이드와 검색 어디에 반영될지 예상해 본다. 실제 검증·리뷰는 PLAN P34와 로컬 WORKLOG에 기록하며 실기기·스크린리더·제품 API·사용자 이해는 별도다.
+
+## P35 주소·공통 UI·기능별 파일을 분류하기
+
+**문제와 선택:** src/design 안에 홈·검색·상세, 공통 팝업, 검토 데이터, 브랜드 설정이 함께 있어 파일을 찾기 어려웠다. 기존 기능을 유지하면서 [프론트 폴더 안내](../frontend/README.md#폴더-구성)의 역할별 구조로 옮겼다. components에는 공통 UI·배치, features에는 나들이·정책·UI 디자인 가이드, config에는 브랜드색, providers에는 공유 상태, styles에는 CSS를 둔다. 이 이름들은 프로젝트의 정리 방식이며 Next.js 예약 폴더가 아니다.
+
+**실제 흐름과 이점·비용:** [홈 page.tsx](../frontend/src/app/page.tsx)는 [HomeReview](../frontend/src/features/outings/home.tsx)를 제공하고 HomeReview는 [OutingCard](../frontend/src/features/outings/outing-card.tsx)를 사용한다. 검색·상세도 같은 기능 폴더의 개별 파일로 분리했다. 여러 기능이 쓰는 팝업·아이콘·상태 UI는 components에서 가져오므로 공통 표시를 수정할 위치가 분명하다. 파일과 import가 늘어나는 비용은 있지만 기능을 추가할 때 모든 코드를 design에 쌓지 않아도 된다. 지금 규모에서는 기능마다 다시 components/hooks/services 계층을 만드는 추가 분류는 하지 않았다.
+
+**이미지와 코드의 차이:** public/images의 파일은 브라우저가 /images/... 주소로 요청한다. src의 코드처럼 import 관계에 따라 화면을 실행하지 않는다. 같은 로고를 홈·가이드가 함께 쓰므로 기존 ui-design/assets라는 중간 경로를 제거했다. CSS mask·카드·icon.ts·빌드 추적 설정을 같은 경로로 갱신했으며 사진·로고·권리 안내 원본은 유지한다. 이미지 파일을 TypeScript로 다시 작성하거나 디자인을 새로 채택한 작업은 아니다.
+
+**대안·확인 방법·선택적 연습:** 단순히 design 폴더를 components로 이름만 바꾸는 대안은 데이터·화면·상태의 혼재가 그대로 남는다. app의 각 경로 안에 모든 코드를 두는 방식도 가능하지만 카드·정책·가이드를 여러 곳에서 공유하므로 이번에는 공통 UI와 기능 코드를 app 밖에 둔다. 주소는 app의 page.tsx가 그대로 결정한다. import·문서 링크, lint·타입·기존 날짜/검색 테스트·빌드와 이미지/화면 직접 접속을 확인한다. 선택적 연습으로 홈 카드 문구, 팝업 테두리, 브랜드색을 각각 어디에서 바꿀지 찾아볼 수 있다. 커밋·main 반영 검증과 사용자의 이해는 별도로 기록한다.
 
 ## 앞으로 작업하며 배울 내용
 
