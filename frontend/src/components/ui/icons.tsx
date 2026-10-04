@@ -35,6 +35,10 @@ const shapes = {
   check: <path d="m5 12 4 4 10-10" />,
   bookmark: <path d="M6 3h12v18l-6-4-6 4Z" />,
   spark: <path d="m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" />,
+  pin: <><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></>,
+  landmark: <><path d="m3 8 9-5 9 5H3ZM5 10v8m5-8v8m4-8v8m5-8v8M3 21h18" /></>,
+  ticket: <><path d="M3 6h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4V6Z" /><path d="M15 6v3m0 3v2m0 3v1" /></>,
+  info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v6m0-10v.1" /></>,
 } satisfies Record<string, ReactNode>;
 export type IconName = keyof typeof shapes;
 export function Icon({ name }: { name: IconName }) {

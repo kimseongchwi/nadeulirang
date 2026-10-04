@@ -4,21 +4,19 @@ import { useState, type ReactNode } from "react";
 import { brandPalette } from "@/config/brand";
 import { ReviewDialog, type ReviewStyle } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icons";
-import { isPolicyType } from "@/features/policies/model";
+import { policyTitles, type PolicyType } from "@/features/policies/model";
 import { ReviewLink, useReview } from "@/providers/review-provider";
 import { HomeFilter } from "@/features/outings/home-filter";
 import { PolicyLinks } from "@/features/policies/policy-links";
 import { PolicySheet } from "@/features/policies/policy-sheet";
+import { OutingPreview } from "@/features/outings/outing-preview";
+import { ReviewDevTools } from "@/components/layout/review-dev-tools";
 
 export function ReviewShell({ children }: { children: ReactNode }) {
-  const { pathname, homeUrl, searchUrl, hash, serviceWidth } = useReview();
+  const { pathname, homeUrl, searchUrl, hash, items } = useReview();
   const [menuOpen, setMenuOpen] = useState(false);
   const guide = pathname === "/ui-design";
-  const type = hash.replace(/^#policy-/, "");
-  const style: ReviewStyle = {
-    "--service-width": `${serviceWidth}px`,
-    "--shell-width": `${384 + serviceWidth}px`,
-  };
+  const style: ReviewStyle = {};
   for (const [key, value] of Object.entries(brandPalette))
     style[`--${key}`] = value;
   const navigation = [
@@ -31,6 +29,7 @@ export function ReviewShell({ children }: { children: ReactNode }) {
       style={style}
       data-nav="combined"
     >
+      <ReviewDevTools guide={guide} />
       <a href="#main" className="skip">
         본문 바로가기
       </a>
@@ -55,16 +54,16 @@ export function ReviewShell({ children }: { children: ReactNode }) {
             <ol className="steps">
               {[
                 [
-                  "새로운 나들이를 발견해요",
-                  "진행 중인 기간 행사와 다가오는 일정을 둘러봐요.",
+                  "가볍게 둘러봐요",
+                  "진행 중이거나 곧 시작하는 나들이를 만나보세요.",
                 ],
                 [
-                  "마음에 드는 곳을 찾아봐요",
-                  "지역과 종류로 관심 있는 곳을 찾아요.",
+                  "마음에 드는 곳을 살펴봐요",
+                  "카드로 간단히 보고, 상세에서 더 알아봐요.",
                 ],
                 [
                   "출발 전, 한 번 더 확인해요",
-                  "휴무·요금·예약은 공식 안내에서 확인해요.",
+                  "운영·요금·예약은 공식 안내에서 확인해요.",
                 ],
               ].map(([title, text]) => (
                 <li key={title}>
@@ -73,121 +72,138 @@ export function ReviewShell({ children }: { children: ReactNode }) {
                 </li>
               ))}
             </ol>
-            <div className="pc-links">
-              <PolicyLinks />
-              <p className="tiny muted">© 2026 나들이랑 · 정책·로고 확정 전</p>
-            </div>
+            {process.env.NODE_ENV === "development" && (
+              <ReviewLink href="/ui-design" className="local-guide-link">
+                UI 가이드 보기 <Icon name="next" />
+              </ReviewLink>
+            )}
           </aside>
         )}
         <div className="service">
-          {!guide && (
-            <>
-              <header className="service-header">
-                <ReviewLink href={homeUrl} className="brand">
-                  <span
-                    className="wordmark"
-                    role="img"
-                    aria-label="나들이랑 홈"
-                  />
-                </ReviewLink>
-                <div className="header-actions">
-                  <ReviewLink
-                    href={pathname === "/" ? searchUrl : "/search"}
-                    className="icon-button"
-                    aria-label="검색 페이지 열기"
-                  >
-                    <Icon name="search" />
+          <div className="service-scroll">
+            {!guide && (
+              <>
+                <header className="service-header">
+                  <ReviewLink href={homeUrl} className="brand">
+                    <span
+                      className="wordmark"
+                      role="img"
+                      aria-label="나들이랑 홈"
+                    />
                   </ReviewLink>
-                  <button
-                    className="icon-button"
-                    onClick={() => setMenuOpen(true)}
-                    aria-label="보조 메뉴 열기"
-                    aria-haspopup="dialog"
-                  >
-                    <Icon name="menu" />
-                  </button>
-                  <button
-                    className="button primary login-placeholder"
-                    disabled
-                    title="로그인 기능 준비 중"
-                  >
-                    로그인
-                  </button>
+                  <div className="header-actions">
+                    <ReviewLink
+                      href={pathname === "/" ? searchUrl : "/search"}
+                      className="icon-button"
+                      aria-label="검색 페이지 열기"
+                    >
+                      <Icon name="search" />
+                    </ReviewLink>
+                    <button
+                      className="icon-button"
+                      onClick={() => setMenuOpen(true)}
+                      aria-label="보조 메뉴 열기"
+                      aria-haspopup="dialog"
+                    >
+                      <Icon name="menu" />
+                    </button>
+                    <button
+                      className="button primary login-placeholder"
+                      disabled
+                      title="로그인 기능 준비 중"
+                    >
+                      로그인
+                    </button>
+                  </div>
+                </header>
+              </>
+            )}
+            <main id="main" tabIndex={-1}>
+              {children}
+            </main>
+            {!guide && (
+              <footer className="service-footer">
+                <div className="footer-intro">
+                  <span className="wordmark" role="img" aria-label="나들이랑" />
+                  <p className="footer-tagline">가까운 하루, 새로운 발견</p>
+                  <p className="footer-description">
+                    마음이 가는 곳을 발견하고,
+                    <br />출발 전 필요한 정보를 확인해요.
+                  </p>
                 </div>
-              </header>
-              <div className="review-banner">
-                검토 시안 · 로고·스타일 미확정
-              </div>
-            </>
-          )}
-          <main id="main" tabIndex={-1}>
-            {children}
-          </main>
-          {!guide && (
-            <>
-              <footer>
-                <p className="footer-brand">나들이랑</p>
-                <p className="small muted">
-                  나들이를 발견하고, 출발 전 정보를 확인해요.
-                </p>
-                <PolicyLinks />
-                <p className="tiny muted">
-                  © 2026 나들이랑 · 운영 정책 준비 중
-                </p>
+                <nav className="footer-policy-nav" aria-label="서비스 안내">
+                  <PolicyLinks variant="footer" />
+                </nav>
+                <div className="footer-meta">
+                  <p>© 2026 나들이랑</p>
+                </div>
               </footer>
-              <nav
-                id="bottomNav"
-                className="bottom-nav"
-                aria-label="주요 페이지"
+            )}
+          </div>
+          {!guide && (
+            <nav
+              id="bottomNav"
+              className="bottom-nav"
+              aria-label="주요 페이지"
+            >
+              <ReviewLink
+                href={homeUrl}
+                aria-current={pathname === "/" ? "page" : undefined}
               >
-                {navigation.map(([href, name, label]) => (
-                  <ReviewLink
-                    key={name}
-                    href={href}
-                    aria-current={
-                      pathname === href.split("?")[0] ? "page" : undefined
-                    }
-                  >
-                    <span className="nav-icon">
-                      <Icon name={name} />
-                    </span>
-                    {label}
-                  </ReviewLink>
-                ))}
-              </nav>
-            </>
+                <span className="nav-icon">
+                  <Icon name="home" />
+                </span>
+                홈
+              </ReviewLink>
+              <button
+                type="button"
+                disabled
+                title="북마크 기능 준비 중"
+                aria-label="북마크, 준비 중"
+              >
+                <span className="nav-icon">
+                  <Icon name="bookmark" />
+                </span>
+                북마크
+              </button>
+            </nav>
           )}
         </div>
       </div>
-      {menuOpen && (
-        <ReviewDialog
-          open
-          id="menuDialog"
-          title="메뉴"
-          className="menu-dialog"
-          onClose={() => setMenuOpen(false)}
-        >
-          <nav aria-label="전체 메뉴">
-            {navigation.map(([href, name, label]) => (
-              <ReviewLink
-                key={name}
-                href={href}
-                onClick={() => setMenuOpen(false)}
-              >
-                <Icon name={name} />
-                <span>{label}</span>
-                <span className="menu-chevron">
-                  <Icon name="next" />
-                </span>
-              </ReviewLink>
-            ))}
-          </nav>
-        </ReviewDialog>
-      )}
-      {pathname === "/" && hash === "#filters" && <HomeFilter />}
-      {hash.startsWith("#policy-") && isPolicyType(type) && (
-        <PolicySheet type={type} />
-      )}
+      <ReviewDialog
+        open={menuOpen}
+        id="menuDialog"
+        title="메뉴"
+        className="menu-dialog"
+        onClose={() => setMenuOpen(false)}
+      >
+        <nav aria-label="전체 메뉴">
+          {navigation.map(([href, name, label]) => (
+            <ReviewLink
+              key={name}
+              href={href}
+              onClick={() => setMenuOpen(false)}
+            >
+              <Icon name={name} />
+              <span>{label}</span>
+              <span className="menu-chevron">
+                <Icon name="next" />
+              </span>
+            </ReviewLink>
+          ))}
+        </nav>
+      </ReviewDialog>
+      {pathname === "/" && <HomeFilter open={hash === "#filters"} />}
+      {(Object.keys(policyTitles) as PolicyType[]).map((type) => (
+        <PolicySheet key={type} type={type} open={hash === `#policy-${type}`} />
+      ))}
+      {items.map((item) => (
+        <OutingPreview
+          key={item.id}
+          item={item}
+          open={hash === `#outing-${item.id}`}
+        />
+      ))}
     </div>
   );
 }

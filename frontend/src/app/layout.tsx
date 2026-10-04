@@ -6,9 +6,9 @@ import "./globals.css";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "나들이 발견 · 나들이랑 검토 시안",
+  title: "나들이 발견 · 나들이랑",
   description:
-    "나들이랑의 홈·검색·상세와 UI 디자인을 확인하는 검토 화면입니다.",
+    "가까운 나들이를 발견하고 일정과 방문 정보를 확인해요.",
   robots: { index: false, follow: false },
 };
 export const viewport: Viewport = {

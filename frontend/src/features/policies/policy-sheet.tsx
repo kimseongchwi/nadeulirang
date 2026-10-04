@@ -5,13 +5,13 @@ import { policyTitles, type PolicyType } from "@/features/policies/model";
 import { PolicyContent } from "@/features/policies/policy-content";
 import { useReview } from "@/providers/review-provider";
 
-export function PolicySheet({ type }: { type: PolicyType }) {
+export function PolicySheet({ type, open }: { type: PolicyType; open: boolean }) {
   const { closeSheet } = useReview();
   return (
     <ReviewDialog
-      id="policyDialog"
+      id={`policyDialog-${type}`}
       title={policyTitles[type]}
-      open
+      open={open}
       onClose={closeSheet}
       sheet
       className="policy-sheet"

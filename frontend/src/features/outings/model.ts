@@ -74,7 +74,7 @@ export function period(item: Outing) {
 }
 export function badgeInfo(item: Outing, today: string, days: number) {
   if (item.lifecycle === "ENDED" || (item.event_end && item.event_end < today))
-    return { text: "종료", className: "neutral" };
+    return { text: "행사 종료", className: "neutral" };
   if (ongoing(item, today)) return { text: "행사 기간 진행 중", className: "" };
   if (upcoming(item, today, days)) return { text: "곧 시작", className: "" };
   return permanent(item)

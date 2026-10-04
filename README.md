@@ -43,7 +43,7 @@ PRD는 제품 기준, DESIGN은 디자인 결정, 학습 문서는 개념·구�
 
 ## UI 디자인 가이드 확인
 
-아래 프론트 개발 서버를 실행한 뒤 [UI 디자인 가이드](http://localhost:3000/ui-design)에 접속합니다. [홈](http://localhost:3000/)·[검색](http://localhost:3000/search)·상세도 같은 서버에서 확인합니다. 별도 디자인 폴더나 검토 서버를 실행할 필요가 없습니다. 개발 서버가 다른 포트를 사용하면 그 주소 뒤에 `/ui-design`을 붙입니다.
+아래 프론트 개발 서버를 실행한 뒤 [UI 디자인 가이드](http://localhost:3000/ui-design)에 접속합니다. [홈](http://localhost:3000/)·[검색](http://localhost:3000/search)·상세도 같은 서버에서 확인합니다. 별도 디자인 폴더나 검토 서버를 실행할 필요가 없습니다. 개발 서버가 다른 포트를 사용하면 그 주소 뒤에 `/ui-design`을 붙입니다. 개발 환경 PC 화면의 왼쪽 소개 아래에서도 UI 가이드 보기로 이동할 수 있습니다. 이 링크는 프로덕션 빌드에서 표시하지 않습니다.
 
 가이드는 [ui-design/page.tsx](frontend/src/app/ui-design/page.tsx), 홈·검색·상세·정책은 frontend/src/app의 각 페이지에서 제공합니다. 공통 UI와 기능별 화면·데이터의 위치는 [프론트 폴더 구성](frontend/README.md#폴더-구성)을 참고합니다. 이미지는 [public/images](frontend/public/images/)에서 관리하며 가이드와 검토 화면은 같은 컴포넌트를 사용합니다. 데이터는 검토용 스냅샷이며 실제 조회 API 연결은 P12·P13에서 이어갑니다. 로고·디자인 전체의 확정이나 제품 구현 완료를 뜻하지 않으며 검토 화면에는 noindex 안내를 적용합니다. 검토 상태는 [PLAN](PLAN.md)·[DESIGN](DESIGN.md)을 참고합니다.
 

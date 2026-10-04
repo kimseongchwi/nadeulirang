@@ -175,6 +175,11 @@ function Calendar({
                       <span className="day-number">
                         {Number(date.slice(8))}
                       </span>
+                      {date === today && (
+                        <span className="today-label" aria-hidden="true">
+                          오늘
+                        </span>
+                      )}
                     </button>
                   ) : (
                     <span role="gridcell" key={`blank-${index}`} />
@@ -276,11 +281,6 @@ function Calendar({
         방향키로 이동, Enter로 선택, Page Up과 Page Down으로 월 이동, Escape로
         취소합니다.
       </p>
-      {pending && (
-        <div className="calendar-status">
-          <p aria-live="polite">{dateLabel(pending)}</p>
-        </div>
-      )}
       <div className="calendar-actions">
         <button
           className="text-button"

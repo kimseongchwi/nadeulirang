@@ -1,27 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef } from "react";
 import { ReviewDialog } from "@/components/ui/dialog";
 import { kindNames } from "@/features/outings/model";
 import { useReview } from "@/providers/review-provider";
 
-export function HomeFilter() {
+export function HomeFilter({ open }: { open: boolean }) {
   const { params, items, closeSheet, replaceSheet } = useReview();
-  const [region, setRegion] = useState(params.get("region") || "");
-  const [kind, setKind] = useState(params.get("kind") || "");
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (open) formRef.current?.reset();
+  }, [open]);
   return (
     <ReviewDialog
       id="homeFilterDialog"
-      open
+      open={open}
       title="홈 필터"
       onClose={closeSheet}
       sheet
       className="policy-sheet filter-sheet"
     >
       <form
+        ref={formRef}
+        key={params.toString()}
         className="filter-sheet-form"
         onSubmit={(event) => {
           event.preventDefault();
+          const data = new FormData(event.currentTarget);
+          const region = String(data.get("region") || "");
+          const kind = String(data.get("kind") || "");
           const query = new URLSearchParams();
           if (region) query.set("region", region);
           if (kind) query.set("kind", kind);
@@ -38,8 +45,8 @@ export function HomeFilter() {
             <label htmlFor="homeFilterRegion">지역</label>
             <select
               id="homeFilterRegion"
-              value={region}
-              onChange={(event) => setRegion(event.target.value)}
+              name="region"
+              defaultValue={params.get("region") || ""}
             >
               <option value="">전체 지역</option>
               {[...new Set(items.map((item) => item.region_name))]
@@ -53,8 +60,8 @@ export function HomeFilter() {
             <label htmlFor="homeFilterKind">종류</label>
             <select
               id="homeFilterKind"
-              value={kind}
-              onChange={(event) => setKind(event.target.value)}
+              name="kind"
+              defaultValue={params.get("kind") || ""}
             >
               <option value="">전체 종류</option>
               {Object.entries(kindNames).map(([value, label]) => (
@@ -73,8 +80,10 @@ export function HomeFilter() {
             type="button"
             className="text-button"
             onClick={() => {
-              setRegion("");
-              setKind("");
+              if (formRef.current) {
+                for (const select of formRef.current.querySelectorAll("select"))
+                  select.value = "";
+              }
             }}
           >
             초기화

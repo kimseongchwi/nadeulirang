@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   kindNames,
   normalizedFilters,
@@ -10,7 +10,7 @@ import {
   type Outing,
 } from "@/features/outings/model";
 import { EmptyState } from "@/components/ui/feedback";
-import { OutingCard, ScopeNote } from "@/features/outings/outing-card";
+import { OutingCard } from "@/features/outings/outing-card";
 import { Icon } from "@/components/ui/icons";
 import { ReviewLink, useReview } from "@/providers/review-provider";
 
@@ -31,7 +31,7 @@ function HomeSection({
   const query = normalizedFilters(params, today, true);
   query.set("scope", scope);
   return (
-    <section>
+    <section className="outing-section">
       <div className="section-head">
         <h2>{title}</h2>
         <ReviewLink href={`/search?${query}`} className="more">
@@ -54,6 +54,12 @@ function HomeSection({
   );
 }
 export function HomeReview() {
+  const chipDrag = useRef<{
+    pointerId: number;
+    startX: number;
+    startScroll: number;
+    dragged: boolean;
+  } | null>(null);
   const { params, items, today, upcomingDays, setHomeQuery, openSheet, hash } =
     useReview();
   const filters = normalizedFilters(params, today, true);
@@ -69,7 +75,7 @@ export function HomeReview() {
       (!region || item.region_name === region) && (!kind || item.kind === kind),
   );
   return (
-    <>
+    <div className="outing-home">
       <div className="hero">
         <span
           className="hero-mark people-mask"
@@ -83,12 +89,10 @@ export function HomeReview() {
           나들이 갈까요?
         </h1>
         <p>
-          지금 만날 전시, 곧 시작할 축제.
-          <br />
-          일상 가까이에서 새로운 하루를 찾아요.
+          가볍게 떠나고 싶은 날,<br />마음이 가는 곳을 발견해요.
         </p>
+        <ReviewLink className="hero-link" href={query ? `/search?${query}` : "/search"}>나들이 찾아보기 <Icon name="next" /></ReviewLink>
       </div>
-      <ScopeNote />
       <div className="home-filter-bar">
         <button
           id="homeFilterOpen"
@@ -109,12 +113,69 @@ export function HomeReview() {
           </ReviewLink>
         )}
       </div>
+      <nav
+        className="kind-chips"
+        aria-label="나들이 종류"
+        aria-describedby="kind-scroll-help"
+        tabIndex={0}
+        onPointerDown={(event) => {
+          if (event.pointerType !== "mouse" || event.button !== 0) {
+            chipDrag.current = null;
+            return;
+          }
+          chipDrag.current = {
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startScroll: event.currentTarget.scrollLeft,
+            dragged: false,
+          };
+        }}
+        onPointerMove={(event) => {
+          const drag = chipDrag.current;
+          if (!drag || drag.pointerId !== event.pointerId || !event.buttons) return;
+          const distance = event.clientX - drag.startX;
+          if (!drag.dragged && Math.abs(distance) < 6) return;
+          drag.dragged = true;
+          event.currentTarget.setPointerCapture(event.pointerId);
+          event.currentTarget.scrollLeft = drag.startScroll - distance;
+          event.preventDefault();
+        }}
+        onPointerUp={(event) => {
+          if (event.currentTarget.hasPointerCapture(event.pointerId))
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        }}
+        onPointerCancel={() => { chipDrag.current = null; }}
+        onPointerLeave={() => {
+          if (!chipDrag.current?.dragged) chipDrag.current = null;
+        }}
+        onClickCapture={(event) => {
+          if (chipDrag.current?.dragged) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          chipDrag.current = null;
+        }}
+        onKeyDown={(event) => {
+          if (event.target !== event.currentTarget) return;
+          if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+            event.preventDefault();
+            event.currentTarget.scrollBy(event.key === "ArrowRight" ? 120 : -120, 0);
+          }
+        }}
+      >
+        {[["", "전체"], ...Object.entries(kindNames)].map(([value, label]) => {
+          const next = new URLSearchParams(filters);
+          if (value) next.set("kind", value); else next.delete("kind");
+          return <ReviewLink key={value} href={`/${next.size ? `?${next}` : ""}`} draggable={false} aria-current={kind === value ? "true" : undefined}>{label}</ReviewLink>;
+        })}
+      </nav>
+      <p id="kind-scroll-help" className="sr-only">좌우로 밀거나 방향키로 종류 목록을 이동할 수 있어요.</p>
       {query && (
         <p className="hint">선택한 조건의 나들이 {filtered.length}곳</p>
       )}
       <HomeSection
         title="지금 만나는 나들이"
-        description="행사 기간 기준이에요. 당일 운영·예약은 별도로 확인해 주세요."
+        description="지금 이어지는 전시와 행사 · 당일 운영은 별도 확인"
         items={filtered
           .filter((item) => ongoing(item, today))
           .sort(
@@ -140,7 +201,7 @@ export function HomeReview() {
       />
       <HomeSection
         title="언제든 떠올릴 나들이"
-        description="상설 시설이에요. 휴관·운영 시간은 출발 전에 확인해 주세요."
+        description="일상에 작은 쉼표가 되는 상설 시설"
         items={filtered
           .filter(permanent)
           .sort(
@@ -150,7 +211,7 @@ export function HomeReview() {
         scope="permanent"
         emptyText="확인한 상설 시설 자료가 아직 없어요."
       />
-    </>
+    </div>
   );
 }
 function windowDays(value: string | null, fallback: number) {

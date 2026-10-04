@@ -2,15 +2,20 @@
 
 import { policyTitles } from "@/features/policies/model";
 import { useReview } from "@/providers/review-provider";
+import { Icon } from "@/components/ui/icons";
 
-export function PolicyLinks({ buttons = false }: { buttons?: boolean }) {
+export function PolicyLinks({
+  variant = "inline",
+}: {
+  variant?: "inline" | "buttons" | "footer";
+}) {
   const { openSheet } = useReview();
   return (
-    <div className={buttons ? "row wrap" : "policy-links"}>
+    <div className={variant === "buttons" ? "row wrap" : "policy-links"}>
       {Object.entries(policyTitles).map(([type, title]) => (
         <a
           key={type}
-          className={buttons ? "button secondary" : undefined}
+          className={variant === "buttons" ? "button secondary" : undefined}
           href={`/policy/${type}`}
           onClick={(event) => {
             if (
@@ -26,6 +31,7 @@ export function PolicyLinks({ buttons = false }: { buttons?: boolean }) {
           }}
         >
           {title}
+          {variant === "footer" && type === "about" && <Icon name="next" />}
         </a>
       ))}
     </div>

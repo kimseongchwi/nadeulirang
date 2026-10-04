@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  devIndicators: { position: "bottom-left" },
   async redirects() {
     return [
       { source: "/guide", destination: "/ui-design", permanent: false },

@@ -6,8 +6,9 @@ import {
   searchItems,
 } from "@/features/outings/model";
 import { EmptyState } from "@/components/ui/feedback";
-import { OutingCard, ScopeNote } from "@/features/outings/outing-card";
+import { OutingCard } from "@/features/outings/outing-card";
 import { ReviewLink, useReview } from "@/providers/review-provider";
+import { Icon } from "@/components/ui/icons";
 
 export function SearchReview() {
   const { params, items, today, upcomingDays, navigate } = useReview();
@@ -21,16 +22,14 @@ export function SearchReview() {
   };
   const results = searchItems(filters, today, upcomingDays);
   return (
-    <>
-      <div className="intro">
+    <div className="outing-search">
+      <div className="intro search-intro">
+        <p className="eyebrow">가고 싶은 곳을, 더 쉽게</p>
         <h1>나들이 검색</h1>
-        <p className="small muted">
-          축제·행사·전시·박물관·문화관광지를 찾아봐요.
-        </p>
       </div>
       <form
         key={query}
-        className="filters"
+        className="filters search-filters"
         onSubmit={(event) => {
           event.preventDefault();
           const data = new FormData(event.currentTarget);
@@ -40,14 +39,16 @@ export function SearchReview() {
           navigate(`/search${next.size ? `?${next}` : ""}`);
         }}
       >
-        <div className="full">
-          <label htmlFor="keyword">이름으로 검색</label>
+        <div className="full search-keyword">
+          <label htmlFor="keyword" className="sr-only">이름으로 검색</label>
+          <Icon name="search" />
           <input
             id="keyword"
             name="q"
             placeholder="행사 또는 시설 이름"
             defaultValue={filters.get("q") || ""}
           />
+          <button className="button primary" type="submit">검색</button>
         </div>
         <div>
           <label htmlFor="region">지역</label>
@@ -92,18 +93,11 @@ export function SearchReview() {
             </div>
           </>
         )}
-        <div className="full row">
-          <button className="button primary" type="submit">
-            검색
-          </button>
-          <ReviewLink href="/search" className="button secondary">
-            초기화
-          </ReviewLink>
-        </div>
       </form>
-      <section>
+      <section className="search-results">
         <div className="section-head">
-          <h2>검색 결과 {results.length}곳</h2>
+          <h2>{query ? "조건에 맞는 나들이" : "둘러볼 나들이"} <span className="result-count">{results.length}</span></h2>
+          {query && <ReviewLink href="/search" className="text-button">초기화</ReviewLink>}
         </div>
         {results.length ? (
           results.map((item) => <OutingCard key={item.id} item={item} />)
@@ -113,12 +107,11 @@ export function SearchReview() {
             description="다른 이름·지역·종류로 찾아봐요."
           >
             <ReviewLink href="/search" className="button secondary">
-              조건 초기화
+              초기화
             </ReviewLink>
           </EmptyState>
         )}
-        <ScopeNote />
       </section>
-    </>
+    </div>
   );
 }

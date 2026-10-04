@@ -13,6 +13,7 @@ import {
   type ComponentProps,
 } from "react";
 import { publicItems } from "@/features/outings/model";
+import { reviewScrollTop, scrollReviewTo } from "@/components/layout/service-scroll";
 
 const storageEvent = "outing-review-settings";
 function subscribeSettings(listener: () => void) {
@@ -68,21 +69,19 @@ function useReviewState(today: string) {
     "",
   );
   const [days, setDays] = useSetting("outing-review-days", "14");
-  const [width, setWidth] = useSetting("outing-review-width", "480");
   const hash = useSyncExternalStore(
     subscribeHash,
     () => window.location.hash,
     () => "",
   );
   const upcomingDays = [7, 14, 30].includes(Number(days)) ? Number(days) : 14;
-  const serviceWidth = width === "520" ? 520 : 480;
   const nextNavigation = useRef(false);
   const renderedUrl = useRef("");
   const saveScroll = useCallback(() => {
     try {
       sessionStorage.setItem(
         `outing-review-scroll:${location.pathname}${location.search}`,
-        String(window.scrollY),
+        String(reviewScrollTop()),
       );
     } catch {
       /* 저장 제한 환경에서는 Next.js의 복귀 처리를 사용한다. */
@@ -92,7 +91,7 @@ function useReviewState(today: string) {
   const navigate = useCallback(
     (url: string, replace = false) => {
       if (url === `${location.pathname}${location.search}`) {
-        window.scrollTo(0, 0);
+        scrollReviewTo(0);
         return;
       }
       saveScroll();
@@ -124,15 +123,21 @@ function useReviewState(today: string) {
               ),
             )
           : 0;
-        window.scrollTo(0, scroll);
+        scrollReviewTo(scroll);
         document.getElementById("main")?.focus({ preventScroll: true });
+        if (location.hash === "#photo-credit")
+          document.getElementById("photo-credit")?.scrollIntoView({ block: "start" });
       });
+    } else if (location.hash === "#photo-credit") {
+      frame = requestAnimationFrame(() =>
+        document.getElementById("photo-credit")?.scrollIntoView({ block: "start" }),
+      );
     }
     return () => cancelAnimationFrame(frame);
-  }, [pathname, search]);
+  }, [pathname, search, hash]);
   const openSheet = useCallback((value: string) => {
     history.replaceState(
-      { ...history.state, reviewSheetScroll: window.scrollY },
+      { ...history.state, reviewSheetScroll: reviewScrollTop() },
       "",
     );
     history.pushState(
@@ -158,7 +163,7 @@ function useReviewState(today: string) {
     // Next.js가 내부 라우터 상태를 보존하고 검색 매개변수 변경을 반영한다.
     history.replaceState({ reviewSheet: false, reviewEntry: true }, "", url);
     window.dispatchEvent(new Event("hashchange"));
-    window.scrollTo(0, 0);
+    scrollReviewTo(0);
   }, []);
   return {
     today,
@@ -166,11 +171,9 @@ function useReviewState(today: string) {
     params: new URLSearchParams(search),
     items: publicItems(today),
     upcomingDays,
-    serviceWidth,
     homeQuery,
     setHomeQuery,
     setUpcomingDays: (value: number) => setDays(String(value)),
-    setServiceWidth: (value: number) => setWidth(String(value)),
     homeUrl: `/${homeQuery ? `?${homeQuery}` : ""}`,
     searchUrl: `/search${homeQuery ? `?${homeQuery}` : ""}`,
     hash,

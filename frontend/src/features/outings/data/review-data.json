@@ -15,6 +15,7 @@
     "fee_status": "UNKNOWN",
     "event_start": "2026-10-15",
     "region_name": "충청남도",
+    "district_name": "논산시",
     "reviewed_at": "2026-10-03T20:28:06.218759+09:00",
     "operation_verified": false
   },
@@ -34,6 +35,7 @@
     "fee_status": "UNKNOWN",
     "event_start": null,
     "region_name": "서울특별시",
+    "district_name": "종로구",
     "reviewed_at": "2026-10-03T20:28:12.247952+09:00",
     "operation_verified": false
   },
@@ -58,6 +60,7 @@
     "fee_status": "UNKNOWN",
     "event_start": null,
     "region_name": "대구광역시",
+    "district_name": "달성군",
     "reviewed_at": "2026-10-03T20:28:11.265591+09:00",
     "operation_verified": false
   },
@@ -77,6 +80,7 @@
     "fee_status": "UNKNOWN",
     "event_start": "2026-06-26",
     "region_name": "경상북도",
+    "district_name": "칠곡군",
     "reviewed_at": "2026-10-03T20:28:09.227732+09:00",
     "operation_verified": false
   },
@@ -96,6 +100,7 @@
     "fee_status": "UNKNOWN",
     "event_start": "2026-08-06",
     "region_name": "세종특별자치시",
+    "district_name": null,
     "reviewed_at": "2026-10-03T20:28:07.226518+09:00",
     "operation_verified": false
   },
@@ -120,6 +125,7 @@
     "fee_status": "UNKNOWN",
     "event_start": null,
     "region_name": "경상남도",
+    "district_name": "김해시",
     "reviewed_at": "2026-10-03T20:28:10.268542+09:00",
     "operation_verified": false
   },
@@ -139,6 +145,7 @@
     "fee_status": "UNKNOWN",
     "event_start": "2026-06-04",
     "region_name": "서울특별시",
+    "district_name": "종로구",
     "reviewed_at": "2026-10-03T20:28:08.241502+09:00",
     "operation_verified": false
   }
