@@ -3,7 +3,7 @@
 import { Icon } from "@/components/ui/icons";
 import { useReview } from "@/providers/review-provider";
 
-export function BackHeading({ title }: { title: string }) {
+export function BackHeading({ title, labelOnly = false }: { title: string; labelOnly?: boolean }) {
   const { back } = useReview();
   return (
     <div className="page-head">
@@ -14,7 +14,7 @@ export function BackHeading({ title }: { title: string }) {
       >
         <Icon name="back" />
       </button>
-      <h1>{title}</h1>
+      {labelOnly ? <p>{title}</p> : <h1>{title}</h1>}
     </div>
   );
 }

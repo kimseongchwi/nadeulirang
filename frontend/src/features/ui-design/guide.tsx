@@ -7,6 +7,7 @@ import { DateField } from "@/features/ui-design/calendar";
 import { ReviewDialog, type ReviewStyle } from "@/components/ui/dialog";
 import { Icon, type IconName } from "@/components/ui/icons";
 import { ongoing, photoId } from "@/features/outings/model";
+import { publicItems } from "./review-model";
 import { ReviewLink, useReview } from "@/providers/review-provider";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/feedback";
 import { OutingCard } from "@/features/outings/outing-card";
@@ -48,13 +49,13 @@ function GuideTable({
 }
 export function GuideReview() {
   const {
-    items,
     today,
     homeUrl,
     searchUrl,
     upcomingDays,
     setUpcomingDays,
   } = useReview();
+  const items = publicItems(today);
   const [previewWidth, setPreviewWidth] = useState(390);
   const [message, setMessage] = useState("");
   const [menu, setMenu] = useState(false);
@@ -624,9 +625,9 @@ export function GuideReview() {
               ]}
             />
             <p className="hint">
-              P12 조회 API 완료 → 화면·로고 검토 → P13 웹 화면 연결 → P14
+              P12 조회 API·P13 웹 화면 연결 완료 → P14
               검색 유입·P15 운영 준비 순서. 제품 범위는 P28에서 확정했으며,
-              홈 구성·로고는 채택했으며 실제 API 연결은 P13에서 진행합니다.
+              채택한 홈·로고로 실제 API를 연결했습니다. 카드 예시는 검토 표본이며 화면 미리보기는 현재 DB 자료를 조회합니다.
             </p>
           </section>
         </div>

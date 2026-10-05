@@ -164,6 +164,43 @@ class OutingApiTests {
         assertThat(options.path("asOfDate").asText()).isEqualTo("2026-10-05");
     }
 
+    @Test @DisplayName("홈은 구분별 정렬 후 세 개를 반환하고 다가오는 14일 경계를 포함한다")
+    void homeSectionsAndWindow() throws Exception {
+        save("오래 남은 행사", "EVENT", "11", "20261001", "20261030");
+        UUID endingFirst = save("먼저 끝나는 행사", "EVENT", "11", "20261005", "20261005");
+        save("다가오는 경계", "EVENT", "11", "20261019", "20261020");
+        save("구간 밖", "EVENT", "11", "20261020", "20261021");
+        save("내일 시작", "EVENT", "11", "20261006", "20261007");
+        for (int i = 0; i < 24; i++) save(String.format("시설 %02d", i), "MUSEUM", "11", "", "");
+        var home = body(get("/home?region=11"));
+        assertThat(home.path("ongoing").get(0).path("id").asText()).isEqualTo(endingFirst.toString());
+        assertThat(home.path("upcoming").size()).isEqualTo(2);
+        assertThat(home.path("upcoming").get(0).path("name").asText()).isEqualTo("내일 시작");
+        assertThat(home.path("upcoming").get(1).path("name").asText()).isEqualTo("다가오는 경계");
+        assertThat(home.path("permanent").size()).isEqualTo(3);
+        assertThat(home.path("permanent").get(0).path("name").asText()).isEqualTo("시설 00");
+        assertThat(home.path("total").asLong()).isEqualTo(28);
+        assertThat(home.path("days").asInt()).isEqualTo(14);
+        assertThat(body(get("?period=UPCOMING&days=14")).path("total").asLong()).isEqualTo(2);
+        assertThat(body(get("?period=UPCOMING")).path("total").asLong()).isEqualTo(3);
+        assertThat(body(get("/home?region=99")).path("total").asLong()).isZero();
+        assertThat(body(get("/home?kind=MUSEUM")).path("ongoing").size()).isZero();
+    }
+
+    @Test @DisplayName("기간 구간은 건수와 페이지를 나누기 전에 적용하고 잘못된 구간은 400이다")
+    void windowBeforePagination() throws Exception {
+        for (int i = 0; i < 24; i++) save("가까운 행사 " + i, "EVENT", "11", "20261006", "20261007");
+        save("먼 훗날 행사", "EVENT", "11", "20261020", "20261021");
+        var page = body(get("?period=UPCOMING&days=14&page=2"));
+        assertThat(page.path("total").asLong()).isEqualTo(24);
+        assertThat(page.path("items").size()).isEqualTo(4);
+        assertThat(page.toString()).doesNotContain("먼 훗날");
+        for (String path : java.util.List.of("?days=14", "?period=ONGOING&days=7", "?period=UPCOMING&days=15",
+                "/home?days=0", "/home?days=15", "/home?days=14&days=7", "/home?page=1", "/home?kind=OTHER")) {
+            assertThat(get(path).statusCode()).as(path).isEqualTo(400);
+        }
+    }
+
     @Test @DisplayName("상세는 최신 성공 근거와 실패 시각을 유지하고 정상 0건 뒤 과거 정보를 복원하지 않는다")
     void preservesProvenanceAndUnknowns() throws Exception {
         UUID id = save("방문 정보", "MUSEUM", "11", "", "");
@@ -203,7 +240,7 @@ class OutingApiTests {
         }
         jdbc.execute("ALTER TABLE outing RENAME TO outing_unavailable");
         try {
-            for (String path : java.util.List.of("", "/options", "/" + UUID.randomUUID())) {
+            for (String path : java.util.List.of("", "/home", "/options", "/" + UUID.randomUUID())) {
                 var response = get(path);
                 assertThat(response.statusCode()).isEqualTo(503);
                 assertThat(body(response).path("retryable").asBoolean()).isTrue();

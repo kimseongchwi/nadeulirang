@@ -3,16 +3,15 @@
 import { useEffect, useRef } from "react";
 import {
   kindNames,
-  normalizedFilters,
-  ongoing,
-  permanent,
-  upcoming,
+  outingSummary,
   type Outing,
 } from "@/features/outings/model";
+import type { Home, Options } from "./api-types";
 import { EmptyState } from "@/components/ui/feedback";
 import { OutingCard } from "@/features/outings/outing-card";
 import { Icon } from "@/components/ui/icons";
 import { ReviewLink, useReview } from "@/providers/review-provider";
+import { HomeFilter } from "./home-filter";
 
 function HomeSection({
   title,
@@ -20,21 +19,25 @@ function HomeSection({
   items,
   scope,
   emptyText,
+  query,
+  days,
 }: {
   title: string;
   description: string;
   items: Outing[];
   scope: string;
   emptyText: string;
+  query: string;
+  days: number;
 }) {
-  const { params, today } = useReview();
-  const query = normalizedFilters(params, today, true);
-  query.set("scope", scope);
+  const search = new URLSearchParams(query);
+  search.set("scope", scope);
+  if (scope === "upcoming") search.set("days", String(days));
   return (
     <section className="outing-section">
       <div className="section-head">
         <h2>{title}</h2>
-        <ReviewLink href={`/search?${query}`} className="more">
+        <ReviewLink href={`/search?${search}`} className="more">
           더 보기 <Icon name="next" />
         </ReviewLink>
       </div>
@@ -53,29 +56,26 @@ function HomeSection({
     </section>
   );
 }
-export function HomeReview() {
+export function HomeReview({ data, options, query }: { data: Home; options: Options; query: string }) {
   const chipDrag = useRef<{
     pointerId: number;
     startX: number;
     startScroll: number;
     dragged: boolean;
   } | null>(null);
-  const { params, items, today, upcomingDays, setHomeQuery, openSheet, hash } =
+  const { setHomeQuery, openSheet, hash } =
     useReview();
-  const filters = normalizedFilters(params, today, true);
-  const query = filters.toString();
+  const filters = new URLSearchParams(query);
   const region = filters.get("region") || "";
   const kind = filters.get("kind") || "";
   useEffect(() => {
     if (window.self === window.top) setHomeQuery(query);
   }, [query, setHomeQuery]);
-  const days = windowDays(params.get("previewDays"), upcomingDays);
-  const filtered = items.filter(
-    (item) =>
-      (!region || item.region_name === region) && (!kind || item.kind === kind),
-  );
+  const days = data.days;
+  const regionName = options.regions.find((r) => r.code === region)?.name || region;
   return (
     <div className="outing-home">
+      <HomeFilter open={hash === "#filters"} options={options} />
       <div className="hero">
         <span
           className="hero-mark people-mask"
@@ -103,7 +103,7 @@ export function HomeReview() {
         >
           <Icon name="filter" />
           <span>
-            {region || "전체 지역"} · {kindNames[kind] || "전체 종류"}
+            {regionName || "전체 지역"} · {kindNames[kind] || "전체 종류"}
           </span>
           <Icon name="down" />
         </button>
@@ -171,51 +171,32 @@ export function HomeReview() {
       </nav>
       <p id="kind-scroll-help" className="sr-only">좌우로 밀거나 방향키로 종류 목록을 이동할 수 있어요.</p>
       {query && (
-        <p className="hint">선택한 조건의 나들이 {filtered.length}곳</p>
+        <p className="hint">선택한 조건으로 홈에서 둘러볼 나들이 {data.total}곳</p>
       )}
       <HomeSection
         title="지금 만나는 나들이"
         description="지금 이어지는 전시와 행사 · 당일 운영은 별도 확인"
-        items={filtered
-          .filter((item) => ongoing(item, today))
-          .sort(
-            (a, b) =>
-              (a.event_end || "").localeCompare(b.event_end || "") ||
-              a.id.localeCompare(b.id),
-          )}
+        items={data.ongoing.map(outingSummary)}
+        query={query} days={days}
         scope="ongoing"
         emptyText="확인한 진행 중 기간 행사가 아직 없어요."
       />
       <HomeSection
         title="곧 시작하는 나들이"
         description={`내일부터 ${days}일 안에 시작해요.`}
-        items={filtered
-          .filter((item) => upcoming(item, today, days))
-          .sort(
-            (a, b) =>
-              (a.event_start || "").localeCompare(b.event_start || "") ||
-              a.id.localeCompare(b.id),
-          )}
+        items={data.upcoming.map(outingSummary)}
+        query={query} days={days}
         scope="upcoming"
         emptyText="이 기간에 시작하는 행사 자료가 아직 없어요."
       />
       <HomeSection
         title="언제든 떠올릴 나들이"
         description="일상에 작은 쉼표가 되는 상설 시설"
-        items={filtered
-          .filter(permanent)
-          .sort(
-            (a, b) =>
-              a.name.localeCompare(b.name, "ko") || a.id.localeCompare(b.id),
-          )}
+        items={data.permanent.map(outingSummary)}
+        query={query} days={days}
         scope="permanent"
         emptyText="확인한 상설 시설 자료가 아직 없어요."
       />
     </div>
   );
-}
-function windowDays(value: string | null, fallback: number) {
-  return value && [7, 14, 30].includes(Number(value))
-    ? Number(value)
-    : fallback;
 }

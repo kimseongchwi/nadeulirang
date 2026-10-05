@@ -6,14 +6,12 @@ import { ReviewDialog, type ReviewStyle } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icons";
 import { policyTitles, type PolicyType } from "@/features/policies/model";
 import { ReviewLink, useReview } from "@/providers/review-provider";
-import { HomeFilter } from "@/features/outings/home-filter";
 import { PolicyLinks } from "@/features/policies/policy-links";
 import { PolicySheet } from "@/features/policies/policy-sheet";
-import { OutingPreview } from "@/features/outings/outing-preview";
 import { ReviewDevTools } from "@/components/layout/review-dev-tools";
 
 export function ReviewShell({ children }: { children: ReactNode }) {
-  const { pathname, homeUrl, searchUrl, hash, items } = useReview();
+  const { pathname, homeUrl, searchUrl, hash, pending } = useReview();
   const [menuOpen, setMenuOpen] = useState(false);
   const guide = pathname === "/ui-design";
   const style: ReviewStyle = {};
@@ -40,11 +38,11 @@ export function ReviewShell({ children }: { children: ReactNode }) {
               <span className="wordmark" role="img" aria-label="나들이랑" />
             </ReviewLink>
             <p className="eyebrow">가까운 하루, 새로운 발견</p>
-            <h1>
+            <h2>
               어디든 좋은 날,
               <br />
               함께 나들이랑.
-            </h1>
+            </h2>
             <p className="lead">
               지금 만날 수 있는 전시부터
               <br />곧 시작할 축제까지.
@@ -118,7 +116,8 @@ export function ReviewShell({ children }: { children: ReactNode }) {
                 </header>
               </>
             )}
-            <main id="main" tabIndex={-1}>
+            <main id="main" tabIndex={-1} aria-busy={pending}>
+              {pending && <span className="navigation-loading" role="status">나들이를 불러오고 있어요…</span>}
               {children}
             </main>
             {!guide && (
@@ -193,16 +192,8 @@ export function ReviewShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
       </ReviewDialog>
-      {pathname === "/" && <HomeFilter open={hash === "#filters"} />}
       {(Object.keys(policyTitles) as PolicyType[]).map((type) => (
         <PolicySheet key={type} type={type} open={hash === `#policy-${type}`} />
-      ))}
-      {items.map((item) => (
-        <OutingPreview
-          key={item.id}
-          item={item}
-          open={hash === `#outing-${item.id}`}
-        />
       ))}
     </div>
   );

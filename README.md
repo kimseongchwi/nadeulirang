@@ -37,7 +37,7 @@ WORKLOG는 Git에서 제외하며 새 환경에서는 첫 작업 결과를 기�
 
 아래 프론트 개발 서버를 실행한 뒤 [UI 디자인 가이드](http://localhost:3000/ui-design)에 접속합니다. [홈](http://localhost:3000/)·[검색](http://localhost:3000/search)·상세도 같은 서버에서 확인합니다. 별도 디자인 폴더나 검토 서버를 실행할 필요가 없습니다. 개발 서버가 다른 포트를 사용하면 그 주소 뒤에 `/ui-design`을 붙입니다. 개발 환경 PC 화면의 왼쪽 소개 아래에서도 UI 가이드 보기로 이동할 수 있습니다. 이 링크는 프로덕션 빌드에서 표시하지 않습니다.
 
-가이드는 [ui-design/page.tsx](frontend/src/app/ui-design/page.tsx), 홈·검색·상세·정책은 frontend/src/app의 각 페이지에서 제공합니다. 공통 UI와 기능별 화면·데이터의 위치는 [프론트 폴더 구성](frontend/README.md#폴더-구성)을 참고합니다. 이미지는 [public/images](frontend/public/images/)에서 관리하며 가이드와 검토 화면은 같은 컴포넌트를 사용합니다. 데이터는 검토용 스냅샷이며 구현한 조회 API와 화면의 연결은 P13에서 진행합니다. 현재 홈 구성·웹 로고를 채택했으며 실제 API 연결·공개 운영은 별도입니다. 검토 화면에는 noindex 안내를 적용합니다. 검토 상태는 [PLAN](PLAN.md)·[DESIGN](DESIGN.md)을 참고합니다.
+가이드는 [ui-design/page.tsx](frontend/src/app/ui-design/page.tsx), 홈·검색·상세·정책은 frontend/src/app의 각 페이지에서 제공합니다. 공통 UI와 기능별 화면·데이터의 위치는 [프론트 폴더 구성](frontend/README.md#폴더-구성)을 참고합니다. 이미지는 [public/images](frontend/public/images/)에서 관리하며 가이드와 서비스 화면은 같은 컴포넌트를 사용합니다. 홈·검색·상세는 Spring API의 실제 수집 DB를 조회하고 검토 스냅샷은 가이드의 카드 예시에서만 사용합니다. 채택한 홈 구성·웹 로고를 적용했으며 공개 운영은 별도입니다. 현재 noindex 설정을 유지하고 공개 대상별 SEO 수정은 P14에서 진행합니다. 상태는 [PLAN](PLAN.md)·[DESIGN](DESIGN.md)을 참고합니다.
 
 ## 프론트 실행
 
@@ -52,6 +52,10 @@ npm run dev
 npm ci는 처음 복제하거나 의존성이 변경되었을 때 실행합니다. 이후에는 npm run dev로 시작합니다. 접속 주소는 [http://localhost:3000](http://localhost:3000)이며, 포트가 다르면 터미널에 출력된 주소를 사용합니다.
 
 루트 폴더에서 바로 시작하려면 `npm --prefix frontend run dev`를 사용합니다. 개발 서버 종료는 Ctrl+C입니다.
+
+홈·검색·상세의 실제 조회에는 아래의 [백엔드 실행](#백엔드-실행검증)과 DB도 필요합니다. Next.js 서버가 기본 `http://127.0.0.1:8080`의 Spring API를 호출합니다. 백엔드 포트를 바꾸면 [frontend/.env.example](frontend/.env.example)을 참고해 `frontend/.env.local`에 `BACKEND_URL`을 지정한 뒤 프론트를 다시 실행합니다. 이 변수는 서버에서만 읽으며 `NEXT_PUBLIC_`로 만들지 않습니다. 원천 인증키·DB 접속 정보는 프론트에 넣지 않습니다. 배포 서버의 주소·설정은 P15에서 별도로 준비하며 사용자 홈의 로컬 설정을 자동 복사하지 않습니다.
+
+`/search`의 `q`·`region`(시도 코드)·`kind`·`scope`·`days`·`sort`·`page`로 조건과 페이지를 복원합니다. 기존 시도 이름 주소도 현재 선택지의 코드로 해석합니다. 정상 0건과 잘못된 조건·조회 실패는 다른 안내이며, 장애 시 검토 표본으로 대체하지 않습니다. `/api/outings/:id`는 간단 보기의 같은 출처 상세 중계 경로입니다. 없는/비공개 상세는 404, 중계 장애는 503입니다. 페이지의 예상 조회 오류는 현재 HTTP 200에 오류·재시도와 noindex를 표시하며 검색엔진용 오류 상태 코드 정책은 P14에서 점검합니다.
 
 ## 프론트 검증
 

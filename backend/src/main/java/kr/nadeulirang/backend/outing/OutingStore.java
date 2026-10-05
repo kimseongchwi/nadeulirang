@@ -60,6 +60,10 @@ public class OutingStore {
     public OutingStore(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
     public OutingResponse.Page list(OutingQuery query, Instant now) {
+        return list(query, now, 20, query.orderBy());
+    }
+
+    private OutingResponse.Page list(OutingQuery query, Instant now, int limit, String orderBy) {
         LocalDate today = now.atZone(CollectionPolicy.SEOUL).toLocalDate();
         List<Object> args = new ArrayList<>(List.of(today, today));
         String where = " FROM candidates WHERE period NOT IN ('ENDED', 'CANCELLED')";
@@ -71,11 +75,23 @@ public class OutingStore {
         if (!query.region().isEmpty()) { where += " AND region_code = ?"; args.add(query.region()); }
         if (!query.kind().isEmpty()) { where += " AND kind = ?"; args.add(query.kind()); }
         if (!query.period().equals("ALL")) { where += " AND period = ?"; args.add(query.period()); }
+        if (query.days() != 0) { where += " AND event_start <= ?::date"; args.add(today.plusDays(query.days())); }
         long total = jdbc.queryForObject(CANDIDATES + "SELECT count(*)" + where, Long.class, args.toArray());
+        args.add(limit);
         args.add(query.offset());
-        var items = jdbc.query(CANDIDATES + "SELECT *" + where + " ORDER BY " + query.orderBy() + " LIMIT 20 OFFSET ?",
+        var items = jdbc.query(CANDIDATES + "SELECT *" + where + " ORDER BY " + orderBy + " LIMIT ? OFFSET ?",
                 (rs, n) -> summary(rs), args.toArray());
-        return new OutingResponse.Page(items, query.page(), 20, total, today);
+        return new OutingResponse.Page(items, query.page(), limit, total, today);
+    }
+
+    public OutingResponse.Home home(String region, String kind, int days, Instant now) {
+        // 같은 현재 시각과 읽기 트랜잭션에서 세 구분의 결과를 맞춘다.
+        var ongoing = list(new OutingQuery("", region, kind, "ONGOING", "END_DATE", 1), now, 3, "event_end, id");
+        var upcoming = list(new OutingQuery("", region, kind, "UPCOMING", "START_DATE", 1, days), now, 3, "event_start, id");
+        var permanent = list(new OutingQuery("", region, kind, "PERMANENT", "NAME", 1), now, 3, "name COLLATE \"C\", id");
+        return new OutingResponse.Home(ongoing.items().stream().limit(3).toList(),
+                upcoming.items().stream().limit(3).toList(), permanent.items().stream().limit(3).toList(),
+                ongoing.total() + upcoming.total() + permanent.total(), days, ongoing.asOfDate());
     }
 
     public OutingResponse.Options options(Instant now) {

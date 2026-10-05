@@ -16,6 +16,8 @@ public final class OutingResponse {
                           Instant collectedAt, Instant sourceCheckedAt) { }
 
     public record Page(List<Summary> items, int page, int pageSize, long total, LocalDate asOfDate) { }
+    public record Home(List<Summary> ongoing, List<Summary> upcoming, List<Summary> permanent,
+                       long total, int days, LocalDate asOfDate) { }
 
     public record Source(String source, String sourceKey, String url, String license,
                          Instant collectedAt, Instant checkedAt, Instant lastFailureAt,

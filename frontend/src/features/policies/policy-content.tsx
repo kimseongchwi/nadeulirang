@@ -1,4 +1,3 @@
-import { dateLabel, snapshot } from "@/features/outings/model";
 import type { PolicyType } from "@/features/policies/model";
 
 export function PolicyContent({ type }: { type: PolicyType }) {
@@ -35,8 +34,8 @@ export function PolicyContent({ type }: { type: PolicyType }) {
             </p>
             <h2>실제 확보 자료</h2>
             <p>
-              {dateLabel(snapshot)} 수집 DB의 공개 후보 7곳 중 종료 2곳을 제외한
-              5곳을 홈·검색에 표시합니다. 전체 지역은 확보한 자료를 함께 본다는
+              수집 DB에서 공개 검토를 마친 자료를 조회합니다. 종료·취소 행사는
+              홈·검색에서 제외하고 공개 가능한 기존 상세에는 상태를 표시합니다. 전체 지역은 확보한 자료를 함께 본다는
               뜻이며 전국 모든 시설을 확보했다는 의미가 아닙니다.
             </p>
             <h2>데이터 출처</h2>
