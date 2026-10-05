@@ -21,10 +21,10 @@ public record OutingQuery(String keyword, String region, String kind, String per
 
     public String orderBy() {
         return switch (sort) {
-            case "NAME" -> "name, id";
-            case "START_DATE" -> "event_start NULLS LAST, name, id";
+            case "NAME" -> "name COLLATE \"C\", id";
+            case "START_DATE" -> "event_start NULLS LAST, name COLLATE \"C\", id";
             default -> "CASE period WHEN 'ONGOING' THEN 0 WHEN 'UPCOMING' THEN 0 WHEN 'PERMANENT' THEN 1 ELSE 2 END, "
-                    + "CASE WHEN period IN ('ONGOING', 'UPCOMING') THEN event_start END, name, id";
+                    + "CASE WHEN period IN ('ONGOING', 'UPCOMING') THEN event_start END, name COLLATE \"C\", id";
         };
     }
 }
