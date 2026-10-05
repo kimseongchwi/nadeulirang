@@ -1,50 +1,64 @@
 "use client";
 
-import { dateLabel, kindNames, period, permanent, photoId, type Outing } from "@/features/outings/model";
-import { Badge } from "@/features/outings/outing-card";
-import { OutingArtwork, PhotoCredit } from "@/features/outings/outing-artwork";
+import { kindNames, period, permanent, photoId, outingSummary } from "./model";
+import { Badge } from "./outing-badge";
+import { OutingArtwork, PhotoCredit } from "./outing-artwork";
 import { BackHeading } from "@/components/layout/back-heading";
 import { Icon } from "@/components/ui/icons";
+import { EvidenceList, checkedTime, sourceNames } from "./evidence";
+import { orderedHours, orderedNotes, safeUrl } from "./api-query";
+import type { Detail } from "./api-types";
 
-export function DetailReview({ item }: { item: Outing }) {
-  return (
-    <div className="outing-detail">
-      <BackHeading title="상세 정보" />
-      <div className="detail-cover"><OutingArtwork item={item} large /></div>
-      <div className="detail-title">
-        <div className="outing-card-meta">{item.region_name} · {kindNames[item.kind]}</div>
-        <h2>{item.name}</h2>
-        <Badge item={item} />
-      </div>
-      {!permanent(item) && (
-        <dl className="detail-facts detail-period">
-          <div><dt>행사 일정</dt><dd>{period(item)}</dd></div>
-        </dl>
-      )}
-      <section className="detail-section">
-        <p className="eyebrow">방문 전에 살펴봐요</p>
-        <h2>이용 정보</h2>
-        <dl className="detail-facts">
-          {[
-            ["주소", "미확인"],
-            ["운영 시간·휴관", "미확인"],
-            ["일반 입장료", "미확인"],
-            ["체험·추가 요금", "미확인"],
-            ["할인 조건", "미확인"],
-            ["예약 조건", "미확인"],
-          ].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
-        </dl>
-        <div className="visit-note"><Icon name="info" /><p>행사 기간과 당일 운영은 다를 수 있어요.<br />휴무·요금·예약은 출발 전에 공식 기관 안내를 확인해 주세요.</p></div>
-      </section>
-      <section className="detail-section detail-sources">
-        <h2>출처</h2>
-        {item.sources.map((source) => (
-          <a className="source-link" key={source.source} href={source.url} target="_blank" rel="noopener noreferrer">
-            <span><strong>{source.source === "TOUR" ? "한국관광공사 TourAPI" : "전국박물관미술관 표준데이터"}</strong><small>데이터 안내 · 자료 확인일 {dateLabel(source.checked.slice(0, 10))}</small></span><span className="external-link-mark" aria-hidden="true">↗</span>
-          </a>
-        ))}
-        {item.id === photoId && <div id="photo-credit"><PhotoCredit /></div>}
-      </section>
+const groups = [
+  ["address", "주소·장소"], ["hours", "운영 시간"], ["closedDays", "휴관·휴무"],
+  ["generalFee", "일반 입장료 안내"], ["extraFee", "체험·추가 요금"],
+  ["discount", "할인 안내"], ["reservation", "예약 안내"], ["contact", "연락처"],
+] as const;
+export function DetailReview({ data }: { data: Detail }) {
+  const item = outingSummary(data.item);
+  const links = data.links.filter((link) => safeUrl(link.url));
+  return <div className="outing-detail">
+    <BackHeading title="상세 정보" labelOnly />
+    <div className="detail-cover"><OutingArtwork item={item} large /></div>
+    <div className="detail-title">
+      <div className="outing-card-meta">{item.region_name} · {kindNames[item.kind]}</div>
+      <h1>{item.name}</h1><Badge item={item} />
     </div>
-  );
+    {!permanent(item) && <dl className="detail-facts detail-period"><div><dt>행사 일정</dt><dd>{period(item)}</dd></div></dl>}
+    {!!data.information.description?.length && <section className="detail-section"><h2>소개</h2><EvidenceList values={data.information.description} /></section>}
+    <section className="detail-section">
+      <p className="eyebrow">방문 전에 살펴봐요</p><h2>이용 정보</h2>
+      <dl className="detail-facts">
+        <div><dt>일반 성인 입장료</dt><dd>{data.item.feeConflict ? "원천별 요금이 달라 확인 필요" : data.item.adultFee !== null && data.item.feeStatus !== "UNKNOWN" ? `${data.item.adultFee.toLocaleString("ko-KR")}원${data.item.feeStatus === "FREE" ? " · 무료" : ""}` : "미확인"}</dd></div>
+        {groups.map(([key, label]) => <div key={key}><dt>{label}</dt><dd><EvidenceList values={key === "hours" ? orderedHours(data.information[key] || []) : data.information[key] || []} /></dd></div>)}
+        <div><dt>할인 기간·증빙·중복 적용</dt><dd>미확인 · 할인 안내가 있어도 세부 적용 조건은 공식 기관에 확인해 주세요.</dd></div>
+        <div><dt>예약 기간·잔여석</dt><dd>미확인 · 예약 안내가 있어도 예약 가능을 보증하지 않아요.</dd></div>
+        <div><dt>당일 운영 확인</dt><dd>{data.item.operationVerified ? "검토된 운영 자료 있음 · 방문일 운영은 별도 확인" : "미확인"}</dd></div>
+      </dl>
+      {!!data.information.notes?.length && <><h3>추가 안내</h3><EvidenceList values={orderedNotes(data.information.notes)} /></>}
+      <div className="visit-note"><Icon name="info" /><p>행사 기간과 당일 운영은 다를 수 있어요.<br />휴무·요금·예약은 출발 전에 공식 기관 안내를 확인해 주세요.</p></div>
+    </section>
+    <section className="detail-section">
+      <h2>공식 안내·예약</h2>
+      {links.map((link, index) => <div key={`${link.purpose}-${index}`}>
+        <a className="source-link" href={safeUrl(link.url)!} target="_blank" rel="noopener noreferrer"><span><strong>{link.purpose === "reservation" ? "예약 안내" : "공식 기관 안내"}</strong><small>{sourceNames[link.evidence.source]} · 확인 {checkedTime(link.evidence.checkedAt)}{link.evidence.stale ? " · 갱신 확인 필요" : ""}</small></span><span aria-hidden="true">↗</span></a>
+      </div>)}
+      {!links.some((link) => link.purpose === "officialWebsite") && <p>공식 기관 안내 주소 미확인</p>}
+      {!links.some((link) => link.purpose === "reservation") && <p>공식 예약 링크 미확인</p>}
+    </section>
+    <section className="detail-section detail-sources">
+      <h2>출처·확인 시각</h2>
+      <p className="small muted">조회 기준 {data.asOfDate} · 모든 시각은 한국 시간이에요.</p>
+      {data.sources.map((source) => {
+        const url = safeUrl(source.url);
+        return <div className="source-record" key={`${source.source}-${source.sourceKey}`}>
+          {url ? <a className="source-link" href={url} target="_blank" rel="noopener noreferrer"><strong>{sourceNames[source.source] || "원천 자료"}</strong><span aria-hidden="true">↗</span></a> : <strong>{sourceNames[source.source] || "원천 자료"}</strong>}
+          <p className="small muted">데이터 안내<br />수집 {checkedTime(source.collectedAt)}<br />원천 확인 {checkedTime(source.checkedAt)}<br />이용허락 {source.license === "KOGL1_DATA" ? "공공누리 제1유형 · 데이터" : "TourAPI 데이터 이용 조건"}</p>
+          {source.stale && <p className="hint">갱신 확인이 필요한 자료예요.</p>}
+          {source.lastFailureAt && <p className="hint">최근 조회 실패 {checkedTime(source.lastFailureAt)} · 마지막 성공 자료를 표시해요.</p>}
+        </div>;
+      })}
+      {item.id === photoId && <div id="photo-credit"><PhotoCredit /></div>}
+    </section>
+  </div>;
 }

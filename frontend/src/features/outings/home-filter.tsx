@@ -4,9 +4,12 @@ import { useEffect, useRef } from "react";
 import { ReviewDialog } from "@/components/ui/dialog";
 import { kindNames } from "@/features/outings/model";
 import { useReview } from "@/providers/review-provider";
+import type { Options } from "./api-types";
 
-export function HomeFilter({ open }: { open: boolean }) {
-  const { params, items, closeSheet, replaceSheet } = useReview();
+export function HomeFilter({ open, options }: { open: boolean; options: Options }) {
+  const { params, closeSheet, replaceSheet } = useReview();
+  const region = params.get("region") || "";
+  const regionCode = options?.regions.find((r) => r.code === region || r.name === region)?.code || region;
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (open) formRef.current?.reset();
@@ -46,14 +49,11 @@ export function HomeFilter({ open }: { open: boolean }) {
             <select
               id="homeFilterRegion"
               name="region"
-              defaultValue={params.get("region") || ""}
+              defaultValue={regionCode}
             >
               <option value="">전체 지역</option>
-              {[...new Set(items.map((item) => item.region_name))]
-                .sort()
-                .map((value) => (
-                  <option key={value}>{value}</option>
-                ))}
+              {regionCode && !options?.regions.some((r) => r.code === regionCode) && <option value={regionCode}>{region} · 확보한 자료 없음</option>}
+              {options?.regions.map((r) => <option key={r.code} value={r.code}>{r.name}</option>)}
             </select>
           </div>
           <div>
@@ -67,7 +67,7 @@ export function HomeFilter({ open }: { open: boolean }) {
               {Object.entries(kindNames).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
-                  {items.some((item) => item.kind === value)
+                  {options?.kinds.some((item) => item.code === value)
                     ? ""
                     : " · 자료 확보 중"}
                 </option>

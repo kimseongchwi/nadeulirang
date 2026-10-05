@@ -2,14 +2,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   addDays,
-  normalizedFilters,
-  publicItems,
-  searchItems,
   seoulDate,
   upcoming,
   validDate,
-  reviewItems,
 } from "../src/features/outings/model.ts";
+import { normalizedFilters, publicItems, searchItems, reviewItems } from "../src/features/ui-design/review-model.ts";
 
 test("서울 자정 경계에서 날짜가 바뀌고 윤년의 실제 날짜만 허용한다", () => {
   assert.equal(seoulDate(new Date("2026-10-03T14:59:59Z")), "2026-10-03");

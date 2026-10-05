@@ -845,7 +845,7 @@ dialog::backdrop {
   .pc-intro .eyebrow {
     margin-top: 40px;
   }
-  .pc-intro h1 {
+  .pc-intro h2 {
     font-size: 32px;
     line-height: 1.5;
     margin-top: 12px;
@@ -964,12 +964,12 @@ dialog::backdrop {
 }
 @media (min-width: 960px) and (max-height: 600px) {
   .review-root:not(.guide-mode) .pc-intro { margin-top: 24px; }
-  .pc-intro h1 { font-size: 28px; }
+  .pc-intro h2 { font-size: 28px; }
   .pc-intro .lead { display: none; }
 }
 @media (min-width: 960px) and (max-height: 440px) {
   .pc-intro .eyebrow { margin-top: 12px; }
-  .pc-intro h1 { font-size: 24px; }
+  .pc-intro h2 { font-size: 24px; }
   .pc-intro .steps { margin-top: 16px; }
   .pc-intro .steps span { display: none; }
 }
@@ -2401,7 +2401,7 @@ body.filter-open {
 .detail-cover .outing-artwork.large { height: 190px; border-radius: 20px; }
 .detail-cover .outing-artwork.large[data-photo="true"] { height: 230px; }
 .detail-title { margin: 24px 0 20px; }
-.detail-title h2 { font-size: 28px; letter-spacing: -.04em; line-height: 1.4; margin: 8px 0 14px; word-break: keep-all; }
+.detail-title h1 { font-size: 28px; letter-spacing: -.04em; line-height: 1.4; margin: 8px 0 14px; word-break: keep-all; }
 .detail-title > .badge { font-size: 11px; border-radius: 6px; padding: 4px 9px; }
 .detail-section { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e9ede6; }
 .detail-section .eyebrow { font-size: 11px; font-weight: 500; margin-bottom: 4px; }
@@ -2455,3 +2455,18 @@ dialog[open]::backdrop { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
   dialog, dialog[data-sheet], dialog::backdrop { transition: none; }
 }
+
+/* 실제 조회 결과의 링크·페이지·원천 근거 */
+.outing-card { position: relative; }
+.outing-card-arrow { position: absolute; right: 10px; bottom: 10px; width: 44px; height: 44px; align-items: center; justify-content: center; border-radius: 12px; }
+.outing-card-bottom { padding-right: 30px; }
+.result-pages { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 24px; flex-wrap: wrap; }
+.evidence-entry + .evidence-entry { margin-top: 14px; }
+.evidence-value { white-space: pre-wrap; overflow-wrap: anywhere; margin: 4px 0; }
+.evidence-label { font-size: 12px; }
+.evidence-source { display: block; color: var(--muted); font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.evidence-stale { color: var(--warning); }
+.source-record + .source-record { margin-top: 20px; }
+.outing-detail .page-head > p { font-size: 16px; margin: 0; }
+
+.navigation-loading { position: fixed; z-index: 30; right: 16px; bottom: 90px; max-width: calc(100vw - 32px); padding: 10px 16px; border-radius: 12px; background: var(--action); color: white; box-shadow: 0 4px 16px #0002; font-size: 13px; }

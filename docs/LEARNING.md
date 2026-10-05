@@ -240,7 +240,7 @@ health는 애플리케이션과 연결된 구성요소의 상태를 확인하는
 
 SQL `CASE`는 저장된 취소/종료 상태를 보존하고, 날짜가 있는 행사의 시작·종료를 현재 서울 날짜와 비교해 진행 중/예정/종료를 계산한다. 종료일과 같은 날은 진행 중이며 다음 날부터 목록에서 빠진다. 상설 시설은 시설 분류일 뿐 휴관·당일 운영을 확인했다는 뜻이 아니다. `operationVerified`와 근거별 확인 시각을 따로 읽어야 한다.
 
-조건의 `?`는 값 바인딩이다. `strpos(lower(name), lower(?))`는 `%`·`_`를 와일드카드로 바꾸지 않고 이름에 해당 문자가 실제 있는지 찾는다. 정렬 SQL은 요청 문자열을 직접 붙이지 않고 검증한 세 가지 값에 대응하는 고정 SQL만 반환한다. 이름에는 PostgreSQL의 `COLLATE "C"`를 명시해 DB 생성 때의 기본 로케일이 달라도 같은 UTF-8 바이트 순으로 비교한다. 이는 언어별 사전식 정렬과 다르지만 배포 환경마다 목록 순서가 달라지는 일을 막는다. 같은 시작일/이름의 동률은 UUID로 정해 페이지 경계의 불필요한 순서 변화를 줄인다.
+조건의 `?`는 값 바인딩이다. `strpos(lower(name), lower(?))`는 `%`·`_`를 와일드카드로 바꾸지 않고 이름에 해당 문자가 실제 있는지 찾는다. 정렬 SQL은 요청 문자열을 직접 붙이지 않고 검증한 네 가지 값에 대응하는 고정 SQL만 반환한다. 이름에는 PostgreSQL의 `COLLATE "C"`를 명시해 DB 생성 때의 기본 로케일이 달라도 같은 UTF-8 바이트 순으로 비교한다. 이는 언어별 사전식 정렬과 다르지만 배포 환경마다 목록 순서가 달라지는 일을 막는다. 같은 시작일/이름의 동률은 UUID로 정해 페이지 경계의 불필요한 순서 변화를 줄인다.
 
 `@Transactional`은 `org.springframework.transaction.annotation.Transactional`에서 가져와 저장소 클래스에 붙인다. `readOnly = true`, `isolation = Isolation.REPEATABLE_READ`를 Spring의 트랜잭션 인터셉터가 외부 메서드 호출 시 적용한다. 총건수와 페이지 항목, 상세 공개 조건과 근거를 같은 DB 스냅샷에서 읽어 수집이 동시에 갱신해도 한 응답 안의 값이 서로 다른 순간의 값으로 섞이지 않게 한다. 트랜잭션이 필요해 DB 연결을 잠시 유지하는 비용이 있고, 다음 페이지 요청까지 영구 스냅샷을 유지하지는 않는다.
 
@@ -260,11 +260,11 @@ SQL `CASE`는 저장된 취소/종료 상태를 보존하고, 날짜가 있는 �
 
 ## 프론트 파일과 실행 흐름
 
-관련 작업: P03·P04·P24·P26·P27·P34·P35.
+관련 작업: P03·P04·P13·P24·P26·P27·P34·P35.
 
 ### 주소·화면·공통 UI의 역할
 
-[홈 page.tsx](../frontend/src/app/page.tsx)의 `HomePage`는 [HomeReview](../frontend/src/features/outings/home.tsx)를 반환한다. `HomeReview`는 [OutingCard](../frontend/src/features/outings/outing-card.tsx)를 사용한다. [layout.tsx](../frontend/src/app/layout.tsx)의 `RootLayout`은 `ReviewProvider`와 `ReviewShell`로 페이지의 `children`을 감싼다.
+[홈 page.tsx](../frontend/src/app/page.tsx)의 비동기 `HomePage`는 API 결과를 기다린 뒤 [HomeReview](../frontend/src/features/outings/home.tsx)에 `data`·`options`·`query` props로 전달한다. `HomeReview`는 [OutingCard](../frontend/src/features/outings/outing-card.tsx)를 사용한다. [layout.tsx](../frontend/src/app/layout.tsx)의 `RootLayout`은 `ReviewProvider`와 `ReviewShell`로 페이지의 `children`을 감싼다.
 
 | 위치 | 코드에서 맡는 역할 |
 |---|---|
@@ -280,13 +280,27 @@ SQL `CASE`는 저장된 취소/종료 상태를 보존하고, 날짜가 있는 �
 
 ### props·state와 서버/브라우저의 경계
 
-React 컴포넌트는 UI를 표현하는 함수다. `props`는 전달받은 입력, `state`는 상호작용에 따라 바뀌는 값이다. 상세 서버 페이지는 id에 맞는 검토 자료를 찾아 `DetailReview`의 `item` prop으로 전달한다. JSX는 그 입력과 상태를 화면으로 표현한다. 사용자 입력·달력의 미적용 선택·메뉴 동작은 브라우저에서 처리한다.
+React 컴포넌트는 UI를 표현하는 함수다. `props`는 전달받은 입력, `state`는 상호작용에 따라 바뀌는 값이다. 상세 서버 페이지는 공개 가능한 id의 API 응답을 기다린 뒤 `DetailReview`의 `data` prop으로 전달한다. 없는/비공개 id에서는 Next.js의 `notFound()`를 호출한다. JSX는 그 입력과 상태를 화면으로 표현한다. 사용자 입력·달력의 미적용 선택·메뉴 동작은 브라우저에서 처리한다.
 
 Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포넌트다. `useState`·사용자 이벤트·`window` 등이 필요한 파일은 맨 위의 `"use client"`로 클라이언트 컴포넌트의 경계를 정한다. 클라이언트 컴포넌트도 첫 HTML의 서버 렌더링에 참여할 수 있으므로 모든 코드가 브라우저에서만 실행된다고 가정하지 않는다. [tsconfig.json](../frontend/tsconfig.json)의 `strict`는 타입 검사이며 실제 외부 응답의 정확성까지 보증하지 않는다.
 
-[model.ts](../frontend/src/features/outings/model.ts)의 `Outing`은 JSON 스냅샷 원소의 타입, `reviewItems`는 검토 항목 배열이다. `seoulDate`는 서울 날짜를 계산하고 `publicItems`·`ongoing`·`upcoming`·`permanent`는 종료/기간/상설을 구분한다. 행사 기간 안이라는 판정은 당일 운영 확인과 다르다. 루트 레이아웃의 `force-dynamic`은 렌더링 날짜를 빌드 시점에 고정하지 않게 한다. 현재 자료는 [review-data.json](../frontend/src/features/outings/data/review-data.json)이며 제품 API 연결은 아직 없다.
+[model.ts](../frontend/src/features/outings/model.ts)의 `Outing`은 카드 표시 타입이고 `outingSummary`가 API의 `Summary`를 변환한다. 검토 표본의 주소·출처를 실제 항목에 채우지 않는다. 실제 상태는 서버의 `apiPeriod`로 표시하며 `CANCELLED`·`ENDED`·`UNKNOWN`을 구분한다. 가이드의 [review-model.ts](../frontend/src/features/ui-design/review-model.ts)만 JSON 스냅샷을 읽고 `publicItems`·검색 예시를 계산한다. `seoulDate`·`ongoing` 등 날짜 도우미는 표시와 가이드에서 사용하며 실제 목록 구분은 DB 조회가 결정한다. 루트의 `force-dynamic`과 API 호출의 `no-store`는 빌드 날짜/응답을 현재 자료로 오인하지 않게 한다.
 
 확인은 프론트의 날짜·검색 테스트 입력과 기대값을 읽는다. 선택적 연습으로 카드 이름 표시를 `outing-card.tsx`에서 바꾸면 홈·검색·가이드에 어떻게 반영될지 예상한다.
+
+### 서버 조회·응답 타입과 실제 본문 HTML
+
+[api-server.ts](../frontend/src/features/outings/api-server.ts)는 Next.js 서버에서만 사용하는 호출 코드다. `BACKEND_URL`은 Spring 주소이고 인증키·DB 설정을 브라우저로 전달하지 않는다. 페이지 → API 호출 → Spring 컨트롤러 → JDBC → 응답 → 화면 props 순으로 흐른다. 첫 HTML에도 실제 이름·이용 정보와 `href=/detail/...` 링크가 있으므로 브라우저가 나중에 목록을 채울 때까지 빈 본문을 제공하지 않는다.
+
+`ApiResult<T>`는 `ok: true`의 `data`와 `ok: false`의 `status`·`message`를 나눈 유니온 타입이다. `T`는 응답 모양을 지정하는 타입 매개변수다. 외부 JSON을 TypeScript 타입으로 단정하면 잘못된 응답도 통과하므로 [api-contract.ts](../frontend/src/features/outings/api-contract.ts)의 타입 가드가 `unknown` 값의 배열·필드·null·숫자를 실제로 검사한다. 정상 0건은 빈 배열이고 접속 실패·8초 초과·비정상 JSON은 오류 결과다. 이전 검토 표본으로 대체하지 않는다. `React.cache`는 같은 렌더링 요청의 선택지/상세 중복 호출을 줄이며 날짜를 영구 캐시하지 않는다.
+
+[api-query.ts](../frontend/src/features/outings/api-query.ts)는 URL의 `q`를 백엔드 `keyword`로, 기존 지역명을 현재 시도 코드로, 홈 `scope`를 기간 구분으로 바꾼다. 없는 지역을 전체 지역으로 넓히지 않는다. 페이지·정렬·다가오는 구간을 URL에 유지하고 검색 폼을 제출할 때 페이지는 1로 돌아간다. 기간 조건만 해제할 때 이름/지역/종류는 보존한다.
+
+홈의 세 목록을 첫 20개 목록에서 잘라 만들면 해당 페이지 밖의 시설/행사가 빠질 수 있다. Java [OutingQuery](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingQuery.java)의 `days` record 구성 요소는 0 또는 다가오는 구간 7·14·30만 허용한다. 기존 여섯 인수 생성자는 일곱 인수 생성자에 0을 전달한다. [OutingStore.home](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingStore.java)은 한 `Instant`와 외부 호출에 적용된 읽기 트랜잭션 안에서 종료일/시작일/이름 순으로 세 구분을 조회한다. 내부 `list` 호출마다 별도 어노테이션 처리가 실행되는 것은 아니다. 시작일 상한 `today.plusDays(days)`를 건수와 페이지 계산 전에 SQL에 바인딩하고 DB 조회에서 각 구분을 3개로 제한해 반환하고 홈 날짜 동률은 ID로 정한다. 추가 DB 조회 비용은 있지만 이후 데이터가 늘어도 홈의 선정 기준을 유지한다.
+
+간단 보기는 열릴 때 같은 서버의 [상세 중계 route.ts](../frontend/src/app/api/outings/[id]/route.ts)를 호출한다. Web API의 `Request`/`Response`를 쓰며 중계 404와 503을 구분한다. 닫힐 때 `AbortController`로 불필요한 요청을 취소한다. 상세의 [EvidenceList](../frontend/src/features/outings/evidence.tsx)는 원천 문장을 JSX 텍스트로 표시해 HTML을 실행하지 않는다. 원천별 서로 다른 주소/요금·확인 시각·갱신 필요 표시를 유지하고 공식 링크는 명시적 HTTP(S) 주소만 연결한다. `orderedNotes`는 `observationId`별로 제목/본문을 묶어 주차 안내의 무료 문장이 다른 예약 안내와 섞이지 않게 한다.
+
+[tsconfig.json](../frontend/tsconfig.json)의 `allowImportingTsExtensions`는 `noEmit` 검사 환경에서 `.ts` import를 허용한다. Node.js의 내장 TypeScript 처리로 가이드의 순수 모델과 실제 URL/응답 로직을 테스트하기 위해 사용하며 실행 코드에 별도 변환 의존성을 추가하지 않는다. 확인은 프론트 API 조건/상태/근거 묶기 테스트, 백엔드 서울 경계/페이지 테스트와 실제 HTML/브라우저 흐름으로 한다. 페이지의 예상 조회 오류는 오류·재시도 UI로 반환하고 HTTP 오류 상태 정책은 P14에서 점검한다.
 
 ### URL·탭 저장과 복귀
 

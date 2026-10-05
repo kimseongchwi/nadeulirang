@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   createContext,
@@ -9,10 +9,10 @@ import {
   useEffect,
   useRef,
   useSyncExternalStore,
+  useTransition,
   type ReactNode,
   type ComponentProps,
 } from "react";
-import { publicItems } from "@/features/outings/model";
 import { reviewScrollTop, scrollReviewTo } from "@/components/layout/service-scroll";
 
 const storageEvent = "outing-review-settings";
@@ -64,6 +64,7 @@ function useReviewState(today: string) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
   const router = useRouter();
+  const [pending, startTransition] = useTransition();
   const [homeQuery, setHomeQuery] = useSetting(
     "outing-review-home-filters",
     "",
@@ -95,8 +96,10 @@ function useReviewState(today: string) {
         return;
       }
       saveScroll();
-      if (replace) router.replace(url, { scroll: false });
-      else router.push(url, { scroll: false });
+      startTransition(() => {
+        if (replace) router.replace(url, { scroll: false });
+        else router.push(url, { scroll: false });
+      });
     },
     [router, saveScroll],
   );
@@ -161,15 +164,14 @@ function useReviewState(today: string) {
   const replaceSheet = useCallback((url: string) => {
     nextNavigation.current = url !== `${location.pathname}${location.search}`;
     // Next.js가 내부 라우터 상태를 보존하고 검색 매개변수 변경을 반영한다.
-    history.replaceState({ reviewSheet: false, reviewEntry: true }, "", url);
-    window.dispatchEvent(new Event("hashchange"));
-    scrollReviewTo(0);
-  }, []);
+    // 검색 조건 변경은 서버 페이지를 다시 조회해야 하므로 라우터로 이동한다.
+    startTransition(() => router.replace(url, { scroll: false }));
+  }, [router]);
   return {
     today,
     pathname,
     params: new URLSearchParams(search),
-    items: publicItems(today),
+    pending,
     upcomingDays,
     homeQuery,
     setHomeQuery,
@@ -206,6 +208,7 @@ export function useReview() {
 }
 export function ReviewLink({
   onNavigate,
+  children,
   ...props
 }: ComponentProps<typeof Link>) {
   const { saveScroll } = useReview();
@@ -221,6 +224,10 @@ export function ReviewLink({
         )
           saveScroll();
       }}
-    />
+    >{children}<LinkPending /></Link>
   );
+}
+function LinkPending() {
+  const { pending } = useLinkStatus();
+  return pending ? <span className="navigation-loading" role="status">나들이를 불러오고 있어요…</span> : null;
 }
