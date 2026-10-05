@@ -37,7 +37,7 @@ WORKLOG는 Git에서 제외하며 새 환경에서는 첫 작업 결과를 기�
 
 아래 프론트 개발 서버를 실행한 뒤 [UI 디자인 가이드](http://localhost:3000/ui-design)에 접속합니다. [홈](http://localhost:3000/)·[검색](http://localhost:3000/search)·상세도 같은 서버에서 확인합니다. 별도 디자인 폴더나 검토 서버를 실행할 필요가 없습니다. 개발 서버가 다른 포트를 사용하면 그 주소 뒤에 `/ui-design`을 붙입니다. 개발 환경 PC 화면의 왼쪽 소개 아래에서도 UI 가이드 보기로 이동할 수 있습니다. 이 링크는 프로덕션 빌드에서 표시하지 않습니다.
 
-가이드는 [ui-design/page.tsx](frontend/src/app/ui-design/page.tsx), 홈·검색·상세·정책은 frontend/src/app의 각 페이지에서 제공합니다. 공통 UI와 기능별 화면·데이터의 위치는 [프론트 폴더 구성](frontend/README.md#폴더-구성)을 참고합니다. 이미지는 [public/images](frontend/public/images/)에서 관리하며 가이드와 검토 화면은 같은 컴포넌트를 사용합니다. 데이터는 검토용 스냅샷이며 실제 조회 API 연결은 P12·P13에서 이어갑니다. 로고·디자인 전체의 확정이나 제품 구현 완료를 뜻하지 않으며 검토 화면에는 noindex 안내를 적용합니다. 검토 상태는 [PLAN](PLAN.md)·[DESIGN](DESIGN.md)을 참고합니다.
+가이드는 [ui-design/page.tsx](frontend/src/app/ui-design/page.tsx), 홈·검색·상세·정책은 frontend/src/app의 각 페이지에서 제공합니다. 공통 UI와 기능별 화면·데이터의 위치는 [프론트 폴더 구성](frontend/README.md#폴더-구성)을 참고합니다. 이미지는 [public/images](frontend/public/images/)에서 관리하며 가이드와 검토 화면은 같은 컴포넌트를 사용합니다. 데이터는 검토용 스냅샷이며 구현한 조회 API와 화면의 연결은 P13에서 진행합니다. 로고·디자인 전체의 확정이나 제품 구현 완료를 뜻하지 않으며 검토 화면에는 noindex 안내를 적용합니다. 검토 상태는 [PLAN](PLAN.md)·[DESIGN](DESIGN.md)을 참고합니다.
 
 ## 프론트 실행
 
@@ -150,7 +150,7 @@ $env:MAVEN_USER_HOME = Join-Path $PWD '.local/maven'
 ./backend/mvnw.cmd -B -ntp -f backend/pom.xml "-Dmaven.repo.local=$PWD/.local/maven/repository" spring-boot:run
 ```
 
-기본 포트는 8080이며 종료는 Ctrl+C입니다. [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)는 DB가 연결되면 HTTP 200과 `{"status":"UP"}`을 반환하고 DB 장애 시 HTTP 503을 반환합니다. 공개 엔드포인트는 health만 사용하며 DB·환경 설정 상세는 공개하지 않습니다. 실행 중 포트 충돌이 있으면 `"-Dspring-boot.run.arguments=--server.port=8081"`을 추가합니다.
+기본 포트는 8080이며 종료는 Ctrl+C입니다. [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)는 DB가 연결되면 HTTP 200과 `{"status":"UP"}`을 반환하고 DB 장애 시 HTTP 503을 반환합니다. Actuator는 health만 공개하며 DB·환경 설정 상세는 공개하지 않습니다. 목록·상세는 `/api/outings`에서 조회하며 조건과 응답은 [백엔드 API 안내](backend/README.md#목록상세-조회-api)를 따릅니다. 실행 중 포트 충돌이 있으면 `"-Dspring-boot.run.arguments=--server.port=8081"`을 추가합니다.
 
 `npm run dev`는 Next.js 프론트만 시작합니다. 프론트의 `http://localhost:3000/api/health`는 현재 라우트·백엔드 전달 설정이 없어 404이며 Spring health와 다른 주소입니다. Spring도 위 명령으로 별도 실행해야 합니다. 서버·포트·경로와 404·접속 실패·503의 차이는 [학습 문서](docs/LEARNING.md#health-주소와-404를-구별하기)를 참고합니다.
 
@@ -168,7 +168,7 @@ $env:MAVEN_USER_HOME = Join-Path $PWD '.local/maven'
 java -jar backend/target/backend-0.0.1-SNAPSHOT.jar
 ```
 
-`check:backend`는 Windows의 `.local/java`가 있으면 자식 세션에 로컬 환경을 적용하고 Maven `test`를 실행합니다. DB를 자동 시작하지 않으므로 중지 상태에서는 위 시작 명령을 먼저 실행합니다. 테스트는 실제 PostgreSQL 접속·서울 시간대, 마이그레이션·중복 적용 방지, HTTP health와 환경 설정 미노출 및 수집의 중복·충돌·실패 보존·예산·갱신 정책을 검사합니다. 실행마다 임의의 `p10_test_<UUID>`·`p11_test_<UUID>` 스키마를 만들고 테스트 종료 단계에서 해당 스키마만 삭제합니다. 프로세스 강제 종료·DB 장애로 정리되지 않은 테스트 스키마는 앱 스키마와 구별하여 따로 정리합니다. 기존 앱·원천 데이터는 테스트에서 삭제하지 않습니다.
+`check:backend`는 Windows의 `.local/java`가 있으면 자식 세션에 로컬 환경을 적용하고 Maven `test`를 실행합니다. DB를 자동 시작하지 않으므로 중지 상태에서는 위 시작 명령을 먼저 실행합니다. 테스트는 실제 PostgreSQL 접속·서울 시간대, 마이그레이션·중복 적용 방지, HTTP health와 환경 설정 미노출 및 수집의 중복·충돌·실패 보존·예산·갱신 정책을 검사합니다. 조회 API는 검색·정렬·페이지·서울 날짜 경계·비공개 보호·상세 근거·0건/404/400/503을 검사합니다. 실행마다 임의의 `p10_test_<UUID>`·`p11_test_<UUID>`·`p12_test_<UUID>` 스키마를 만들고 테스트 종료 단계에서 해당 스키마만 삭제합니다. 프로세스 강제 종료·DB 장애로 정리되지 않은 테스트 스키마는 앱 스키마와 구별하여 따로 정리합니다. 기존 앱·원천 데이터는 테스트에서 삭제하지 않습니다.
 
 `verify`는 같은 테스트와 실행 JAR 빌드를 수행합니다. 테스트 결과는 `backend/target/surefire-reports/`에 있으며 빌드 결과와 로컬 Maven 캐시는 Git에서 제외합니다. Linux에서는 JDK 21과 위 세 DB 환경 변수를 준비하고 `cd backend` 후 `./mvnw -B -ntp verify`로 검증합니다. CI는 PostgreSQL 18.6 서비스를 새로 준비해 이 명령을 실행하며 실제 로컬 비밀번호를 사용하지 않습니다.
 
