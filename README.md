@@ -2,7 +2,7 @@
 
 전국 축제·행사·전시·박물관·문화관광지를 발견하고, 관심 있는 곳의 일정·요금·방문 정보를 공식 출처로 확인하는 개인 웹 서비스입니다. 검색 유입과 광고 수익을 목표로 합니다. 현재 제공 범위와 후속 기능은 [PRD](docs/PRD.md)에서 관리합니다.
 
-서비스를 만들고 운영하면서 Java·Spring·React를 학습하는 것도 개발 목적입니다. Java 문법·어노테이션부터 기능의 선택 이유·동작 흐름·대안과 실제 코드를 [학습 문서](docs/LEARNING.md)에 연결해 설명하고, 작은 변경·결과 예측으로 이해를 확인합니다. 학습 협업 방식은 [AGENTS](AGENTS.md#개발과-학습)를 따릅니다.
+서비스를 만들고 운영하면서 Java·Spring·React를 학습하는 것도 개발 목적입니다. 현재 코드·설정·파일 구조의 문법·핵심 식별자·동작 흐름과 구현 선택 이유를 [학습 문서](docs/LEARNING.md)에 연결해 설명하고, 작은 변경·결과 예측으로 이해를 확인합니다. 학습 협업 방식은 [AGENTS](AGENTS.md#개발과-학습)를 따릅니다.
 
 ## 기술 구성
 
@@ -17,9 +17,9 @@
 | [PLAN.md](PLAN.md) | 항목 번호·완료 기준이 있는 작업 체크리스트 |
 | `docs/WORKLOG.md` (로컬 전용) | PLAN 항목에 연결한 날짜별 결과·검증·리뷰. Git 추적 제외 |
 | [docs/PRD.md](docs/PRD.md) | 제품 요구사항: 무엇을 만들고 어떤 동작을 제공할지 |
-| [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) | 원천별 제공 항목·표본·이용 조건과 수집 전 검증 사항 |
-| [docs/LEARNING.md](docs/LEARNING.md) | 기존 선택의 이유·이점·대안, 실제 코드와 확인 방법, 이후 학습 기록 형식 |
-| [DESIGN.md](DESIGN.md) | 디자인 후보와 확정 결과 |
+| [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md) | 원천별 표본·출처·이용 조건과 현재 수집/후속 검토 기준 |
+| [docs/LEARNING.md](docs/LEARNING.md) | 현재 코드·파일 역할·문법·호출/데이터 흐름·구현 이유·확인 방법 |
+| [DESIGN.md](DESIGN.md) | 현재 선택·미확정 검토안과 필요한 과거 결정 근거 |
 | [AGENTS.md](AGENTS.md) | 계획에 따른 작업·검증·기록 규칙 |
 | [frontend/AGENTS.md](frontend/AGENTS.md) | Next.js 작업에 필요한 추가 안내 |
 | [frontend/README.md](frontend/README.md) | 프론트 폴더 안내와 공통 문서 연결 |
@@ -27,19 +27,11 @@
 
 ## 작업 흐름
 
-PLAN의 항목 선택 → 작업·검증·리뷰 → 같은 번호로 WORKLOG 기록 → 완료 기준을 충족하면 PLAN에 ✅를 표시합니다. 미완료 항목은 [ ]로 유지합니다.
+[PLAN](PLAN.md)의 항목을 골라 구현·검증·리뷰하고, 실제 결과는 로컬 docs/WORKLOG.md에 기록합니다. 완료 기준을 충족한 항목만 ✅로 표시합니다.
 
-완료한 플랜의 변경은 검증·자체 리뷰와 커밋 훅 검사를 통과하면 자동으로 로컬 커밋합니다. 디자인 관련 변경은 예외로, 명시적인 커밋 요청이 있을 때만 커밋합니다. 미확정 시안은 저장소 밖에서 검토하며 경로는 로컬 WORKLOG에 기록합니다. 커밋 묶음과 포함 범위는 [AGENTS의 브랜치와 커밋](AGENTS.md#브랜치와-커밋)을 따릅니다. 푸시·PR 생성·main 반영·배포는 별도로 허용된 요청 범위에서 수행합니다.
+작업·학습·문서 관리·브랜치·커밋·원격 반영 규칙은 [AGENTS](AGENTS.md)를 따릅니다. 완료 작업은 검증과 훅 통과 뒤 로컬 커밋하며 디자인 변경은 명시적인 커밋 요청이 필요합니다. 푸시·PR·main 반영·배포는 허용된 요청 범위에서 수행합니다.
 
-PLAN은 Git으로 공유하고 WORKLOG는 로컬에 보관합니다. 새로 복제한 환경에서는 첫 결과 기록 시 WORKLOG를 생성합니다. 생성 형식과 관리 규칙은 [AGENTS의 로컬 작업 기록](AGENTS.md#로컬-작업-기록)을 따릅니다. 변경 이유·검증 결과는 해당 커밋·PR 본문에도 남깁니다.
-
-일일 계획은 기존 미완료 항목에서 선택합니다. 여러 날에 걸친 작업은 같은 번호를 유지하고 WORKLOG에 날짜별 결과를 남깁니다.
-
-PRD는 제품 기준, DESIGN은 디자인 결정, 학습 문서는 개념·구조·선택 이유를 담습니다. README와 AGENTS에는 매 작업의 진행 상태를 복사하지 않고 안내·규칙이 바뀔 때만 반영합니다. 구체적인 관리 규칙은 AGENTS를 참고합니다.
-
-커밋 전 변경 diff를 자체 리뷰하고 검토 범위·발견한 문제·처리를 WORKLOG에 짧게 남깁니다. 검증 명령의 성공과 리뷰 결과는 구분하며, 미검토 내용은 완료한 리뷰로 기록하지 않습니다. 리뷰 기준은 [AGENTS](AGENTS.md#코드문서-리뷰)를 따릅니다.
-
-“리뷰 후 PR·자동 머지까지” 요청하면 검토·필요한 수정·검증 후, 미커밋 변경을 저장하고 푸시·PR·조건 충족 후 머지까지 진행합니다. 머지 성공을 확인하면 main으로 돌아오고 해당 작업의 로컬·원격 브랜치도 정리합니다. 반영되지 않은 변경이 있으면 보존하고 정리를 보류합니다. 리뷰만 요청했을 때의 작업 범위와 상세 규칙은 [브랜치와 커밋](AGENTS.md#브랜치와-커밋)을 참고합니다. 자동 머지는 저장소에서 활성화하고 필수 검사·리뷰 조건을 충족해야 합니다. [GitHub 자동 머지 안내](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/automatically-merging-a-pull-request)
+WORKLOG는 Git에서 제외하며 새 환경에서는 첫 작업 결과를 기록할 때 생성합니다. 형식은 [로컬 작업 기록 규칙](AGENTS.md#로컬-작업-기록)을 따릅니다.
 
 ## UI 디자인 가이드 확인
 
@@ -160,7 +152,7 @@ $env:MAVEN_USER_HOME = Join-Path $PWD '.local/maven'
 
 기본 포트는 8080이며 종료는 Ctrl+C입니다. [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)는 DB가 연결되면 HTTP 200과 `{"status":"UP"}`을 반환하고 DB 장애 시 HTTP 503을 반환합니다. 공개 엔드포인트는 health만 사용하며 DB·환경 설정 상세는 공개하지 않습니다. 실행 중 포트 충돌이 있으면 `"-Dspring-boot.run.arguments=--server.port=8081"`을 추가합니다.
 
-`npm run dev`는 Next.js 프론트만 시작합니다. 프론트의 `http://localhost:3000/api/health`는 현재 라우트·백엔드 전달 설정이 없어 404이며 Spring health와 다른 주소입니다. Spring도 위 명령으로 별도 실행해야 합니다. 서버·포트·경로와 404·접속 실패·503의 차이는 [학습 문서](docs/LEARNING.md#p10-health-주소와-404를-구별하기)를 참고합니다.
+`npm run dev`는 Next.js 프론트만 시작합니다. 프론트의 `http://localhost:3000/api/health`는 현재 라우트·백엔드 전달 설정이 없어 404이며 Spring health와 다른 주소입니다. Spring도 위 명령으로 별도 실행해야 합니다. 서버·포트·경로와 404·접속 실패·503의 차이는 [학습 문서](docs/LEARNING.md#health-주소와-404를-구별하기)를 참고합니다.
 
 일반 서버 실행에서 설정 파일은 Spring이 직접 읽지 않고 `use-local-env.ps1`이 공통/폴더별 설정의 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`를 현재 세션으로 전달합니다. 실제 비밀번호를 명령 인수에 넣지 않습니다. PostgreSQL JDBC·Flyway·Actuator·Spring MVC를 사용합니다. P11 수집 실행은 아래 전용 실행기로 원천 키만 별도로 읽습니다. JDBC와 Flyway는 같은 전용 스키마를 사용하며 애플리케이션 DB 세션 시간대는 Asia/Seoul입니다.
 
