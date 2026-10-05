@@ -47,7 +47,7 @@ export function LoadingState() {
       aria-atomic="true"
     >
       <StateArt type="loading" />
-      <p className="state-title">나들이를 불러오고 있어요…</p>
+      <span className="sr-only">나들이를 불러오고 있어요.</span>
     </div>
   );
 }

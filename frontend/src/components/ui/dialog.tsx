@@ -83,6 +83,7 @@ export function ReviewDialog({
     const previousContainerOverflow = container?.style.overflowY || "";
     const previousOverflow = document.body.style.overflow;
     dialog.showModal();
+    window.dispatchEvent(new Event("review-dialog-state"));
     document.body.style.overflow = "hidden";
     position();
     scrollReviewTo(scroll);
@@ -96,6 +97,7 @@ export function ReviewDialog({
       dialog.style.removeProperty("height");
       dialog.style.removeProperty("translate");
       boundsRef.current = null;
+      window.dispatchEvent(new Event("review-dialog-state"));
       document.body.style.overflow = previousOverflow;
       if (container) container.style.overflowY = previousContainerOverflow;
       scrollReviewTo(scroll);

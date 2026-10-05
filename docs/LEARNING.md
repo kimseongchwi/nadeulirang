@@ -368,7 +368,11 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 `HomeReview`의 `chipDrag`는 마우스 이동이 6px 이상일 때 드래그로 처리하고 `scrollLeft`를 바꾼다. 드래그 뒤 클릭을 억제하며 터치는 네이티브 스크롤을 유지한다. `overflow-x`만 쓰는 대안은 간단하지만 마우스로 끄는 동작을 따로 제공하지 않는다. 방향키·정상 클릭·`pointercancel`을 함께 확인한다.
 
-[feedback.tsx](../frontend/src/components/ui/feedback.tsx)의 `LoadingState`·`EmptyState`·`ErrorState`는 로딩·정상 0건·요청 실패를 구분한다. 로딩은 `role=status`로 알리고 장식 아이콘은 읽기에서 제외한다. 심볼은 CSS mask와 transform으로 움직이며 reduced-motion에서는 정적이다. 가이드의 재시도는 표시 예시이므로 실제 요청 오류의 검증을 대신하지 않는다.
+[feedback.tsx](../frontend/src/components/ui/feedback.tsx)의 `LoadingState`·`EmptyState`·`ErrorState`는 로딩·정상 0건·요청 실패를 구분한다. 로딩은 사람 심볼만 눈에 보이고 `role=status`·`aria-live`와 시각적으로 숨긴 글씨로 읽기 도구에 알린다. 장식 심볼은 읽기에서 제외하며 CSS mask와 transform으로 움직이고 reduced-motion에서는 정적이다. 가이드의 재시도는 표시 예시이므로 실제 요청 오류의 검증을 대신하지 않는다.
+
+관련 작업: P51. 예전 `ReviewLink` 안의 `LinkPending`과 공통 `ReviewShell`이 각각 고정 위치의 이동 문구를 만들던 것을 하나의 진행 표시로 합쳤다. `LinkPending`은 `useLinkStatus`의 pending을 고유 `useId`와 함께 Provider에 보고하고 화면 요소는 만들지 않는다. Provider는 링크 식별자의 Set과 `useTransition`의 pending을 합치므로 여러 링크나 코드 이동도 하나의 상태가 된다. 완료/언마운트에서 식별자를 제거하고 요청 재시도도 같은 `refresh` 경로를 사용한다.
+
+[navigation-progress.tsx](../frontend/src/components/layout/navigation-progress.tsx)의 `NavigationProgress`는 React DOM의 `createPortal`로 실제 서비스 영역 또는 열린 dialog에 사람 로딩 한 개를 표시한다. `useSyncExternalStore`는 공통 dialog의 열기/닫기 이벤트를 구독해 네이티브 모달이 열려 있을 때도 그 안으로 표시를 옮긴다. 고정 위치/절대 위치의 레이어라 버튼·본문 크기를 바꾸지 않고 이동 중 화면을 흐리게 덮는다. route별 검색 loading.tsx를 제거해 같은 요청에 별도 fallback이 뜨지 않게 했으며, 간단 보기의 자체 조회도 페이지 이동 중에는 중복 로딩을 숨긴다. 초기 서버 HTML 응답을 기다리는 상태와 화면 안의 이동 진행은 구분한다. 확인은 지연된 다음 페이지·홈/검색·상세 이동의 단일 표시와 오류→재시도다.
 
 ### 브랜드·이미지·정책·개발 표시
 

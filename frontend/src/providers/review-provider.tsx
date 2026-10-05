@@ -8,6 +8,8 @@ import {
   useContext,
   useEffect,
   useRef,
+  useId,
+  useState,
   useSyncExternalStore,
   useTransition,
   type ReactNode,
@@ -64,7 +66,17 @@ function useReviewState(today: string) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
+  const [transitionPending, startTransition] = useTransition();
+  const [pendingLinks, setPendingLinks] = useState<Set<string>>(() => new Set());
+  const reportLinkPending = useCallback((id: string, active: boolean) => {
+    setPendingLinks((previous) => {
+      if (previous.has(id) === active) return previous;
+      const next = new Set(previous);
+      if (active) next.add(id); else next.delete(id);
+      return next;
+    });
+  }, []);
+  const pending = transitionPending || pendingLinks.size > 0;
   const [homeQuery, setHomeQuery] = useSetting(
     "outing-review-home-filters",
     "",
@@ -104,7 +116,7 @@ function useReviewState(today: string) {
     [router, saveScroll],
   );
   const back = useCallback(() => {
-    if (history.state?.reviewEntry) router.back();
+    if (history.state?.reviewEntry) startTransition(() => router.back());
     else navigate("/search");
   }, [router, navigate]);
   useEffect(() => {
@@ -172,6 +184,8 @@ function useReviewState(today: string) {
     pathname,
     params: new URLSearchParams(search),
     pending,
+    reportLinkPending,
+    refresh: () => startTransition(() => router.refresh()),
     upcomingDays,
     homeQuery,
     setHomeQuery,
@@ -229,5 +243,11 @@ export function ReviewLink({
 }
 function LinkPending() {
   const { pending } = useLinkStatus();
-  return pending ? <span className="navigation-loading" role="status">나들이를 불러오고 있어요…</span> : null;
+  const { reportLinkPending } = useReview();
+  const id = useId();
+  useEffect(() => {
+    reportLinkPending(id, pending);
+    return () => reportLinkPending(id, false);
+  }, [id, pending, reportLinkPending]);
+  return null;
 }

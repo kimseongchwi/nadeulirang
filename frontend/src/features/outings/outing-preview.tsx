@@ -13,7 +13,7 @@ import { previewLocation } from "./api-query";
 import { isDetail } from "./api-contract";
 
 export function OutingPreview({ item, open, sample = false }: { item: Outing; open: boolean; sample?: boolean }) {
-  const { closeSheet, navigate } = useReview();
+  const { closeSheet, navigate, pending } = useReview();
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<{ data?: Detail; status?: number } | null>(null);
   useEffect(() => {
@@ -41,7 +41,7 @@ export function OutingPreview({ item, open, sample = false }: { item: Outing; op
             {!permanent(item) && <div><dt><Icon name="calendar" />행사 일정</dt><dd>{period(item)}</dd></div>}
             <div><dt><Icon name="ticket" />운영·요금</dt><dd>상세 정보에서 보기</dd></div>
           </dl>
-          {!sample && (!result ? <LoadingState /> : result.status ? result.status === 404 ? <EmptyState title="공개된 정보를 찾을 수 없어요." description="삭제되거나 공개 대상에서 제외된 자료일 수 있어요." /> : <ErrorState onRetry={() => { setResult(null); setAttempt((value) => value + 1); }} /> : null)}
+          {!sample && !pending && (!result ? <LoadingState /> : result.status ? result.status === 404 ? <EmptyState title="공개된 정보를 찾을 수 없어요." description="삭제되거나 공개 대상에서 제외된 자료일 수 있어요." /> : <ErrorState onRetry={() => { setResult(null); setAttempt((value) => value + 1); }} /> : null)}
         </div>
       </div>
       <div className="outing-preview-actions"><button type="button" className="button primary" onClick={() => navigate(`/detail/${item.id}`, true)}>상세 정보 보기 <Icon name="next" /></button></div>

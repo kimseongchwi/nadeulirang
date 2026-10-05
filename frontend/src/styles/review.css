@@ -2500,4 +2500,6 @@ dialog[open]::backdrop { opacity: 1; }
 .evidence-label { display: block; color: var(--muted); font-size: 12px; font-weight: 400; }
 .outing-detail .page-head > p { font-size: 16px; margin: 0; }
 
-.navigation-loading { position: fixed; z-index: 30; right: 16px; bottom: 90px; max-width: calc(100vw - 32px); padding: 10px 16px; border-radius: 12px; background: var(--action); color: white; box-shadow: 0 4px 16px #0002; font-size: 13px; }
+.navigation-progress { position: fixed; inset: 0 0 var(--nav-height) 0; z-index: 25; display: grid; place-items: center; background: rgb(255 255 255 / .9); pointer-events: none; }
+dialog > .navigation-progress { position: absolute; inset: 0; border-radius: inherit; }
+.navigation-progress .loading { display: grid; place-items: center; }

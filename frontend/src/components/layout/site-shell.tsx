@@ -9,6 +9,7 @@ import { ReviewLink, useReview } from "@/providers/review-provider";
 import { PolicyLinks } from "@/features/policies/policy-links";
 import { PolicySheet } from "@/features/policies/policy-sheet";
 import { ReviewDevTools } from "@/components/layout/review-dev-tools";
+import { NavigationProgress } from "./navigation-progress";
 
 export function ReviewShell({ children }: { children: ReactNode }) {
   const { pathname, homeUrl, searchUrl, hash, pending } = useReview();
@@ -117,7 +118,6 @@ export function ReviewShell({ children }: { children: ReactNode }) {
               </>
             )}
             <main id="main" tabIndex={-1} aria-busy={pending}>
-              {pending && <span className="navigation-loading" role="status">나들이를 불러오고 있어요…</span>}
               {children}
             </main>
             {!guide && (
@@ -175,6 +175,7 @@ export function ReviewShell({ children }: { children: ReactNode }) {
           )}
         </div>
       </div>
+      {pending && <NavigationProgress />}
       <ReviewDialog
         open={menuOpen}
         id="menuDialog"
