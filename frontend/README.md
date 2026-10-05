@@ -22,4 +22,4 @@ Next.js + TypeScript 기반 프론트엔드다. 같은 개발 서버의 /ui-desi
 
 app의 page.tsx가 features의 화면을 불러오고, 각 화면은 components의 공통 UI를 사용한다. 가이드의 모바일 미리보기도 같은 홈·검색·상세 페이지를 사용한다. components·features 같은 폴더 이름은 이 프로젝트의 역할 분류이며 Next.js의 필수 이름이 아니다.
 
-[brand.ts](src/config/brand.ts)의 팔레트를 [ReviewShell](src/components/layout/site-shell.tsx)의 CSS 변수와 [icon.ts](src/app/icon.ts)의 파비콘 응답이 공유한다. public/images의 파일은 /images/... 주소로 제공한다. 검토 스냅샷은 [review-data.json](src/features/outings/data/review-data.json)에 보관하며 조회 API 연결은 P12·P13에서 이어간다.
+[brand.ts](src/config/brand.ts)의 팔레트를 [ReviewShell](src/components/layout/site-shell.tsx)의 CSS 변수와 [icon.ts](src/app/icon.ts)의 파비콘 응답이 공유한다. public/images의 파일은 /images/... 주소로 제공한다. 검토 스냅샷은 [review-data.json](src/features/outings/data/review-data.json)에 보관하며 구현한 조회 API의 화면 연결은 P13에서 이어간다.
