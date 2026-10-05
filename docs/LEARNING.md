@@ -9,7 +9,7 @@
 1. 기술별 역할과 폴더 구성에서 읽을 파일을 찾는다.
 2. Java 시작 코드 → 어노테이션 → Spring 시작·DB 연결 흐름을 읽는다.
 3. 수집 클래스의 타입·생성자·SQL·응답 처리를 따라간다.
-4. 프론트 페이지 → 화면 → 데이터·상태·팝업 흐름을 읽는다.
+4. 조회 컨트롤러 → DB 조회 → HTTP 응답과 프론트 페이지 → 화면 → 데이터·상태·팝업 흐름을 읽는다.
 5. 관련 테스트의 입력과 기대값으로 변경의 영향을 확인한다.
 
 ## 기술별 역할
@@ -215,6 +215,48 @@ health는 애플리케이션과 연결된 구성요소의 상태를 확인하는
 선택적 연습: `adultChrge`의 `""`, `"0"`, `"1000"`이 각각 어떤 요금 상태가 될지 예상하고 테스트와 비교한다. 서로 다른 원천의 1,000원과 3,000원을 연결했을 때 원문·일반 요금·내부 ID가 어떻게 되는지 찾아본다. 제품 코드를 바꾸지 않아도 테스트 입력과 기대값을 읽으며 확인할 수 있다.
 
 `parse`와 HTTP 응답 판정의 작은 예제는 [verify-tourapi.mjs](../scripts/verify-tourapi.mjs)의 summarizeResponse와 [도구 테스트](../tests/tooling/tourapi-validation.test.mjs)를 함께 본다. 이 Node.js 도구는 표본 확인용이며 실제 저장 흐름은 CollectionRunner → SourceClient → CollectionStore다.
+
+## 목록·상세 HTTP 조회와 공개 경계
+
+관련 작업: P12. 요청 조건·응답 필드·호출 예시는 [백엔드 API 안내](../backend/README.md#목록상세-조회-api)를 따른다.
+
+### 컨트롤러·생성자·응답 record를 읽기
+
+목록 요청의 흐름은 HTTP GET `/api/outings` → [OutingController.list](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingController.java) → `new OutingQuery(...)` → [OutingStore.list](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingStore.java) → PostgreSQL → `OutingResponse.Page` → JSON 응답이다. 상세는 `detail(UUID id)`가 같은 공개 조건을 확인한 뒤 근거와 출처를 추가한다. 수집기를 호출하지 않으므로 방문자마다 외부 원천 호출 예산을 쓰지 않는다.
+
+`OutingController`는 Java 클래스이며 `private final OutingStore store`와 `Clock clock`는 필드다. 생성자는 Spring이 전달한 조회 객체와 시계를 저장한다. `list(...)`는 문자열 조건·정수 페이지를 받아 `OutingResponse.Page`를 반환하는 메서드다. 외부 입력은 검증한 `OutingQuery`로 바꾼다. `record`의 간결한 생성자 `public OutingQuery { ... }`는 매개변수를 정리하고 허용하지 않은 값에 `IllegalArgumentException`을 던진다. `offset()`의 `(long) page`는 정수 곱셈 전에 64비트 값으로 바꿔 매우 큰 페이지 번호의 오버플로를 막는다.
+
+[OutingResponse](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingResponse.java)의 `Page`, `Summary`, `Detail` 등은 Java `record`다. `List<Summary>`는 목록 항목의 타입을 지정하고, `Map<String, List<Evidence>>`는 정보 그룹명에 여러 출처 근거를 연결한다. `UUID`·`LocalDate`·`Instant`·`BigDecimal`은 각각 식별자·달력 날짜·시각·십진수 금액을 표현하는 Java 타입이다. `adultFee == null`은 미확인이며 0원과 다르다. record가 JSON을 만드는 것은 아니며 Spring MVC의 응답 처리와 Jackson이 접근 메서드의 값을 JSON으로 직렬화한다.
+
+`@RestController`, `@RequestMapping`, `@GetMapping`, `@RequestParam`, `@PathVariable`은 `org.springframework.web.bind.annotation`에서 가져온다. `@RestController`는 클래스, 나머지는 클래스/메서드/매개변수에 붙는다. Spring MVC가 시작 때 `/api/outings`와 GET 메서드의 연결을 등록하고, 요청 시 `defaultValue`와 매개변수 타입에 따라 조건을 읽는다. `/{id}`의 문자열은 `UUID`로 변환되며 올바르지 않으면 조회 전에 입력 오류가 발생한다. 어노테이션 자체가 DB 조회를 실행하는 것은 아니다. 요청을 처리하는 메서드가 `store.list(...)`·`store.detail(...)`를 호출할 때 실행된다.
+
+### SQL 조회·날짜·한 응답의 일관성
+
+`OutingStore`는 기존 `JdbcTemplate`로 SQL을 실행한다. 새 JPA 의존성이나 별도 서비스 계층은 추가하지 않았다. 현재는 조회 조합과 응답 변환이 한 클래스 안에서 확인 가능하며, 업무 규칙이 늘어나면 책임 분리를 다시 판단할 수 있다. SQL을 직접 유지하는 비용이 있다.
+
+`CANDIDATES`는 Java 텍스트 블록에 저장한 SQL이다. PostgreSQL의 `WITH candidates AS (...)`는 이어지는 조회에서 사용할 임시 결과 이름이며 새 테이블을 저장하지 않는다. 승인·표출·허용 라이선스·실제 원문 존재 조건을 먼저 적용한다. 이후 목록은 `ENDED`·`CANCELLED`를 제외하고 상세는 ID 조건만 추가한다. 수집용 `public_candidate` 뷰는 취소를 제외하므로, 그대로 상세에 사용하면 공개 상세에서 취소 안내를 볼 수 없는 문제를 피했다. 기존 마이그레이션과 뷰는 수정하지 않았다.
+
+`Clock`은 Java의 현재 시각 공급 타입이다. [OutingTimeConfiguration](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingTimeConfiguration.java)의 `@Configuration`·`@Bean`은 `org.springframework.context.annotation`에서 가져오며 클래스·메서드에 붙는다. Spring이 시작할 때 `outingClock()`을 호출해 반환한 `Clock.systemUTC()`를 빈으로 등록하고 컨트롤러 생성자에 제공한다. `clock.instant()`로 얻은 한 시각을 `CollectionPolicy.SEOUL`로 바꿔 조회 전체에 같은 날짜를 적용한다. 테스트에서는 `Clock.fixed(...)`를 전달해 PC의 실제 날짜와 무관하게 서울 자정을 재현한다.
+
+SQL `CASE`는 저장된 취소/종료 상태를 보존하고, 날짜가 있는 행사의 시작·종료를 현재 서울 날짜와 비교해 진행 중/예정/종료를 계산한다. 종료일과 같은 날은 진행 중이며 다음 날부터 목록에서 빠진다. 상설 시설은 시설 분류일 뿐 휴관·당일 운영을 확인했다는 뜻이 아니다. `operationVerified`와 근거별 확인 시각을 따로 읽어야 한다.
+
+조건의 `?`는 값 바인딩이다. `strpos(lower(name), lower(?))`는 `%`·`_`를 와일드카드로 바꾸지 않고 이름에 해당 문자가 실제 있는지 찾는다. 정렬 SQL은 요청 문자열을 직접 붙이지 않고 검증한 세 가지 값에 대응하는 고정 SQL만 반환한다. 이름에는 PostgreSQL의 `COLLATE "C"`를 명시해 DB 생성 때의 기본 로케일이 달라도 같은 UTF-8 바이트 순으로 비교한다. 이는 언어별 사전식 정렬과 다르지만 배포 환경마다 목록 순서가 달라지는 일을 막는다. 같은 시작일/이름의 동률은 UUID로 정해 페이지 경계의 불필요한 순서 변화를 줄인다.
+
+`@Transactional`은 `org.springframework.transaction.annotation.Transactional`에서 가져와 저장소 클래스에 붙인다. `readOnly = true`, `isolation = Isolation.REPEATABLE_READ`를 Spring의 트랜잭션 인터셉터가 외부 메서드 호출 시 적용한다. 총건수와 페이지 항목, 상세 공개 조건과 근거를 같은 DB 스냅샷에서 읽어 수집이 동시에 갱신해도 한 응답 안의 값이 서로 다른 순간의 값으로 섞이지 않게 한다. 트랜잭션이 필요해 DB 연결을 잠시 유지하는 비용이 있고, 다음 페이지 요청까지 영구 스냅샷을 유지하지는 않는다.
+
+### 마지막 성공 근거·미확인·오류의 차이
+
+상세 근거 SQL은 `record_operation.last_success_call = source_observation.call_id`로 각 오퍼레이션의 마지막 성공 원문을 찾는다. 수집 실패는 이 연결을 유지하고 실패 시각을 따로 남기므로 마지막 정상 문장을 읽을 수 있다. 정상 0건은 연결을 `NULL`로 만들고, 새 응답에서 빠진 필드는 새 원문에 없으므로 과거 값을 복원하지 않는다. 수집 시각과 원천 기준일/수정 시각, 마지막 응답 성공 시각을 서로 바꾸지 않는다.
+
+`information`은 허용한 방문 정보 필드만 그룹으로 묶고 원천별 값을 보존한다. `observationId`는 반복 안내의 제목/본문을 같은 원문 행으로 연결한다. 주차·조건부 요금 문장이 섞인 `infotext`를 일반 입장료로 자동 분류하지 않는다. 빈 추가 요금을 무료로, 빈 할인을 할인 없음으로 바꾸지 않는다. 충돌 요금은 P11에서 계산한 `UNKNOWN`/`feeConflict`와 여러 원천의 문장을 함께 반환한다.
+
+각 `Evidence.stale`은 해당 필드의 확인 시각을 쓰며 다른 오퍼레이션의 새 성공으로 오래된 운영 정보가 최신이 되지 않는다. HTTP(S) 링크는 원문의 명시적 주소만 `CollectionPolicy.safeLink`로 추출하며 HTML·예약 문장을 실행하거나 링크/조건을 만들어 내지 않는다. 프론트에서는 문장을 텍스트로 표시해야 한다. 현재 공식 공지의 구조화된 적용 기간/할인/예약 판단을 구현하지 않았으며 원천 문장과 `unconfirmed`를 함께 제공한다.
+
+[OutingErrorHandler](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingErrorHandler.java)의 `@RestControllerAdvice(assignableTypes = OutingController.class)`·`@ExceptionHandler`는 `org.springframework.web.bind.annotation`의 라이브러리 기능이다. Spring MVC가 이 컨트롤러의 요청 처리 중 발생한 지정 예외를 연결된 메서드로 전달한다. 없는/비공개 ID의 `OutingNotFoundException`은 404, 조건/타입 오류는 400, `DataAccessException`·`TransactionException`은 재시도 가능한 503이다. DB 오류를 빈 목록이나 404로 바꾸면 장애를 정상 데이터 없음으로 오인하므로 구분한다. SQL·접속 설정·오류 원문은 응답에 넣지 않는다.
+
+확인은 [OutingApiTests](../backend/src/test/java/kr/nadeulirang/backend/outing/OutingApiTests.java)의 실제 PostgreSQL·HTTP 테스트다. 임의의 `p12_test_<UUID>` 스키마에서 검색 조합·문자 검색·안정된 페이지·서울 자정·공개 보호·출처/충돌·실패/0건·오류 응답을 확인하고 해당 스키마만 정리한다. 장애 테스트는 격리 스키마의 `outing` 이름을 잠시 바꿔 SQL 실패를 만들고 `finally`에서 복구한다. 앱 스키마의 자료는 수정하지 않는다.
+
+선택적 연습: 종료일이 10월 5일인 행사를 서울 10월 5일 23:59:59와 10월 6일 00:00:00에 조회하면 목록·상세가 어떻게 달라지는지 `computesPeriodAtReadTime`의 입력과 비교한다. 결과가 없는 정상 검색과 DB 장애에서 HTTP 상태·본문이 어떻게 다른지도 찾아본다.
 
 ## 프론트 파일과 실행 흐름
 
