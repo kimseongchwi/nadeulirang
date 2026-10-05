@@ -22,7 +22,9 @@ public class OutingStore {
     // 상세에서는 취소도 공개 가능하다. 검토·표출·이용허락·원문 확보 조건은 모든 조회에 적용한다.
     private static final String CANDIDATES = """
         WITH candidates AS (
-            SELECT o.*,
+            SELECT o.*, a.id AS photo_id, a.original_url AS photo_url, a.thumbnail_url AS photo_thumbnail,
+                a.provider AS photo_provider, a.attribution_url AS photo_attribution,
+                a.license_code AS photo_license, a.checked_at AS photo_checked_at,
                 CASE WHEN lifecycle = 'CANCELLED' THEN 'CANCELLED'
                      WHEN lifecycle = 'ENDED' THEN 'ENDED'
                      WHEN kind IN ('MUSEUM', 'CULTURAL_SITE') THEN 'PERMANENT'
@@ -33,7 +35,15 @@ public class OutingStore {
                     WHERE r.outing_id = o.id AND r.license IN ('KOGL1_DATA', 'TOUR_DATA')) AS collected_at,
                 (SELECT max(r.last_success_at) FROM source_record r WHERE r.outing_id = o.id
                     AND r.license IN ('KOGL1_DATA', 'TOUR_DATA')) AS source_checked_at
-            FROM outing o WHERE review_status = 'APPROVED' AND visibility = 'VISIBLE'
+            FROM outing o LEFT JOIN LATERAL (
+                SELECT a.* FROM file_asset a JOIN source_record r ON r.id=a.record_id
+                JOIN record_operation op ON op.record_id=r.id AND op.operation='detailCommon2'
+                JOIN source_observation b ON b.id=a.observation_id AND b.call_id=op.last_success_call
+                WHERE r.outing_id=o.id AND r.source='TOUR' AND r.license='TOUR_DATA'
+                    AND a.active AND a.license_code='KOGL1' AND b.raw_row->>'cpyrhtDivCd'='Type1'
+                ORDER BY a.checked_at DESC, a.id LIMIT 1
+            ) a ON true
+            WHERE review_status = 'APPROVED' AND visibility = 'VISIBLE'
                 AND name <> '' AND kind IS NOT NULL AND region_code IS NOT NULL AND region_name IS NOT NULL
                 AND EXISTS (SELECT 1 FROM source_record r JOIN source_observation b ON b.record_id = r.id
                     WHERE r.outing_id = o.id AND r.license IN ('KOGL1_DATA', 'TOUR_DATA'))
@@ -164,7 +174,10 @@ public class OutingStore {
                 rs.getString("region_code"), rs.getString("region_name"), rs.getString("period"),
                 rs.getObject("event_start", LocalDate.class), rs.getObject("event_end", LocalDate.class),
                 rs.getString("fee_status"), rs.getBigDecimal("adult_fee"), rs.getBoolean("fee_conflict"),
-                rs.getBoolean("operation_verified"), instant(rs, "collected_at"), instant(rs, "source_checked_at"));
+                rs.getBoolean("operation_verified"), instant(rs, "collected_at"), instant(rs, "source_checked_at"),
+                rs.getObject("photo_id") == null ? null : new OutingResponse.Photo(rs.getObject("photo_id", UUID.class),
+                    rs.getString("photo_url"), rs.getString("photo_thumbnail"), rs.getString("photo_provider"),
+                    rs.getString("photo_attribution"), rs.getString("photo_license"), instant(rs, "photo_checked_at")));
     }
 
     private static Instant instant(ResultSet rs, String column) throws SQLException {

@@ -283,6 +283,53 @@ class OutingApiTests {
         assertThat(olderEvidence.path("sources").get(0).path("stale").asBoolean()).isFalse();
     }
 
+    @Test @DisplayName("대표 사진은 중복 없이 재수집하고 실패 보존·유형 변경·사진 제거를 반영한다")
+    void storesRepresentativePhotoHistory() throws Exception {
+        UUID id = save("사진 시설", "MUSEUM", "11", "", "");
+        var row = json.createObjectNode().put("contentid", "1").put("title", "사진 시설")
+            .put("firstimage", "http://tong.visitkorea.or.kr/cms/resource/01/123_image2_1.jpg")
+            .put("firstimage2", "https://tong.visitkorea.or.kr/cms/resource/01/123_image3_1.jpg")
+            .put("cpyrhtDivCd", "Type1");
+        ingest(row, "detailCommon2", "MUSEUM", "11", NOW.minusSeconds(10));
+        ingest(row, "detailCommon2", "MUSEUM", "11", NOW.minusSeconds(8));
+        var photo = body(get("/" + id)).path("item").path("photo");
+        assertThat(photo.path("url").asText()).isEqualTo("https://tong.visitkorea.or.kr/cms/resource/01/123_image2_1.jpg");
+        assertThat(photo.path("license").asText()).isEqualTo("KOGL1");
+        assertThat(photo.path("provider").asText()).isEqualTo("한국관광공사 TourAPI");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM file_asset", Integer.class)).isEqualTo(1);
+        assertThat(outings.list(query("ALL", "DEFAULT", 1), NOW).items().getFirst().photo().id()).isEqualTo(UUID.fromString(photo.path("id").asText()));
+        collection.failedRecord(Source.TOUR, "1", "detailCommon2", "CONNECTION_FAILED", NOW.minusSeconds(6));
+        assertThat(outings.detail(id, NOW).item().photo()).isNotNull();
+        ingest(row.put("cpyrhtDivCd", "Type3"), "detailCommon2", "MUSEUM", "11", NOW.minusSeconds(4));
+        assertThat(outings.detail(id, NOW).item().photo()).isNull();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM file_asset WHERE active", Integer.class)).isZero();
+        ingest(row.put("cpyrhtDivCd", "Type1").put("firstimage", "https://tong.visitkorea.or.kr/cms/resource/01/124_image2_1.jpg"), "detailCommon2", "MUSEUM", "11", NOW.minusSeconds(2));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM file_asset", Integer.class)).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM file_asset WHERE active", Integer.class)).isEqualTo(1);
+        ingest(row.put("firstimage", ""), "detailCommon2", "MUSEUM", "11", NOW);
+        assertThat(outings.detail(id, NOW).item().photo()).isNull();
+    }
+
+    @Test @DisplayName("임의 호스트·쿼리·미확인 유형 사진은 거부하고 비공개 항목의 사진을 노출하지 않는다")
+    void protectsPhotoBoundaries() throws Exception {
+        UUID id = save("사진 시설", "MUSEUM", "11", "", "");
+        var row = json.createObjectNode().put("contentid", "1").put("title", "사진 시설").put("cpyrhtDivCd", "Type1");
+        String allowed = "https://tong.visitkorea.or.kr/cms/resource/01/123_image2_1.jpg";
+        int index = 0;
+        for (String bad : java.util.List.of("https://evil.example/x.jpg", allowed + "?serviceKey=x", "https://tong.visitkorea.or.kr.evil.example/x.jpg", "javascript:x")) {
+            ingest(row.put("firstimage", bad), "detailCommon2", "MUSEUM", "11", NOW.minusSeconds(20).plusSeconds(index++));
+            assertThat(outings.detail(id, NOW).item().photo()).isNull();
+        }
+        for (String license : java.util.List.of("", "Type2", "Type3", "Type4")) {
+            ingest(row.put("firstimage", allowed).put("cpyrhtDivCd", license), "detailCommon2", "MUSEUM", "11", NOW.minusSeconds(10).plusSeconds(index++));
+            assertThat(outings.detail(id, NOW).item().photo()).isNull();
+        }
+        ingest(row.put("cpyrhtDivCd", "Type1"), "detailCommon2", "MUSEUM", "11", NOW);
+        jdbc.update("UPDATE outing SET visibility='HIDDEN' WHERE id=?", id);
+        assertThat(get("/" + id).statusCode()).isEqualTo(404);
+        assertThat(body(get("")).path("total").asLong()).isZero();
+    }
+
     private UUID save(String name, String kind, String region, String start, String end) {
         var row = json.createObjectNode().put("contentid", Integer.toString(++sequence)).put("title", name)
                 .put("eventstartdate", start).put("eventenddate", end).put("addr1", "확보한 주소");

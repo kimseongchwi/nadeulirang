@@ -10,10 +10,13 @@ import java.util.UUID;
 public final class OutingResponse {
     private OutingResponse() { }
 
+    public record Photo(UUID id, String url, String thumbnailUrl, String provider,
+                        String attributionUrl, String license, Instant checkedAt) { }
+
     public record Summary(UUID id, String name, String kind, String regionCode, String regionName,
                           String period, LocalDate eventStart, LocalDate eventEnd, String feeStatus,
                           BigDecimal adultFee, boolean feeConflict, boolean operationVerified,
-                          Instant collectedAt, Instant sourceCheckedAt) { }
+                          Instant collectedAt, Instant sourceCheckedAt, Photo photo) { }
 
     public record Page(List<Summary> items, int page, int pageSize, long total, LocalDate asOfDate) { }
     public record Home(List<Summary> ongoing, List<Summary> upcoming, List<Summary> permanent,
