@@ -4,7 +4,7 @@ import { ReviewDialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icons";
 import { Badge } from "./outing-badge";
 import { OutingArtwork } from "@/features/outings/outing-artwork";
-import { kindNames, period, permanent, type Outing } from "@/features/outings/model";
+import { kindNames, period, permanent, regionLabel, type Outing } from "@/features/outings/model";
 import { useReview } from "@/providers/review-provider";
 import { useEffect, useState } from "react";
 import type { Detail } from "./api-types";
@@ -37,7 +37,7 @@ export function OutingPreview({ item, open, sample = false }: { item: Outing; op
           <h2>{item.name}</h2>
           <Badge item={item} />
           <dl className="preview-facts">
-            <div><dt><Icon name="pin" />위치</dt><dd>{result?.data ? previewLocation(result.data) : `${item.region_name}${sample && item.district_name ? ` ${item.district_name}` : ""}`}</dd></div>
+            <div><dt><Icon name="pin" />위치</dt><dd>{result?.data ? previewLocation(result.data) : regionLabel(item.region_name, item.district_name)}</dd></div>
             {!permanent(item) && <div><dt><Icon name="calendar" />행사 일정</dt><dd>{period(item)}</dd></div>}
             <div><dt><Icon name="ticket" />운영·요금</dt><dd>상세 정보에서 보기</dd></div>
           </dl>

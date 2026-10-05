@@ -328,6 +328,12 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 상세의 `locationGroups`는 `eventplace`/`opar`를 행사 장소로 먼저 묶고 주소 필드를 각각 구분한다. 원문 배열을 `filter`로 나누어 독립된 `dt`/`dd` 행에 표시하며 원문 값은 바꾸지 않는다. `EvidenceList`의 `showLabels={false}`는 이미 제목이 있는 위치·소개·프로그램·추가 안내에서 내부 이름의 반복을 생략한다. 값이 서로 다르면 둘 다 보존하고 실제로 같은 위치인지는 추정하지 않는다.
 
+관련 작업: P53. [OutingStore](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingStore.java)의 공통 조회는 `record_operation.last_success_call = source_observation.call_id`로 각 오퍼레이션의 마지막 성공 주소 근거만 선택한다. SQL의 `array_agg`로 `addr1`·`rdnmadr`·`lnmadr`를 모으고 JDBC `ResultSet.getArray`의 배열을 `String[]`로 읽는다. 상세 주소와 과거 원문을 수정하지 않고 조회 응답의 `districtName`만 계산하며 카드마다 상세 API를 추가 호출하지 않는다.
+
+[OutingLocation.confirmedDistrict](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingLocation.java)는 `static` 메서드라 객체 생성 없이 호출한다. `String region`과 `String[] addresses`를 받아 주소가 정확한 시도 이름으로 시작할 때 첫 시군구를 읽는다. Java 라이브러리 `HashSet<String>`이 중복을 없애고, 후보가 하나일 때만 `String`을 반환한다. 주소 누락·서로 다른 시군구는 `null`이며 장소명·이전 주소로 추정하지 않는다. 격리 DB 테스트에서 오래된 주소의 제외·새 성공 응답 반영·충돌/빈 응답·원문 보존과 목록/홈/상세 일치를 확인한다.
+
+프론트 [api-contract.ts](../frontend/src/features/outings/api-contract.ts)가 `districtName`의 문자열 또는 `null` 계약을 검사하고 [model.ts](../frontend/src/features/outings/model.ts)의 `outingSummary`가 카드 모델로 전달한다. 공통 `regionLabel`로 홈·검색 카드와 간단 보기·상세의 `previewLocation`을 표시한다. `null`은 시도만 보여주므로 검토 표본으로 실제 자료를 채우지 않는다. 확인은 API 계약 회귀 테스트와 실제 카드→간단 보기→상세의 같은 지역 표시 및 좁은 화면이다.
+
 ### 사진 출처의 접힌 안내
 
 관련 작업: P50. [policy-content.tsx](../frontend/src/features/policies/policy-content.tsx)는 실제 서비스의 사진을 한국관광공사 TourAPI 제공 사진·공공누리 제1유형으로 묶고 제공처·이용 조건의 링크를 표시한다. 현재 API의 `Photo`와 타입 가드는 해당 제공처/유형만 허용하므로 사진이 늘 때마다 이름 목록을 추가하지 않는다. DB의 사진별 URL·근거·이용 조건은 화면의 공통 안내와 별도로 보존한다.

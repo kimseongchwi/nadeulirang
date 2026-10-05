@@ -1,6 +1,6 @@
 "use client";
 
-import { kindNames, period, permanent, type Outing } from "@/features/outings/model";
+import { kindNames, period, permanent, regionLabel, type Outing } from "@/features/outings/model";
 import { ReviewLink, useReview } from "@/providers/review-provider";
 import { Icon } from "@/components/ui/icons";
 import { OutingArtwork } from "@/features/outings/outing-artwork";
@@ -15,7 +15,7 @@ export function OutingCard({ item, sample = false }: { item: Outing; sample?: bo
       <button type="button" className="outing-card-open" aria-label={`${item.name} 간단 보기`} aria-haspopup="dialog" onClick={() => openSheet(`#outing-${item.id}`)}>
         <OutingArtwork item={item} />
         <span className="outing-card-content">
-          <span className="outing-card-meta">{item.region_name} <span>·</span> {kindNames[item.kind]}</span>
+          <span className="outing-card-meta">{regionLabel(item.region_name, item.district_name)} <span>·</span> {kindNames[item.kind]}</span>
           <span className="outing-card-name">{item.name}</span>
           <span className="outing-card-period">{permanent(item) ? "상설 · 운영일 확인 필요" : period(item)}</span>
           <span className="outing-card-bottom"><Badge item={item} /></span>

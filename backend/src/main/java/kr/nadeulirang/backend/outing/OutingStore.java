@@ -25,6 +25,12 @@ public class OutingStore {
             SELECT o.*, a.id AS photo_id, a.original_url AS photo_url, a.thumbnail_url AS photo_thumbnail,
                 a.provider AS photo_provider, a.attribution_url AS photo_attribution,
                 a.license_code AS photo_license, a.checked_at AS photo_checked_at,
+                (SELECT array_agg(f.value #>> '{}') FROM source_record r
+                    JOIN source_observation b ON b.record_id = r.id
+                    JOIN field_evidence f ON f.observation_id = b.id
+                    JOIN record_operation op ON op.record_id = r.id AND op.last_success_call = b.call_id
+                    WHERE r.outing_id = o.id AND r.license IN ('KOGL1_DATA', 'TOUR_DATA')
+                        AND f.field_name IN ('addr1', 'rdnmadr', 'lnmadr')) AS district_addresses,
                 CASE WHEN lifecycle = 'CANCELLED' THEN 'CANCELLED'
                      WHEN lifecycle = 'ENDED' THEN 'ENDED'
                      WHEN kind IN ('MUSEUM', 'CULTURAL_SITE') THEN 'PERMANENT'
@@ -171,13 +177,23 @@ public class OutingStore {
 
     private static OutingResponse.Summary summary(ResultSet rs) throws SQLException {
         return new OutingResponse.Summary(rs.getObject("id", UUID.class), rs.getString("name"), rs.getString("kind"),
-                rs.getString("region_code"), rs.getString("region_name"), rs.getString("period"),
+                rs.getString("region_code"), rs.getString("region_name"), district(rs), rs.getString("period"),
                 rs.getObject("event_start", LocalDate.class), rs.getObject("event_end", LocalDate.class),
                 rs.getString("fee_status"), rs.getBigDecimal("adult_fee"), rs.getBoolean("fee_conflict"),
                 rs.getBoolean("operation_verified"), instant(rs, "collected_at"), instant(rs, "source_checked_at"),
                 rs.getObject("photo_id") == null ? null : new OutingResponse.Photo(rs.getObject("photo_id", UUID.class),
                     rs.getString("photo_url"), rs.getString("photo_thumbnail"), rs.getString("photo_provider"),
                     rs.getString("photo_attribution"), rs.getString("photo_license"), instant(rs, "photo_checked_at")));
+    }
+
+    private static String district(ResultSet rs) throws SQLException {
+        var addresses = rs.getArray("district_addresses");
+        if (addresses == null) return null;
+        try {
+            return OutingLocation.confirmedDistrict(rs.getString("region_name"), (String[]) addresses.getArray());
+        } finally {
+            addresses.free();
+        }
     }
 
     private static Instant instant(ResultSet rs, String column) throws SQLException {

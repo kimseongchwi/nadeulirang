@@ -1,9 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { backendQuery, orderedHours, orderedNotes, parameters, previewLocation, queryParameters, safeUrl, windowDays } from "../src/features/outings/api-query.ts";
-import { isDetail, isOptions, isPage, isPhoto } from "../src/features/outings/api-contract.ts";
-import { badgeInfo, outingSummary } from "../src/features/outings/model.ts";
-
+import { isDetail, isOptions, isPage, isPhoto, isSummary } from "../src/features/outings/api-contract.ts";
+import { badgeInfo, outingSummary, regionLabel } from "../src/features/outings/model.ts";
 import { detailContent } from "../src/features/outings/detail-content.ts";
 
 const options = { regions: [{ code: "11", name: "서울특별시", count: 2 }], kinds: [{ code: "MUSEUM", count: 2 }], total: 2, asOfDate: "2026-10-05" };
@@ -71,18 +70,25 @@ test("예약 주소의 위험한 스킴·인증 정보와 잘못된 API 본문�
   assert.equal(isDetail({ item: null }), false);
 });
 test("실제 API 상태를 표시에 사용하고 미확인 요금·주소에 검토 표본을 채우지 않는다", () => {
-  const summary = { id: "공개 식별자", name: "아주 긴 시설 이름", kind: "EVENT", regionCode: "11", regionName: "서울특별시", period: "CANCELLED", eventStart: "2026-10-05", eventEnd: "2026-10-06", feeStatus: "UNKNOWN", adultFee: null, feeConflict: false, operationVerified: false, collectedAt: null, sourceCheckedAt: null };
+  const summary = { id: "공개 식별자", name: "아주 긴 시설 이름", kind: "EVENT", regionCode: "11", regionName: "서울특별시", districtName: null, period: "CANCELLED", eventStart: "2026-10-05", eventEnd: "2026-10-06", feeStatus: "UNKNOWN", adultFee: null, feeConflict: false, operationVerified: false, collectedAt: null, sourceCheckedAt: null, photo: null };
   const item = outingSummary(summary);
   assert.equal(badgeInfo(item, "2026-10-05", 14).text, "행사 취소");
   assert.equal(badgeInfo(outingSummary({ ...summary, period: "ENDED" }), "2026-10-05", 14).text, "행사 종료");
   assert.equal(badgeInfo(outingSummary({ ...summary, period: "UNKNOWN" }), "2026-10-05", 14).text, "일정 미확인");
-  assert.equal(item.district_name, ""); assert.equal(item.fee_status, "UNKNOWN"); assert.deepEqual(item.sources, []);
+  assert.equal(item.district_name, null); assert.equal(item.fee_status, "UNKNOWN"); assert.deepEqual(item.sources, []);
+  assert.equal(isSummary(summary), true);
+  assert.equal(isSummary({ ...summary, districtName: undefined }), false);
+  assert.equal(isSummary({ ...summary, districtName: 123 }), false);
+  const confirmed = { ...summary, districtName: "종로구" };
+  const card = outingSummary(confirmed);
+  assert.equal(isSummary(confirmed), true);
+  assert.equal(regionLabel(card.region_name, card.district_name), previewLocation({ item: confirmed }));
+  assert.equal(regionLabel(card.region_name, card.district_name), "서울특별시 종로구");
 });
-test("주소에서 같은 시·군·구만 간단 보기에 사용하고 반복 안내의 제목과 본문을 묶는다", () => {
-  const data = { item: { regionName: "경상남도" }, information: { address: [{ field: "addr1", value: "경상남도 김해시 진례면" }, { field: "rdnmadr", value: "경상남도 김해시 분청로 21" }] } };
+test("공통 요약의 확인된 시군구를 표시하고 반복 안내의 제목과 본문을 묶는다", () => {
+  const data = { item: { regionName: "경상남도", districtName: "김해시" } };
   assert.equal(previewLocation(data), "경상남도 김해시");
-  assert.equal(previewLocation({ ...data, information: { address: [{ field: "addr1", value: "경상남도 김해시" }, { field: "rdnmadr", value: "경상남도 창원시" }] } }), "경상남도");
-  assert.equal(previewLocation({ ...data, information: {} }), "경상남도");
+  assert.equal(previewLocation({ item: { ...data.item, districtName: null } }), "경상남도");
   const notes = [{ observationId: "첫째", field: "infoname", value: "주차" }, { observationId: "둘째", field: "infoname", value: "예약" }, { observationId: "첫째", field: "infotext", value: "무료" }, { observationId: "둘째", field: "infotext", value: "미확인" }];
   assert.deepEqual(orderedNotes(notes).map((entry) => entry.value), ["주차", "무료", "예약", "미확인"]);
   const hours = [{ observationId: "구조화", field: "weekdayOperColseHhmm", value: "18:00" }, { observationId: "문장", field: "usetime", value: "월요일 휴무" }, { observationId: "구조화", field: "weekdayOperOpenHhmm", value: "10:00" }];

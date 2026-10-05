@@ -14,6 +14,7 @@ public final class OutingResponse {
                         String attributionUrl, String license, Instant checkedAt) { }
 
     public record Summary(UUID id, String name, String kind, String regionCode, String regionName,
+                          String districtName,
                           String period, LocalDate eventStart, LocalDate eventEnd, String feeStatus,
                           BigDecimal adultFee, boolean feeConflict, boolean operationVerified,
                           Instant collectedAt, Instant sourceCheckedAt, Photo photo) { }

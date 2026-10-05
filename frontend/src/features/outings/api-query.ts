@@ -1,4 +1,5 @@
 import type { Detail, Evidence, Options } from "./api-types";
+import { regionLabel } from "./model.ts";
 
 const kinds = ["FESTIVAL", "EVENT", "EXHIBITION", "MUSEUM", "CULTURAL_SITE"];
 const scopes: Record<string, string> = { ongoing: "ONGOING", upcoming: "UPCOMING", permanent: "PERMANENT" };
@@ -61,13 +62,7 @@ export function safeUrl(value: string) {
   catch { return null; }
 }
 export function previewLocation(data: Detail) {
-  const region = data.item.regionName;
-  const districts = new Set((data.information.address || []).flatMap((entry) => {
-    if (!["addr1", "rdnmadr", "lnmadr"].includes(entry.field) || !entry.value.startsWith(`${region} `)) return [];
-    const district = entry.value.slice(region.length + 1).split(/\s/)[0];
-    return /^[가-힣]+[시군구]$/.test(district) ? [district] : [];
-  }));
-  return districts.size === 1 ? `${region} ${[...districts][0]}` : region;
+  return regionLabel(data.item.regionName, data.item.districtName);
 }
 function orderedEvidence(values: Evidence[], fields: readonly string[]) {
   const rows = new Map<string, Evidence[]>();

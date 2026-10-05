@@ -18,11 +18,14 @@ export type Outing = {
 export function outingSummary(item: Summary): Outing {
   return {
     id: item.id, name: item.name, kind: item.kind, region_name: item.regionName,
-    district_name: "", event_start: item.eventStart, event_end: item.eventEnd,
+    district_name: item.districtName, event_start: item.eventStart, event_end: item.eventEnd,
     lifecycle: item.period, fee_status: item.feeStatus,
     operation_verified: item.operationVerified, sources: [],
     reviewed_at: item.sourceCheckedAt || "", apiPeriod: item.period, photo: item.photo,
   };
+}
+export function regionLabel(region: string, district: string | null) {
+  return district ? `${region} ${district}` : region;
 }
 export const photoId = "23e35bc8-99bf-4578-b13b-3f4ebee00d13";
 export function seoulDate(now = new Date()) {

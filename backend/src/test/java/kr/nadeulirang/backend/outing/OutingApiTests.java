@@ -330,6 +330,28 @@ class OutingApiTests {
         assertThat(body(get("")).path("total").asLong()).isZero();
     }
 
+    @Test @DisplayName("목록·홈·상세에 최신 주소의 같은 시군구를 제공하고 충돌·누락·옛 주소는 제외한다")
+    void sharesConfirmedDistrictAcrossSummaries() throws Exception {
+        UUID id = save("지역 행사", "EVENT", "26", "20261005", "20261006");
+        var row = json.createObjectNode().put("contentid", "1").put("title", "지역 행사")
+            .put("addr1", "지역 26 해운대구 우동");
+        ingest(row, "detailCommon2", "EVENT", "26", NOW.minusSeconds(30));
+        ingest(row.put("addr1", "지역 26 수영구 광안동").put("addr2", "해운대구 표본 설명"),
+            "detailCommon2", "EVENT", "26", NOW.minusSeconds(20));
+        assertThat(body(get("")).path("items").get(0).path("districtName").asText()).isEqualTo("수영구");
+        assertThat(body(get("/home")).path("ongoing").get(0).path("districtName").asText()).isEqualTo("수영구");
+        assertThat(body(get("/" + id)).path("item").path("districtName").asText()).isEqualTo("수영구");
+        assertThat(outings.detail(id, NOW).information().get("address")).anyMatch(e -> e.field().equals("addr2"));
+        var other = json.createObjectNode().put("contentid", "1").put("rdnmadr", "지역 26 해운대구 길 1");
+        ingest(other, "detailIntro2", "EVENT", "26", NOW.minusSeconds(10));
+        assertThat(outings.list(query("ALL", "DEFAULT", 1), NOW).items().getFirst().districtName()).isNull();
+        ingest(other.put("rdnmadr", ""), "detailIntro2", "EVENT", "26", NOW.minusSeconds(5));
+        assertThat(outings.detail(id, NOW).item().districtName()).isEqualTo("수영구");
+        ingest(row.put("addr1", ""), "detailCommon2", "EVENT", "26", NOW);
+        assertThat(outings.detail(id, NOW).item().districtName()).isNull();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM field_evidence WHERE field_name='addr1' AND value #>> '{}' LIKE '%해운대구%'", Integer.class)).isPositive();
+    }
+
     private UUID save(String name, String kind, String region, String start, String end) {
         var row = json.createObjectNode().put("contentid", Integer.toString(++sequence)).put("title", name)
                 .put("eventstartdate", start).put("eventenddate", end).put("addr1", "확보한 주소");

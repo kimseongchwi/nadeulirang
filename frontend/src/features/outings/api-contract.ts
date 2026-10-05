@@ -18,7 +18,7 @@ export function isPhoto(value: unknown): value is Photo {
 }
 export function isSummary(value: unknown): value is Summary {
   return record(value) && strings(value, ["id", "name", "kind", "regionCode", "regionName", "period", "feeStatus"])
-    && nullable(value, ["eventStart", "eventEnd", "collectedAt", "sourceCheckedAt"])
+    && nullable(value, ["districtName", "eventStart", "eventEnd", "collectedAt", "sourceCheckedAt"])
     && (value.adultFee === null || typeof value.adultFee === "number" && Number.isFinite(value.adultFee) && value.adultFee >= 0)
     && typeof value.feeConflict === "boolean" && typeof value.operationVerified === "boolean"
     && (value.photo === null || isPhoto(value.photo));

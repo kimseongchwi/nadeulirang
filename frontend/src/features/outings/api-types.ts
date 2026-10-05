@@ -3,7 +3,7 @@ export type Photo = {
   attributionUrl: string; license: "KOGL1"; checkedAt: string;
 };
 export type Summary = {
-  id: string; name: string; kind: string; regionCode: string; regionName: string;
+  id: string; name: string; kind: string; regionCode: string; regionName: string; districtName: string | null;
   period: string; eventStart: string | null; eventEnd: string | null;
   feeStatus: string; adultFee: number | null; feeConflict: boolean;
   operationVerified: boolean; collectedAt: string | null; sourceCheckedAt: string | null;
