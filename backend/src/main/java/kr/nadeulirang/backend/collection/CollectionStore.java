@@ -118,6 +118,21 @@ public class CollectionStore {
                             """, UUID.randomUUID(), observation, property.getKey(), property.getValue().toString(), source.datasetUrl, reference, Timestamp.from(now));
                 }
             }
+            if (source == Source.TOUR && operation.equals("detailCommon2")) {
+                // 성공한 공통 응답의 대표 사진만 활성화한다. 실패한 조회는 기존 사진을 지우지 않는다.
+                jdbc.update("UPDATE file_asset SET active = false WHERE record_id = ? AND active", record);
+                String photo = PhotoPolicy.url(text(row, "firstimage"));
+                if (text(row, "cpyrhtDivCd").equals("Type1") && photo != null) {
+                    jdbc.update("""
+                        INSERT INTO file_asset(id, record_id, observation_id, original_url, thumbnail_url,
+                            provider, attribution_url, license_code, checked_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 'KOGL1', ?)
+                        ON CONFLICT(record_id, original_url) DO UPDATE SET observation_id=EXCLUDED.observation_id,
+                            thumbnail_url=EXCLUDED.thumbnail_url, checked_at=EXCLUDED.checked_at, active=true
+                        """, UUID.randomUUID(), record, observation, photo, PhotoPolicy.url(text(row, "firstimage2")),
+                        "한국관광공사 TourAPI", source.datasetUrl, Timestamp.from(now));
+                }
+            }
             if (reviewedKind != null && regionCode != null && regionName != null && reviewReason != null) {
                 jdbc.update("""
                         UPDATE outing SET kind = ?, region_code = ?, region_name = ?, review_status = 'APPROVED',
@@ -182,6 +197,16 @@ public class CollectionStore {
 
     public String summary() {
         return jdbc.queryForList("SELECT region_name, kind, count(*) AS count FROM public_candidate GROUP BY region_name, kind ORDER BY region_name, kind").toString();
+    }
+
+    public record TourReview(String name, String kind, String regionCode) { }
+
+    public TourReview reviewedTour(String sourceKey) {
+        return jdbc.query("""
+                SELECT o.name,o.kind,o.region_code FROM source_record r JOIN outing o ON o.id=r.outing_id
+                WHERE r.source='TOUR' AND r.source_key=? AND o.review_status='APPROVED'
+                """, (rs,n) -> new TourReview(rs.getString(1),rs.getString(2),rs.getString(3)),sourceKey)
+                .stream().findFirst().orElse(null);
     }
 
     public boolean blocked(Source source) {

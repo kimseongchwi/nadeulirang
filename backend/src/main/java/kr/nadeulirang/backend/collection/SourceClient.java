@@ -21,7 +21,7 @@ public class SourceClient {
     private static final Set<String> TOUR_OPERATIONS = Set.of("ldongCode2", "lclsSystmCode2", "searchKeyword2",
             "searchFestival2", "areaBasedList2", "areaBasedSyncList2", "detailCommon2", "detailIntro2", "detailInfo2");
     private static final Set<String> TOUR_QUERY = Set.of("contentId", "contentTypeId", "numOfRows", "pageNo", "keyword",
-            "eventStartDate", "eventEndDate", "lDongListYn", "lclsSystmListYn", "lDongRegnCd", "lclsSystm3", "showflag");
+            "eventStartDate", "eventEndDate", "lDongListYn", "lclsSystmListYn", "lDongRegnCd", "lclsSystm1", "lclsSystm2", "lclsSystm3", "showflag");
     private final CollectionStore store;
     private final DataSource dataSource;
 

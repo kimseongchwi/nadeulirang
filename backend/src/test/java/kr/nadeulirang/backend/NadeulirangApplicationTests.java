@@ -55,7 +55,7 @@ class NadeulirangApplicationTests {
 	@DisplayName("초기 마이그레이션을 적용하고 재실행해도 중복 적용하지 않는다")
 	void migratesSchemaOnce() {
 		flyway.validate();
-		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("2");
+		assertThat(flyway.info().current().getVersion().getVersion()).isEqualTo("4");
 		assertThat(jdbc.queryForObject("SELECT obj_description(oid, 'pg_namespace') FROM pg_namespace WHERE nspname = ?",
 				String.class, TEST_SCHEMA)).isEqualTo("나들이랑 애플리케이션 데이터");
 		assertThat(flyway.migrate().migrationsExecuted).isZero();

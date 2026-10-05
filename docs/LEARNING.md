@@ -127,7 +127,7 @@ public class NadeulirangApplication {
 
 1. [use-local-env.ps1](../scripts/use-local-env.ps1)이 DB 설정을 환경 변수로 전달한다. Spring이 루트 `.env`를 직접 읽는 구성은 아니다.
 2. [pom.xml](../backend/pom.xml)의 MVC·JDBC·Flyway·Actuator 의존성과 [application.properties](../backend/src/main/resources/application.properties)가 웹 서버·DB 연결·마이그레이션·health 구성에 사용된다.
-3. DB 연결 뒤 Flyway가 전용 스키마와 이력을 준비하고 미적용 마이그레이션을 순서대로 실행한다. V1은 스키마 설명, V2는 수집·제품 테이블을 정의한다.
+3. DB 연결 뒤 Flyway가 전용 스키마와 이력을 준비하고 미적용 마이그레이션을 순서대로 실행한다. V1은 스키마 설명, V2는 수집·제품 테이블, V3는 목록 배치의 중간 위치를 정의한다.
 4. 웹 서버가 시작되고 `/actuator/health`로 상태를 확인할 수 있다. 이 엔드포인트는 Actuator가 제공하므로 별도의 사용자 작성 Controller가 없다.
 
 자동 구성은 기본 연결 코드를 줄여 주지만 어떤 의존성과 설정이 동작을 만드는지 확인해야 한다. 환경·설정을 바꾸면 같은 시작 코드에서도 동작이 달라진다. 수동 구성도 가능한 대안이며 현재 규모에서 모든 객체·웹 서버를 직접 구성하면 유지할 코드가 늘어난다.
@@ -136,7 +136,7 @@ public class NadeulirangApplication {
 
 ### Flyway와 전용 스키마를 사용한 이유
 
-[연결 설정](../backend/src/main/resources/application.properties)은 JDBC와 Flyway에 같은 `nadeulirang` 스키마를 지정하고 SQL 자동 초기화를 끈다. `clean-disabled=true`로 Flyway의 스키마 정리를 금지한다. [V1](../backend/src/main/resources/db/migration/V1__initialize_schema.sql)은 스키마 설명을 기록하고 [V2](../backend/src/main/resources/db/migration/V2__collection_model.sql)는 제품·수집 테이블을 만든다.
+[연결 설정](../backend/src/main/resources/application.properties)은 JDBC와 Flyway에 같은 `nadeulirang` 스키마를 지정하고 SQL 자동 초기화를 끈다. `clean-disabled=true`로 Flyway의 스키마 정리를 금지한다. [V1](../backend/src/main/resources/db/migration/V1__initialize_schema.sql)은 스키마 설명을 기록하고 [V2](../backend/src/main/resources/db/migration/V2__collection_model.sql)는 제품·수집 테이블, [V3](../backend/src/main/resources/db/migration/V3__collection_checkpoint.sql)는 배치 위치 테이블을 만든다.
 
 마이그레이션은 DB 구조 변경을 버전 파일로 남기는 방법이다. 이력을 함께 관리하면 어느 변경이 적용됐는지 확인하고 다른 환경에도 같은 순서로 적용하기 쉽다. 적용한 SQL을 고치면 기존 DB의 이력과 새 파일이 달라질 수 있으므로 다음 버전으로 변경을 추가한다. 여러 초기화 방식의 중복 사용을 피하는 것은 [Spring Boot 공식 초기화 안내](https://docs.spring.io/spring-boot/how-to/data-initialization.html)의 권장 방식과도 맞는다.
 
@@ -216,6 +216,18 @@ health는 애플리케이션과 연결된 구성요소의 상태를 확인하는
 
 `parse`와 HTTP 응답 판정의 작은 예제는 [verify-tourapi.mjs](../scripts/verify-tourapi.mjs)의 summarizeResponse와 [도구 테스트](../tests/tooling/tourapi-validation.test.mjs)를 함께 본다. 이 Node.js 도구는 표본 확인용이며 실제 저장 흐름은 CollectionRunner → SourceClient → CollectionStore다.
 
+### 목록 배치·커서와 검토 분리
+
+관련 작업: P38. `CollectionRunner.collectBatch`는 행사·시설의 다섯 목록을 순회하고 실행 후보 상한을 나눠 처리한다. `Stream` record는 목록 이름·`Source` enum·오퍼레이션·조회 JSON을 전달한다. API가 반환한 페이지를 읽은 뒤 TourAPI 후보의 공통/소개/반복 또는 표준 행을 기존 저장소에 저장한다. 기존 검토 목록 외의 신규 후보는 `PENDING`이며 저장 성공과 공개 검토는 별개다. `CollectionStore.reviewedTour`는 승인된 TourAPI의 이름·종류·시도 코드를 `TourReview` record로 읽어 재조회 때 대조한다. 이름·종류·시도 주소가 그대로면 승인을 유지하고 바뀌면 재검토 대상으로 저장한다.
+
+[CollectionCheckpointStore](../backend/src/main/java/kr/nadeulirang/backend/collection/CollectionCheckpointStore.java)의 `Cursor` record는 페이지 번호·행 위치·성공 `source_call` UUID·완료 여부를 갖는다. 생성자 인수는 Spring이 제공하는 `JdbcTemplate`·`DataSource`다. `V3__collection_checkpoint.sql`의 외래키로 성공 목록 원문을 참조해 부분 처리한 페이지는 다음 실행에서 같은 응답의 남은 행부터 읽는다. 행 저장 후 커서를 진행하므로 그 사이 중단돼도 원천별 유일 제약으로 제품 ID를 다시 만들지 않는다. 별도의 관측 이력은 남을 수 있다.
+
+`withBatchLock`은 JDBC 연결이 살아 있는 동안 PostgreSQL 세션 잠금을 유지해 같은 배치 커서의 동시 변경을 막고 `finally`에서 해제한다. 이는 네트워크와 저장 전체를 하나의 트랜잭션으로 되돌리는 방식이 아니다. 각 성공 행과 요청 예산은 독립적으로 보존하며 상세 실패 후보는 같은 위치에 남는다. 원천의 월간 목록 변경은 페이지 위치에 영향을 줄 수 있어 최신 변경 전체를 추적하는 예약 갱신과 구분한다.
+
+[CollectionBatchTests](../backend/src/test/java/kr/nadeulirang/backend/collection/CollectionBatchTests.java)는 원천 네트워크를 가짜 응답으로 대체하고 별도 PostgreSQL 스키마에서 위치 재개·실패 후 복구·후보 비공개·페이지 끝·기존 승인 보존과 변경 시 재검토를 검사한다. `SourceResponse.totalCount`는 TourAPI의 `response.body`와 표준 API의 직접 `body` 구조를 모두 읽어 20행이 전량이라고 오판하지 않는다. 실제 키 인증·전국 원문 수집은 로컬 수집 실행에서 별도로 확인한다. 선택적 연습으로 20행 중 19번째(0부터 시작)를 처리한 뒤 `total=20`과 `total=21`일 때 `next`의 완료 여부를 예상해 본다.
+
+`collect-data.ps1`의 `Mode`·`MaxItems`·`Campaign` 매개변수는 Spring 실행 인수로 전달하고 원천 키는 기존 로컬 파일에서 읽는다. Windows PowerShell 5가 한국어 스크립트를 읽도록 파일에 UTF-8 BOM을 보존하고 Java의 표준 출력·오류 인코딩도 UTF-8로 지정한다. 이는 수집 프로세스 설정이며 PC의 영구 환경 설정을 바꾸지 않는다.
+
 ## 목록·상세 HTTP 조회와 공개 경계
 
 관련 작업: P12. 요청 조건·응답 필드·호출 예시는 [백엔드 API 안내](../backend/README.md#목록상세-조회-api)를 따른다.
@@ -282,6 +294,8 @@ SQL `CASE`는 저장된 취소/종료 상태를 보존하고, 날짜가 있는 �
 
 React 컴포넌트는 UI를 표현하는 함수다. `props`는 전달받은 입력, `state`는 상호작용에 따라 바뀌는 값이다. 상세 서버 페이지는 공개 가능한 id의 API 응답을 기다린 뒤 `DetailReview`의 `data` prop으로 전달한다. 없는/비공개 id에서는 Next.js의 `notFound()`를 호출한다. JSX는 그 입력과 상태를 화면으로 표현한다. 사용자 입력·달력의 미적용 선택·메뉴 동작은 브라우저에서 처리한다.
 
+`DetailReview`는 `safeUrl`로 표시 가능한 링크만 남긴 뒤 `links.some`으로 실제 예약 링크가 있는지 판단한다. 그 불리언 값에 따라 JSX의 삼항 연산자가 ‘공식 안내·예약’ 또는 ‘공식 안내’ 제목을 선택한다. 예약 링크가 없다는 이유로 예약 필요 여부를 추정하거나 누락 안내를 추가하지 않는다.
+
 Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포넌트다. `useState`·사용자 이벤트·`window` 등이 필요한 파일은 맨 위의 `"use client"`로 클라이언트 컴포넌트의 경계를 정한다. 클라이언트 컴포넌트도 첫 HTML의 서버 렌더링에 참여할 수 있으므로 모든 코드가 브라우저에서만 실행된다고 가정하지 않는다. [tsconfig.json](../frontend/tsconfig.json)의 `strict`는 타입 검사이며 실제 외부 응답의 정확성까지 보증하지 않는다.
 
 [model.ts](../frontend/src/features/outings/model.ts)의 `Outing`은 카드 표시 타입이고 `outingSummary`가 API의 `Summary`를 변환한다. 검토 표본의 주소·출처를 실제 항목에 채우지 않는다. 실제 상태는 서버의 `apiPeriod`로 표시하며 `CANCELLED`·`ENDED`·`UNKNOWN`을 구분한다. 가이드의 [review-model.ts](../frontend/src/features/ui-design/review-model.ts)만 JSON 스냅샷을 읽고 `publicItems`·검색 예시를 계산한다. `seoulDate`·`ongoing` 등 날짜 도우미는 표시와 가이드에서 사용하며 실제 목록 구분은 DB 조회가 결정한다. 루트의 `force-dynamic`과 API 호출의 `no-store`는 빌드 날짜/응답을 현재 자료로 오인하지 않게 한다.
@@ -298,15 +312,27 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 홈의 세 목록을 첫 20개 목록에서 잘라 만들면 해당 페이지 밖의 시설/행사가 빠질 수 있다. Java [OutingQuery](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingQuery.java)의 `days` record 구성 요소는 0 또는 다가오는 구간 7·14·30만 허용한다. 기존 여섯 인수 생성자는 일곱 인수 생성자에 0을 전달한다. [OutingStore.home](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingStore.java)은 한 `Instant`와 외부 호출에 적용된 읽기 트랜잭션 안에서 종료일/시작일/이름 순으로 세 구분을 조회한다. 내부 `list` 호출마다 별도 어노테이션 처리가 실행되는 것은 아니다. 시작일 상한 `today.plusDays(days)`를 건수와 페이지 계산 전에 SQL에 바인딩하고 DB 조회에서 각 구분을 3개로 제한해 반환하고 홈 날짜 동률은 ID로 정한다. 추가 DB 조회 비용은 있지만 이후 데이터가 늘어도 홈의 선정 기준을 유지한다.
 
-간단 보기는 열릴 때 같은 서버의 [상세 중계 route.ts](../frontend/src/app/api/outings/[id]/route.ts)를 호출한다. Web API의 `Request`/`Response`를 쓰며 중계 404와 503을 구분한다. 닫힐 때 `AbortController`로 불필요한 요청을 취소한다. 상세의 [EvidenceList](../frontend/src/features/outings/evidence.tsx)는 원천 문장을 JSX 텍스트로 표시해 HTML을 실행하지 않는다. 원천별 서로 다른 주소/요금·확인 시각·갱신 필요 표시를 유지하고 공식 링크는 명시적 HTTP(S) 주소만 연결한다. `orderedNotes`는 `observationId`별로 제목/본문을 묶어 주차 안내의 무료 문장이 다른 예약 안내와 섞이지 않게 한다.
+간단 보기는 열릴 때 같은 서버의 [상세 중계 route.ts](../frontend/src/app/api/outings/[id]/route.ts)를 호출한다. Web API의 `Request`/`Response`를 쓰며 중계 404와 503을 구분한다. 닫힐 때 `AbortController`로 불필요한 요청을 취소한다. 상세의 [EvidenceList](../frontend/src/features/outings/evidence.tsx)는 원천 문장을 JSX 텍스트로 표시해 HTML을 실행하지 않는다. 서로 다른 주소/요금 문장은 유지하되 항목마다 출처·확인 시각을 반복하지 않는다. DetailReview의 refreshNeeded는 출처 또는 정보/링크의 stale·최근 조회 실패를 합쳐 필요한 경우에만 갱신 안내 한 줄을 표시한다. 공식 링크는 명시적 HTTP(S) 주소만 연결한다. DB/API의 근거는 보존하고 데이터셋·사진 출처와 이용 조건은 PolicyContent의 about 분기에서 공통 푸터 시트·직접 주소에 제공한다.
+
+상세 제목 아래의 최근 자료 확인일은 API의 sourceCheckedAt(마지막 원천 성공의 최근 시각)을 Date로 읽고 유효한 경우에만 기존 seoulDate로 한국 날짜를 표시한다. 날짜 한 줄이 모든 필드의 동시 갱신을 뜻하지 않으므로 필드별 오래됨/실패 근거와 갱신 안내는 유지한다. detail-facts의 dt는 항목 이름, dd는 실제 값이며 CSS grid로 이름을 값 위에 배치한다. 값은 본문색·600, 이름과 detail-unknown은 보조색·400으로 표시한다. EvidenceList의 보조 이름도 span으로 구분해 긴 소개 본문까지 굵게 만들지 않는다. `orderedNotes`는 `observationId`별로 제목/본문을 묶어 주차 안내의 무료 문장이 다른 예약 안내와 섞이지 않게 한다.
 
 [tsconfig.json](../frontend/tsconfig.json)의 `allowImportingTsExtensions`는 `noEmit` 검사 환경에서 `.ts` import를 허용한다. Node.js의 내장 TypeScript 처리로 가이드의 순수 모델과 실제 URL/응답 로직을 테스트하기 위해 사용하며 실행 코드에 별도 변환 의존성을 추가하지 않는다. 확인은 프론트 API 조건/상태/근거 묶기 테스트, 백엔드 서울 경계/페이지 테스트와 실제 HTML/브라우저 흐름으로 한다. 페이지의 예상 조회 오류는 오류·재시도 UI로 반환하고 HTTP 오류 상태 정책은 P14에서 점검한다.
+
+### 상세 위치 정보의 구분
+
+상세의 `locationGroups`는 `eventplace`/`opar`를 행사 장소로 먼저 묶고 주소 필드를 각각 구분한다. 원문 배열을 `filter`로 나누어 독립된 `dt`/`dd` 행에 표시하며 원문 값은 바꾸지 않는다. `EvidenceList`의 `showLabels={false}`는 이미 행 제목이 있는 위치 정보에서만 내부 이름의 반복을 생략한다. 값이 서로 다르면 둘 다 보존하고 실제로 같은 위치인지는 추정하지 않는다.
+
+### 사진 출처의 접힌 안내
+
+[policy-content.tsx](../frontend/src/features/policies/policy-content.tsx)의 사진 안내는 제공처와 이용 기준을 짧게 보여 주고, 저작자·원본·라이선스·변경 정보는 네이티브 `details`/`summary` 안에 둔다. `open` 속성을 생략해 처음에는 접히며 브라우저가 클릭·Enter/Space·펼침 상태를 처리하므로 별도 React state나 토글 스크립트가 필요 없다.
 
 ### URL·탭 저장과 복귀
 
 [review-provider.tsx](../frontend/src/providers/review-provider.tsx)의 `useReviewState`는 `usePathname`·`useSearchParams`로 주소를 읽고 `navigate`·`back`·`openSheet`·`closeSheet`·`replaceSheet`로 이동을 처리한다. 조건은 `URLSearchParams`로 읽으며, 해시는 현재 페이지를 유지한 채 팝업의 열림을 나타낸다. `OutingPreview`는 상세 이동 시 간단 보기 이력을 교체하므로 뒤로 가기가 목록으로 돌아갈 수 있다.
 
 `useSetting`은 `sessionStorage`와 사용자 정의 이벤트를 `useSyncExternalStore`로 구독한다. 서버에서는 fallback으로 초기 화면을 만들고 브라우저에서 저장한 기간·홈 조건을 읽는다. `sessionStorage`는 탭에 속하므로 계정 간 동기화 저장소가 아니다.
+
+상단·푸터 로고는 같은 `ReviewLink`와 `homeUrl`을 사용한다. `homeUrl`은 저장한 홈 조건을 쿼리에 담으며 `ReviewLink`는 Next.js `Link`를 감싸 이동 전 스크롤을 보존한다. 실제 `<a>` 링크이므로 클릭과 키보드 Enter로 이동하고, 공통 `brand` 스타일의 최소 높이 44px와 링크 포커스 표시를 함께 적용한다.
 
 `saveScroll`은 주소별 위치를 저장한다. `nextNavigation` ref는 코드로 요청한 이동과 뒤로/앞으로 가기를 구분하며, 복귀 시 [service-scroll.ts](../frontend/src/components/layout/service-scroll.ts)의 실제 스크롤 영역에 위치를 적용한다. 화면 state만 쓰는 대안은 단순하지만 직접 접속·새로고침·복귀에서 조건을 유지하기 어렵다. URL과 저장소를 함께 쓰면 구독·서버 초기값·복귀 검증 비용이 생긴다.
 
@@ -324,6 +350,8 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 ### 레이아웃·입력·드래그·상태 표시
 
+[detail.tsx](../frontend/src/features/outings/detail.tsx)의 `detail-status-meta`는 제목 아래 상태칩과 최근 자료 확인일을 별도 flex 행에 둔다. `justify-content: space-between`은 칩을 왼쪽, 확인일을 오른쪽에 배치하고 `flex-wrap`은 함께 들어가지 않으면 확인일을 다음 줄로 보낸다. 제목의 `max-width: 100%`·`overflow-wrap: anywhere`는 긴 이름을 생략하지 않고 영역 안에서 줄바꿈한다. 상태를 계산하는 `Badge` 로직은 배치와 독립적이다.
+
 [site-shell.tsx](../frontend/src/components/layout/site-shell.tsx)와 `review.css`는 모바일 서비스와 PC 안내/서비스를 구성한다. PC의 오른쪽 스크롤은 `service-scroll.ts`로 읽고 복원한다. 검색창은 `search-keyword`의 `focus-within`에 경계와 포커스 링을 적용한다. 320px에서는 두 grid 열을 모두 차지해 입력 폭을 확보한다.
 
 `HomeReview`의 `chipDrag`는 마우스 이동이 6px 이상일 때 드래그로 처리하고 `scrollLeft`를 바꾼다. 드래그 뒤 클릭을 억제하며 터치는 네이티브 스크롤을 유지한다. `overflow-x`만 쓰는 대안은 간단하지만 마우스로 끄는 동작을 따로 제공하지 않는다. 방향키·정상 클릭·`pointercancel`을 함께 확인한다.
@@ -332,7 +360,19 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 ### 브랜드·이미지·정책·개발 표시
 
-[brand.ts](../frontend/src/config/brand.ts)의 한 팔레트를 `ReviewShell`의 CSS 변수와 [icon.ts](../frontend/src/app/icon.ts)가 공유한다. public의 이미지는 코드처럼 실행되지 않고 URL 요청으로 제공된다. `OutingArtwork`·`PhotoCredit`은 대표 이미지와 출처를 나눠 표시하며 이미지가 없어도 종류와 텍스트를 읽을 수 있다.
+#### 실제 대표 사진의 저장과 표시
+
+[V4](../backend/src/main/resources/db/migration/V4__file_asset.sql)의 `file_asset`은 파일 내용 대신 `REMOTE` 저장 방식·원본/미리보기 URL·제공처·이용 유형·확인 시각을 관리한다. `record_id`와 `observation_id` 외래키로 출처 항목과 실제 JSON 원문을 찾을 수 있다. `(record_id, original_url)`의 `UNIQUE`는 같은 사진의 중복 생성을 막고, `WHERE active`가 붙은 유일 인덱스는 한 원천에 활성 대표 사진 하나만 허용한다. 이전 사진은 비활성 이력으로 보존한다.
+
+[CollectionStore](../backend/src/main/java/kr/nadeulirang/backend/collection/CollectionStore.java)의 `ingest`는 성공한 공통 응답을 저장한 트랜잭션 안에서 이전 사진을 비활성화하고 Type1의 허용 URL만 삽입/갱신한다. `ON CONFLICT ... DO UPDATE`는 같은 URL이면 원문 참조와 확인 시각을 갱신한다. 실패 처리에는 사진 삭제가 없으며, 정상 응답에서 사진이 없어지거나 유형이 바뀌면 활성 사진이 사라진다. [PhotoPolicy](../backend/src/main/java/kr/nadeulirang/backend/collection/PhotoPolicy.java)의 `url`은 Java `String.matches`로 호스트·경로·확장자를 확인하고 HTTP 주소는 같은 호스트의 HTTPS로 바꾼다. 임의 URL을 서버에서 다운로드하는 기능은 만들지 않았다.
+
+[OutingStore](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingStore.java)의 `LEFT JOIN LATERAL`은 각 공개 후보의 최신 원문과 연결된 활성 사진 하나를 같은 목록 조회에 붙인다. `LEFT JOIN`이므로 사진이 없어도 나들이 행이 사라지지 않는다. [OutingResponse.Photo](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingResponse.java)는 Java `record`로 API 필드와 타입을 선언하며 생성자에 SQL에서 읽은 UUID·문자열·Instant를 전달한다. 사진이 없으면 `Summary.photo`는 `null`이다. 제공처는 API 공급 기관이며 확인되지 않은 촬영자 이름을 만들지 않는다.
+
+프론트 [api-contract.ts](../frontend/src/features/outings/api-contract.ts)의 `isPhoto`가 이용 유형·URL·제공처를 검사하고 `outingSummary`가 사진을 화면 모델로 전달한다. [OutingArtwork](../frontend/src/features/outings/outing-artwork.tsx)의 `useState`는 로딩 실패한 URL을 기억한다. Next.js `Image`의 `onError`가 이 상태를 갱신하면 해당 사진 대신 종류 아이콘을 렌더링한다. `unoptimized`는 브라우저가 원본 URL을 직접 요청하도록 하며 `object-fit: contain`은 사진 전체를 잘라내지 않고 배치한다. 원천 호스트 장애/변경의 영향을 받는 대신 로컬 파일 저장·동기화 비용이 없다. 가이드의 로컬 표본은 실제 API 상태가 없는 자료에만 적용한다.
+
+확인은 사진 중복/주소 변경·사진 제거/유형 변경·수집 실패 보존·위험 URL·비공개 보호 테스트와 실제 브라우저의 `naturalWidth`·아이콘 대체로 수행한다. DB 메타데이터 확보와 이미지 서버의 현재 로딩 성공은 서로 다른 결과다.
+
+[brand.ts](../frontend/src/config/brand.ts)의 한 팔레트를 `ReviewShell`의 CSS 변수와 [icon.ts](../frontend/src/app/icon.ts)가 공유한다. public의 이미지는 코드처럼 실행되지 않고 URL 요청으로 제공된다. `OutingArtwork`는 대표 이미지 또는 종류 아이콘을 표시하며 이미지가 없어도 종류와 텍스트를 읽을 수 있다. 사진의 작성자·원본 링크·라이선스·잘라 표시한 안내는 공통 서비스·데이터 출처에서 제공한다.
 
 정책 본문은 직접 접속 페이지와 바텀시트가 공유한다. Next.js 개발 표시 위치는 [next.config.ts](../frontend/next.config.ts)에서 정하고, [ReviewDevTools](../frontend/src/components/layout/review-dev-tools.tsx)는 가이드/iframe에서만 Next.js 포털의 Shadow DOM에 스타일을 넣는다. 일반 화면으로 이동하면 스타일·관찰자를 정리한다. 이 DOM 식별자에 의존하므로 Next.js 갱신 때 숨김/복원을 다시 확인할 비용이 있다.
 

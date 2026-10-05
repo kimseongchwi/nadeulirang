@@ -3,8 +3,8 @@
 import { ReviewDialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icons";
 import { Badge } from "./outing-badge";
-import { OutingArtwork, PhotoCredit } from "@/features/outings/outing-artwork";
-import { kindNames, period, permanent, photoId, type Outing } from "@/features/outings/model";
+import { OutingArtwork } from "@/features/outings/outing-artwork";
+import { kindNames, period, permanent, type Outing } from "@/features/outings/model";
 import { useReview } from "@/providers/review-provider";
 import { useEffect, useState } from "react";
 import type { Detail } from "./api-types";
@@ -39,11 +39,9 @@ export function OutingPreview({ item, open, sample = false }: { item: Outing; op
           <dl className="preview-facts">
             <div><dt><Icon name="pin" />위치</dt><dd>{result?.data ? previewLocation(result.data) : `${item.region_name}${sample && item.district_name ? ` ${item.district_name}` : ""}`}</dd></div>
             {!permanent(item) && <div><dt><Icon name="calendar" />행사 일정</dt><dd>{period(item)}</dd></div>}
-            <div><dt><Icon name="ticket" />운영·요금</dt><dd>확인 필요</dd></div>
+            <div><dt><Icon name="ticket" />운영·요금</dt><dd>상세 정보에서 보기</dd></div>
           </dl>
-          <p className="preview-note">운영 시간·휴무·요금·예약은 출발 전 공식 안내를 확인해 주세요.</p>
           {!sample && (!result ? <LoadingState /> : result.status ? result.status === 404 ? <EmptyState title="공개된 정보를 찾을 수 없어요." description="삭제되거나 공개 대상에서 제외된 자료일 수 있어요." /> : <ErrorState onRetry={() => { setResult(null); setAttempt((value) => value + 1); }} /> : null)}
-          {item.id === photoId && <PhotoCredit />}
         </div>
       </div>
       <div className="outing-preview-actions"><button type="button" className="button primary" onClick={() => navigate(`/detail/${item.id}`, true)}>상세 정보 보기 <Icon name="next" /></button></div>

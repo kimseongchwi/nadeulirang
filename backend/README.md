@@ -4,7 +4,11 @@ Spring Boot·Java 21·Maven Wrapper 기반 프로젝트입니다. 버전 선택�
 
 `src/main/resources/db/migration/`의 Flyway 마이그레이션으로 DB 변경을 관리합니다. 이미 적용한 파일은 수정하지 않고 다음 버전 파일을 추가합니다. 기능 테스트는 `src/test/`에 둡니다.
 
+로컬 전국 목록 배치는 [루트 수집 안내](../README.md#데이터-수집-p11p38)를 따릅니다. `V3__collection_checkpoint.sql`은 월별/지정 배치의 페이지·행·성공 응답 참조를 보존합니다. 수집 실행기와 원천 클라이언트·저장소는 `collection/`에 있고 `CollectionBatchTests`는 실제 격리 DB에서 부분 페이지 재개·실패 위치·신규 후보 비공개를 검사합니다.
+
 ## 목록·상세 조회 API
+
+`V4__file_asset.sql`은 대표 사진의 원본/미리보기 URL·제공처·출처 링크·이용 유형·원문 근거·확인 시각을 `file_asset`에 저장합니다. 바이너리 파일은 DB나 디스크에 복제하지 않습니다. 기존 마지막 공통 응답의 제1유형 사진을 자동으로 채우며, 다음 `detailCommon2` 수집 때 같은 URL은 갱신하고 변경/제거/유형 변경은 이전 사진을 비활성화합니다. 실패한 조회는 기존 사진을 보존합니다.
 
 Spring 서버 실행 후 `http://localhost:8080`에서 아래 읽기 전용 API를 호출합니다. Next.js 서버 페이지와 간단 보기의 상세 중계가 이 API를 사용합니다. 요청마다 원천 API를 호출하지 않고 저장된 PostgreSQL 자료를 읽습니다.
 
@@ -36,6 +40,8 @@ Spring 서버 실행 후 `http://localhost:8080`에서 아래 읽기 전용 API�
 ### 상세 근거와 미확인 정보
 
 `item`은 이름·종류·시도·기간 상태/시작/종료일·일반 성인 요금 상태/금액·요금 충돌·운영 검증 여부와 수집/원천 확인 시각을 제공합니다. 금액 `null`은 미확인이며 0원으로 바꾸지 않습니다.
+
+목록·홈·상세의 요약에는 `photo`가 있습니다. 없거나 이용 대상이 아니면 `null`이며, 있으면 `id`·원본 HTTPS `url`·선택적 `thumbnailUrl`·`provider`·`attributionUrl`·`license`(`KOGL1`)·`checkedAt`을 제공합니다. 한국관광공사 이미지 호스트의 정해진 `/cms/resource/` JPG/PNG 주소만 허용하며 임의 호스트·인증 정보·쿼리·제3유형은 연결하지 않습니다. 사진에도 해당 나들이의 공개 검토/표출 경계가 적용됩니다. 브라우저의 이미지 요청은 원천 호스트로 직접 전송되므로 원천 장애 시 프론트 아이콘으로 대체합니다.
 
 `information`은 `address`·`description`·`hours`·`closedDays`·`generalFee`·`extraFee`·`discount`·`reservation`·`officialWebsite`·`contact`·`notes` 배열입니다. 각 원소는 원천 필드명·문장/값·원천/원본 키·출처 URL·원천 기준일/수정 시각·수집/확인 시각·오래됨 여부·`observationId`를 함께 제공합니다. 일반 요금 문장의 조건이나 반복 안내를 자동 가격표로 해석하지 않습니다. `notes`의 `infoname`·`infotext`는 같은 `observationId`로 묶어 제목과 본문을 표시할 수 있습니다. 운영 시간·휴관일·예약 기간은 다른 정보입니다.
 

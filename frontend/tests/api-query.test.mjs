@@ -1,10 +1,20 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { backendQuery, orderedHours, orderedNotes, parameters, previewLocation, queryParameters, safeUrl, windowDays } from "../src/features/outings/api-query.ts";
-import { isDetail, isOptions, isPage } from "../src/features/outings/api-contract.ts";
+import { isDetail, isOptions, isPage, isPhoto } from "../src/features/outings/api-contract.ts";
 import { badgeInfo, outingSummary } from "../src/features/outings/model.ts";
 
 const options = { regions: [{ code: "11", name: "서울특별시", count: 2 }], kinds: [{ code: "MUSEUM", count: 2 }], total: 2, asOfDate: "2026-10-05" };
+test("허용 사진의 제공처·이용 유형·주소를 검사하고 외부 호스트와 인증 쿼리를 거부한다", () => {
+  const photo = { id: "사진", url: "https://tong.visitkorea.or.kr/cms/resource/01/123_image2_1.jpg", thumbnailUrl: null,
+    provider: "한국관광공사 TourAPI", attributionUrl: "https://www.data.go.kr/data/15101578/openapi.do", license: "KOGL1", checkedAt: "2026-10-05T00:00:00Z" };
+  assert.equal(isPhoto(photo), true);
+  for (const url of ["http://tong.visitkorea.or.kr/cms/resource/01/123_image2_1.jpg", "https://evil.example/x.jpg", `${photo.url}?serviceKey=x`, "https://tong.visitkorea.or.kr.evil.example/x.jpg"])
+    assert.equal(isPhoto({ ...photo, url }), false);
+  assert.equal(isPhoto({ ...photo, license: "KOGL3" }), false);
+  assert.equal(isPhoto({ ...photo, provider: "미확인" }), false);
+  assert.equal(isPhoto({ ...photo, thumbnailUrl: "https://evil.example/x.jpg" }), false);
+});
 test("기존 지역명 주소를 실제 코드로 연결하고 없는 지역은 전체로 넓히지 않는다", () => {
   assert.equal(queryParameters(new URLSearchParams("region=서울특별시"), options).get("region"), "11");
   assert.equal(queryParameters(new URLSearchParams("region=99"), options).get("region"), "99");

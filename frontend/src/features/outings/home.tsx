@@ -175,7 +175,7 @@ export function HomeReview({ data, options, query }: { data: Home; options: Opti
       )}
       <HomeSection
         title="지금 만나는 나들이"
-        description="지금 이어지는 전시와 행사 · 당일 운영은 별도 확인"
+        description="오늘의 즐거움을 발견해보세요."
         items={data.ongoing.map(outingSummary)}
         query={query} days={days}
         scope="ongoing"
@@ -190,8 +190,8 @@ export function HomeReview({ data, options, query }: { data: Home; options: Opti
         emptyText="이 기간에 시작하는 행사 자료가 아직 없어요."
       />
       <HomeSection
-        title="언제든 떠올릴 나들이"
-        description="일상에 작은 쉼표가 되는 상설 시설"
+        title="일상에서 만나는 나들이"
+        description="일상에 작은 쉼표를 더해보세요."
         items={data.permanent.map(outingSummary)}
         query={query} days={days}
         scope="permanent"

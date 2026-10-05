@@ -394,8 +394,8 @@ export function GuideReview() {
             <p className="section-description">
               사진 또는 종류 아이콘 옆에 이름·지역·일정을 간결하게 표시합니다.
               카드를 누르면 간단 보기 시트가 올라오고, 상세 정보 보기로 개별
-              페이지에 이동해요. 사진 설명은 생략하고 출처는 간단 보기와
-              상세 하단의 사진 출처에서 확인합니다. 시트는 열고 닫을 때 부드럽게 움직이며
+              페이지에 이동해요. 사진 설명은 생략하고 출처·이용 조건은
+              푸터의 서비스·데이터 출처에서 확인합니다. 시트는 열고 닫을 때 부드럽게 움직이며
               동작 줄이기 설정에서는 움직임을 생략해요.
             </p>
             {photoCard && <OutingCard item={photoCard} sample />}
@@ -403,11 +403,11 @@ export function GuideReview() {
             <div className="sample">
               <div className="status-list">
                 <span className="badge">행사 기간 진행 중</span>
-                <span className="badge warning">운영 확인 필요</span>
+                <span className="badge warning">운영 정보 미확인</span>
                 <span className="badge neutral">행사 종료</span>
                 <span className="badge error">정보 조회 실패</span>
               </div>
-              <p className="hint">행사 기간과 당일 운영은 구분해요. 상태는 색상과 라벨을 함께 읽습니다.</p>
+              <p className="hint">상태는 색상과 라벨을 함께 읽습니다.</p>
             </div>
             <div className="sample">
               <h3>무료·유료·미확인 · 스타일 예시</h3>

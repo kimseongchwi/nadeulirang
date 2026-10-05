@@ -44,10 +44,10 @@ export function ReviewShell({ children }: { children: ReactNode }) {
               함께 나들이랑.
             </h2>
             <p className="lead">
-              지금 만날 수 있는 전시부터
-              <br />곧 시작할 축제까지.
+              가까운 곳부터 새로운 곳까지,
+              <br />마음이 가는 나들이를 찾아보세요.
               <br />
-              마음이 가는 곳을 천천히 찾아보세요.
+              가고 싶은 곳의 정보를 살펴봐요.
             </p>
             <ol className="steps">
               {[
@@ -60,8 +60,8 @@ export function ReviewShell({ children }: { children: ReactNode }) {
                   "카드로 간단히 보고, 상세에서 더 알아봐요.",
                 ],
                 [
-                  "출발 전, 한 번 더 확인해요",
-                  "운영·요금·예약은 공식 안내에서 확인해요.",
+                  "방문 정보를 한눈에",
+                  "주소·운영 시간·요금 정보를 살펴봐요.",
                 ],
               ].map(([title, text]) => (
                 <li key={title}>
@@ -123,11 +123,17 @@ export function ReviewShell({ children }: { children: ReactNode }) {
             {!guide && (
               <footer className="service-footer">
                 <div className="footer-intro">
-                  <span className="wordmark" role="img" aria-label="나들이랑" />
+                  <ReviewLink
+                    href={homeUrl}
+                    className="brand"
+                    aria-label="나들이랑 홈으로 이동"
+                  >
+                    <span className="wordmark" role="img" aria-label="나들이랑" />
+                  </ReviewLink>
                   <p className="footer-tagline">가까운 하루, 새로운 발견</p>
                   <p className="footer-description">
                     마음이 가는 곳을 발견하고,
-                    <br />출발 전 필요한 정보를 확인해요.
+                    <br />가고 싶은 곳의 정보를 살펴봐요.
                   </p>
                 </div>
                 <nav className="footer-policy-nav" aria-label="서비스 안내">

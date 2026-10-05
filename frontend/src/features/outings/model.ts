@@ -1,4 +1,4 @@
-import type { Summary } from "./api-types";
+import type { Photo, Summary } from "./api-types";
 
 export const kindNames: Readonly<Record<string, string>> = {
   FESTIVAL: "축제",
@@ -13,6 +13,7 @@ export type Outing = {
   fee_status: string; operation_verified: boolean;
   sources: { source: string; url: string; checked: string }[];
   reviewed_at: string; apiPeriod?: string;
+  photo?: Photo | null;
 };
 export function outingSummary(item: Summary): Outing {
   return {
@@ -20,7 +21,7 @@ export function outingSummary(item: Summary): Outing {
     district_name: "", event_start: item.eventStart, event_end: item.eventEnd,
     lifecycle: item.period, fee_status: item.feeStatus,
     operation_verified: item.operationVerified, sources: [],
-    reviewed_at: item.sourceCheckedAt || "", apiPeriod: item.period,
+    reviewed_at: item.sourceCheckedAt || "", apiPeriod: item.period, photo: item.photo,
   };
 }
 export const photoId = "23e35bc8-99bf-4578-b13b-3f4ebee00d13";

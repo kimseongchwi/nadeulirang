@@ -1,13 +1,20 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import { Icon } from "@/components/ui/icons";
 import { kindNames, photoId, type Outing } from "@/features/outings/model";
 
 export function OutingArtwork({ item, large = false }: { item: Outing; large?: boolean }) {
-  const photo = item.id === photoId;
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const source = item.photo
+    ? large ? item.photo.url : item.photo.thumbnailUrl || item.photo.url
+    : !item.apiPeriod && item.id === photoId ? "/images/clayarch.jpg" : null;
+  const photo = source !== null && source !== failedUrl;
   return (
     <span className={`outing-artwork${large ? " large" : ""}`} data-kind={item.kind} data-photo={photo}>
       {photo ? (
-        <Image src="/images/clayarch.jpg" alt="클레이아크 김해미술관 외관" width={large ? 720 : 120} height={large ? 480 : 120} unoptimized />
+        <Image src={source!} alt={`${item.name} 사진`} width={large ? 720 : 120} height={large ? 480 : 120} unoptimized onError={() => setFailedUrl(source)} referrerPolicy="no-referrer" />
       ) : (
         <span className="outing-artwork-symbol" aria-hidden="true">
           <Icon name={item.kind === "MUSEUM" || item.kind === "CULTURAL_SITE" ? "landmark" : item.kind === "EXHIBITION" ? "spark" : "ticket"} />
@@ -15,16 +22,5 @@ export function OutingArtwork({ item, large = false }: { item: Outing; large?: b
         </span>
       )}
     </span>
-  );
-}
-
-export function PhotoCredit() {
-  return (
-    <div className="photo-credit">
-      <a className="source-link" href="https://commons.wikimedia.org/wiki/File:Clayarch_Gimhae_Museum.JPG" target="_blank" rel="noopener noreferrer">
-        <span><strong>HappyMidnight · Wikimedia Commons</strong><small>사진 출처 · 2015</small></span>
-        <span className="external-link-mark" aria-hidden="true">↗</span>
-      </a>
-    </div>
   );
 }

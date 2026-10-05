@@ -1,4 +1,4 @@
-import type { Detail, Evidence, Home, Options, Page, SourceInfo, Summary } from "./api-types";
+import type { Detail, Evidence, Home, Options, Page, Photo, SourceInfo, Summary } from "./api-types";
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -7,11 +7,21 @@ function strings(value: Record<string, unknown>, keys: string[]) { return keys.e
 function nullable(value: Record<string, unknown>, keys: string[]) { return keys.every((key) => value[key] === null || typeof value[key] === "string"); }
 function count(value: unknown) { return typeof value === "number" && Number.isSafeInteger(value) && value >= 0; }
 function arrayOf<T>(value: unknown, check: (entry: unknown) => entry is T): value is T[] { return Array.isArray(value) && value.every(check); }
+export function photoUrl(value: unknown): value is string {
+  return typeof value === "string" && /^https:\/\/tong\.visitkorea\.or\.kr\/cms\/resource\/\d+\/\d+_image\d+_\d+\.(jpg|jpeg|png)$/i.test(value);
+}
+export function isPhoto(value: unknown): value is Photo {
+  return record(value) && strings(value, ["id", "provider", "attributionUrl", "checkedAt"])
+    && photoUrl(value.url) && (value.thumbnailUrl === null || photoUrl(value.thumbnailUrl))
+    && value.license === "KOGL1" && value.provider === "한국관광공사 TourAPI"
+    && value.attributionUrl === "https://www.data.go.kr/data/15101578/openapi.do";
+}
 export function isSummary(value: unknown): value is Summary {
   return record(value) && strings(value, ["id", "name", "kind", "regionCode", "regionName", "period", "feeStatus"])
     && nullable(value, ["eventStart", "eventEnd", "collectedAt", "sourceCheckedAt"])
     && (value.adultFee === null || typeof value.adultFee === "number" && Number.isFinite(value.adultFee) && value.adultFee >= 0)
-    && typeof value.feeConflict === "boolean" && typeof value.operationVerified === "boolean";
+    && typeof value.feeConflict === "boolean" && typeof value.operationVerified === "boolean"
+    && (value.photo === null || isPhoto(value.photo));
 }
 function isEvidence(value: unknown): value is Evidence {
   return record(value) && strings(value, ["field", "value", "source", "sourceKey", "url", "collectedAt", "checkedAt", "observationId"])
