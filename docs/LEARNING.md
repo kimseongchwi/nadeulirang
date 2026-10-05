@@ -1,20 +1,16 @@
-# 나들이랑 개발 학습 기록
+# 나들이랑 코드 학습
 
-이 문서는 나들이랑을 만들면서 Java·Spring·React의 구조와 선택 이유를 공부하기 위한 설명서다. 해결한 문제, 선택의 이점과 비용, 실제 코드, 확인 방법을 연결한다. Java 코드의 문법을 읽고 Spring이 더하는 동작을 구별하며 작은 변경의 영향을 예상할 수 있는 것을 학습 목표로 삼는다.
+현재 저장소의 코드·설정·파일 구조를 읽고 작은 변경의 영향을 이해하기 위한 문서다. 파일의 역할, 핵심 문법과 식별자, 호출·데이터 흐름, 구현 선택의 이유와 확인 방법을 설명한다. Java 문법과 Spring/Jackson 등의 라이브러리 기능을 구별한다.
 
-작성 기준은 2026-10-03의 코드와 Git 이력이다. **기록된 근거**는 당시 문서·커밋에서 확인한 이유이며, **현재 해설**은 지금 코드의 이점·대안을 설명한 것이다. 과거 이유가 기록되지 않았으면 현재 설명을 당시의 판단으로 바꾸어 적지 않는다. **후속 학습**은 아직 구현·선택하지 않은 내용이다. 아래 연습은 제안이며 사용자의 수행·이해가 확인됐다는 뜻이 아니다.
-
-작업 상태·완료 기준은 [PLAN](../PLAN.md), 제품 동작은 [PRD](PRD.md), 실제 수행 결과는 로컬 `docs/WORKLOG.md`, 실행 명령은 [README](../README.md)에서 관리한다. 학습 설명은 이 문서에서 누적하므로 새 채팅에서도 이어 읽을 수 있다.
+기획·공개 범위는 [PRD](PRD.md), 작업·완료 상태는 [PLAN](../PLAN.md), 실행 명령은 [README](../README.md), 실제 수행 결과는 로컬 docs/WORKLOG.md에서 관리한다. 관련 PLAN 번호는 구현을 찾는 참고 정보다. 아래 설명은 2026-10-05의 코드 기준이며 연습은 선택 사항이다.
 
 ## 읽는 순서
 
-1. 아래 기술 역할 표로 언어·프레임워크·실행 환경·빌드 도구를 구별한다.
-2. P10 Java 코드·어노테이션 설명부터 읽고 애플리케이션 시작·DB·health까지 실제 파일을 따라간다.
-3. P03·P04 설명으로 React와 Next.js, TypeScript의 역할을 구별한다.
-4. P05·P06 설명에서 제품 요구사항이 데이터 모델·검증에 어떤 영향을 주는지 살핀다.
-5. 다음 기능을 시작할 때 해당 PLAN 번호의 후속 학습을 읽고, 구현 뒤 실제 코드 설명으로 보완한다.
-
-모르는 용어는 해당 기능을 읽는 데 필요한 만큼 먼저 익힌다. Java에서는 객체·메서드·컬렉션·예외, JavaScript/TypeScript에서는 객체·배열·함수·비동기 요청이 출발점이다. 모든 기술을 먼저 숙달해야 개발을 시작할 수 있는 것은 아니다.
+1. 기술별 역할과 폴더 구성에서 읽을 파일을 찾는다.
+2. Java 시작 코드 → 어노테이션 → Spring 시작·DB 연결 흐름을 읽는다.
+3. 수집 클래스의 타입·생성자·SQL·응답 처리를 따라간다.
+4. 프론트 페이지 → 화면 → 데이터·상태·팝업 흐름을 읽는다.
+5. 관련 테스트의 입력과 기대값으로 변경의 영향을 확인한다.
 
 ## 기술별 역할
 
@@ -31,61 +27,29 @@
 | 프론트 프레임워크 | Next.js | React에 페이지·레이아웃·렌더링 등의 실행 구조를 제공한다. [현재 레이아웃](../frontend/src/app/layout.tsx) |
 | 프론트 환경과 패키지 관리 | Node.js·npm | 개발 서버·검사 도구를 실행하고 패키지를 설치한다. [프론트 패키지 설정](../frontend/package.json) |
 
-Kotlin은 Java와 비교할 수 있는 언어, Gradle은 Maven과 비교할 수 있는 빌드 도구다. 현재 프로젝트는 Java·Maven을 사용하며 Kotlin·Gradle을 추가할 필요가 있는 상황은 확인되지 않았다. IDE는 코드 편집·실행·디버깅을 돕는 도구다. 현재 빌드·테스트는 터미널과 Wrapper로 수행할 수 있고 IDE별 디버깅 설정은 준비한 범위에 포함되지 않는다.
+## 실행 환경과 설정
 
-## 기존 작업의 이유와 효과
+관련 작업: P01·P08·P09·P22.
 
-### P01 P08 P09 실행 환경을 먼저 확인한 이유
+[use-local-env.ps1](../scripts/use-local-env.ps1)은 현재 PowerShell 프로세스의 JAVA_HOME·PATH와 DB 설정을 준비한다. [local-db.ps1](../scripts/local-db.ps1)은 PostgreSQL 프로세스를 관리한다. JDK 경로 설정과 DB 시작은 별개이며, 다른 터미널은 같은 프로세스의 환경을 자동 공유하지 않는다. 실제 위치와 준비 명령은 README를 따른다.
 
-**기록된 근거:** [PLAN](../PLAN.md#백엔드-기본-환경)과 [README](../README.md#백엔드-개발-환경)는 실제 실행 버전·DB 접속을 확인하고 프로젝트 전용 실행 파일·데이터를 `.local/`에 두도록 정리했다. 환경 적용은 현재 세션으로 제한하고 실제 접속 정보는 Git에서 제외한다.
+### 공통 설정과 폴더별 설정을 합치는 순서
 
-**현재 해설:** 소스 코드가 같아도 JDK·패키지·DB 상태가 다르면 결과가 달라질 수 있다. 환경을 먼저 확인하면 코드 오류와 설치·접속 오류를 구별하기 쉽다. 프로젝트 전용 환경은 시스템 설정과 다른 프로젝트에 영향을 줄일 수 있지만 새 터미널마다 적용하고 DB를 시작해야 하는 비용이 있다. 시스템 설치·컨테이너도 가능한 대안이며 모든 환경에서 로컬 ZIP 방식이 가장 좋은 것은 아니다.
+**문제와 선택:** `.env`는 Git에서 제외되므로 새 작업 폴더나 복제본에 따라오지 않는다. API 키·DB 설정의 공통 파일을 사용자 홈 `.nadeulirang/.env`에 보관하고, 폴더별 비어 있지 않은 값만 덮어쓰도록 했다. 보관 명령과 실제 경로는 [README](../README.md#작업-폴더-사이의-로컬-설정-유지-p22)에서 관리한다. 작업 폴더는 일시적으로 바뀌어도 공통 파일은 같은 사용자 홈에 남는다.
 
-[use-local-env.ps1](../scripts/use-local-env.ps1)은 `JAVA_HOME`·PATH와 허용된 DB 변수만 현재 프로세스에 전달한다. [local-db.ps1](../scripts/local-db.ps1)은 기존 데이터 폴더를 이용해 시작·종료·상태를 관리한다. JDK 위치를 알려주는 일과 PostgreSQL 프로세스를 시작하는 일은 별개다.
+[local-settings.mjs](../scripts/local-settings.mjs)의 `loadLocalSettings`와 [local-settings.ps1](../scripts/local-settings.ps1)의 `Get-NadeulirangLocalSettings`는 6개 변수만 읽는다. `CollectionRunner.readKeys(Path, Path)`는 Java의 `Map<String, String>`에 원천 키 3개만 담는다. 공통 파일을 먼저 순회한 뒤 폴더별 값을 순회하므로 같은 이름의 비어 있지 않은 값이 교체되고, 빈 값은 기존 공통 값에 영향을 주지 않는다. 파일 내용을 명령으로 평가하지 않으므로 비밀번호의 `$()`도 문자로 읽는다.
 
-확인은 README의 버전·DB 상태 명령을 따른다. 선택적 연습으로 새 터미널에서 환경 적용 전후의 `java -version` 결과를 비교하고, JDK가 준비돼 있어도 DB가 중지돼 있으면 접속이 실패하는 이유를 설명해 본다. 데이터 폴더나 접속 정보를 삭제하는 실험은 하지 않는다.
+**이점·비용·대안:** 매번 키를 복사하지 않아도 되지만 공통 설정의 변경은 이를 상속하는 다른 작업 폴더에 영향을 준다. 다른 DB가 필요한 폴더는 자체 설정으로 구분한다. 파일 복사만 하는 대안은 기존 실행 코드를 유지할 수 있어도 값이 여러 사본에 남아 변경이 어긋나기 쉽다. 비밀 관리 서비스는 여러 PC·운영 환경의 권한과 교체를 관리하는 대안이지만 이번 로컬 작업에는 추가하지 않았다. 지금은 접근 권한을 제한한 로컬 파일이며 자동 동기화나 암호화 저장소를 구현한 것은 아니다.
 
-### P03 P04 React와 Next.js를 구별해서 읽기
+**확인 방법:** [도구 테스트](../tests/tooling/local-settings.test.mjs)는 폴더 이동·빈 입력·폴더별 우선순위·문자 그대로 읽기와 Windows 보관 파일의 생성/갱신을 검사한다. [백엔드 설정 테스트](../backend/src/test/java/kr/nadeulirang/backend/collection/CollectionSettingsTests.java)는 공통 키 상속과 기존 폴더만 있는 경우를 검사한다. 실제 키와 파일 권한은 값을 출력하지 않는 별도 로컬 확인으로 검증한다. 선택적 연습으로 공통 `DB_URL`과 폴더별 `DB_URL`이 다를 때 어느 값을 사용할지 예상해 본다.
 
-**기록된 근거:** 기술 구성은 React 기반 Next.js·TypeScript이며 P03·P04에서 기본 프로젝트·실행·lint·타입 검사·빌드를 확인했다. React·Next.js·TypeScript 각각의 최초 선택 이유를 상세 비교한 당시 기록은 없다. P03·P04 당시 페이지는 기본 화면이었다. 현재 검토 시안의 프론트 구조는 아래 P34·P35를 따르며 제품 화면 구현은 P13의 범위다.
+## Java와 Spring 시작 코드
 
-**현재 해설:** 이 프로젝트의 React 컴포넌트는 UI의 한 부분을 표현하는 함수다. props는 전달받는 입력, state는 상호작용에 따라 바뀌는 기억이다. 컴포넌트를 나누고 최소한의 상태를 어디에 둘지 판단하면 데이터 흐름과 수정 범위를 이해하기 쉽다. 컴포넌트를 너무 잘게 나누거나 계산 가능한 값까지 state로 중복 저장하면 관리가 복잡해질 수 있다. [React 공식 설명](https://react.dev/learn/thinking-in-react)
+관련 작업: P10.
 
-[page.tsx](../frontend/src/app/page.tsx)의 `Home`은 기본 UI를 반환하고 [layout.tsx](../frontend/src/app/layout.tsx)의 `RootLayout`은 공통 문서 구조를 감싼다. Next.js App Router의 페이지·레이아웃은 기본적으로 Server Component이며, 사용자 이벤트·브라우저 API 등이 필요한 영역에는 Client Component 경계를 둔다. 이는 Spring 백엔드의 Java 코드와 다른 실행 영역이다. 현재 화면에 검색 state·백엔드 데이터 연결이 구현됐다는 뜻은 아니다. [Next.js 공식 설명](https://nextjs.org/docs/app/getting-started/server-and-client-components)
+### Java 시작 코드를 문법부터 읽기
 
-[tsconfig.json](../frontend/tsconfig.json)의 `strict`는 타입 검사를 엄격하게 적용한다. 다만 TypeScript 타입만으로 외부 API의 실제 응답이나 데이터의 정확성을 보증할 수는 없다. Vite 기반 React 구성도 가능한 대안이며, Next.js를 사용하면 라우팅·서버 렌더링 등의 규칙도 함께 공부해야 한다. 검색 유입 요구사항은 [P14](../PLAN.md#기능과-공개-준비)에서 검증한다.
-
-확인은 [프론트 검사 명령](../README.md#프론트-검증)을 따른다. 선택적 연습으로 `Home`이 반환하는 요소와 `RootLayout`의 `children`이 만나는 위치를 찾아본다. 추후 검색 화면에서는 검색어와 검색 결과 중 무엇을 state로 보관할지 먼저 예상해 본다.
-
-### P05 제품 범위를 먼저 정한 이유
-
-**기록된 근거:** [PRD](PRD.md#첫-공개-범위)에서 검색·상세·최대 3곳 비교를 첫 공개 범위로 정하고 개인별 예상 합계는 후속으로 뒀다. 확인되지 않은 요금·운영 정보를 무료·방문 가능으로 추정하지 않는 기준도 확정했다.
-
-**현재 해설:** 요구사항은 화면 목록을 넘어서 데이터와 조건문을 결정한다. 요금을 0과 미확인으로 구별해야 한다면 저장 모델과 필터가 그 차이를 보존해야 한다. 조건을 URL에 유지해야 한다면 화면의 state와 URL 중 어디를 기준으로 삼을지도 정해야 한다. 범위를 좁히면 먼저 검증할 흐름이 분명해지지만 후속 기능은 제공할 수 없다. 모든 기능을 한 번에 만드는 대안은 판단·검증해야 할 경우의 수를 늘린다.
-
-아직 이 요구사항을 처리하는 검색·비교 코드가 구현된 것은 아니다. 현재 확인할 대상은 [PRD의 정보와 계산 기준](PRD.md#정보계산-기준)이다. 선택적 연습으로 일반 입장료 0원·요금 누락·조건부 무료가 검색 필터에서 어떻게 달라야 하는지 예를 들어 설명한다. 정한 규칙은 P11~P13 구현의 테스트 사례로 연결한다.
-
-### P06 원천 표본과 실패 처리를 먼저 검증한 이유
-
-**기록된 근거:** [원천 검토](DATA_SOURCES.md#p11-수집-기준)는 종류·지역 매핑, 중복·회차·요금 충돌, 출처·시각 보존과 정상 0건/실패의 구별을 수집 기준으로 정리했다. API 조회 성공은 기관의 당일 운영 확인과 구분한다.
-
-**현재 해설:** 외부 데이터는 같은 의미를 다른 구조로 표현하거나 필드를 누락할 수 있다. 표본을 먼저 읽으면 잘못된 가정으로 테이블과 화면을 만드는 위험을 줄일 수 있다. 원천 값을 보존하면 나중에 변환 오류·충돌 원인을 다시 확인할 수 있지만 저장량과 해석 작업이 늘어난다. 원천 응답을 그대로 화면에 전달하는 방식은 단순한 대신 제품 분류·누락·실패 기준을 일관되게 적용하기 어렵다.
-
-[verify-tourapi.mjs](../scripts/verify-tourapi.mjs)의 `buildUrl`은 요청 조건을 제한하고 `summarizeResponse`는 상태·본문을 검사한다. [verify-standard-data.mjs](../scripts/verify-standard-data.mjs)의 `summarizeStandardResponse`는 다른 원천 형식을 처리한다. 이 Node.js 도구들은 P06 표본 검증용이며 Spring의 실제 수집 기능은 P11에서 구현한다. 원천을 다시 호출하지 않아도 [도구 테스트](../tests/tooling/tourapi-validation.test.mjs)를 읽으며 실패와 빈 결과의 차이를 공부할 수 있다.
-
-확인은 README의 도구 테스트 명령을 따른다. 선택적 연습으로 HTTP 200인데 원천 결과 코드가 오류인 응답, 정상 응답의 0건, 본문 손상 사례가 각각 어떤 결과여야 하는지 먼저 적고 테스트와 비교한다. 인증키·실제 접속 정보는 학습 예제에 적지 않는다.
-
-### P07 디자인 기준선을 먼저 정한 이유
-
-**기록된 근거:** [DESIGN의 방향 선택](../DESIGN.md#방향-선택)은 첫 공개 시나리오에서 일정·요금·출처를 반복 비교하기에 적합하다는 이유로 정보 중심 방향을 채택했다. 기본 프로젝트 실행 성공과 디자인 채택은 구분돼 있다.
-
-**현재 해설:** 데이터가 준비되기 전에 화면의 읽는 순서와 공통 스타일을 정하면 구현할 때 항목·상태 표현을 맞추기 쉽다. 실제 긴 이름·누락·오류·모바일 조건에서는 기준선을 보완해야 하므로 P13의 구현 검증이 필요하다. 스타일만 적용한 기본 화면으로 제품 시나리오를 검증할 수는 없다.
-
-선택적 연습으로 같은 카드에서 일반 요금·추가 요금·출처·미확인 표시를 어떤 순서로 읽어야 하는지 PRD와 대조한다. 이 기록은 기존 선택을 설명하며 새로운 디자인이나 스타일 변경을 채택하지 않는다.
-
-### P10 Java 시작 코드를 문법부터 읽기
-
-**기록된 근거:** 현재 백엔드 Java 소스는 [시작 클래스](../backend/src/main/java/kr/nadeulirang/backend/NadeulirangApplication.java)와 [통합 테스트](../backend/src/test/java/kr/nadeulirang/backend/NadeulirangApplicationTests.java)다. 제품의 수집·조회 클래스는 아직 없으므로 이 두 파일로 언어의 기본을 읽는다.
+[시작 클래스](../backend/src/main/java/kr/nadeulirang/backend/NadeulirangApplication.java)와 [통합 테스트](../backend/src/test/java/kr/nadeulirang/backend/NadeulirangApplicationTests.java)로 Java의 기본 표현을 읽는다. 실제 수집 클래스는 아래 데이터 모델·수집 절에서 이어 읽는다.
 
 시작 클래스의 핵심은 다음과 같다. 기존 코드의 발췌이며 새 기능이나 실행 과제가 아니다.
 
@@ -109,11 +73,11 @@ public class NadeulirangApplication {
 | `NadeulirangApplication.class` | 이 타입을 나타내는 `Class` 객체를 전달한다. `new NadeulirangApplication()`으로 만든 앱 인스턴스와 다르다. |
 | `{ ... }`, `;` | 중괄호는 클래스·메서드의 몸체 범위를 감싸고 세미콜론은 이 코드의 선언·호출 문장을 끝낸다. |
 
-**현재 해설:** 클래스 선언과 객체 생성, 메서드 선언과 호출을 구별하면 누가 언제 실행하는지 추적할 수 있다. 객체마다 상태가 필요한 메서드는 인스턴스와 연결하고 `static` 메서드는 클래스와 연결한다. 모든 메서드를 `static`으로 만드는 방식은 객체의 상태·의존성을 다루는 설계와 맞지 않을 수 있다. 관련 문법은 [Java 21 클래스·필드·메서드 명세](https://docs.oracle.com/javase/specs/jls/se21/html/jls-8.html)에서 확인할 수 있다.
+클래스 선언과 객체 생성, 메서드 선언과 호출을 구별하면 누가 언제 실행하는지 추적할 수 있다. 객체마다 상태가 필요한 메서드는 인스턴스와 연결하고 `static` 메서드는 클래스와 연결한다. 모든 메서드를 `static`으로 만드는 방식은 객체의 상태·의존성을 다루는 설계와 맞지 않을 수 있다. 관련 문법은 [Java 21 클래스·필드·메서드 명세](https://docs.oracle.com/javase/specs/jls/se21/html/jls-8.html)에서 확인할 수 있다.
 
 테스트의 `private JdbcTemplate jdbc;`도 세 부분으로 읽는다. `private`는 접근 범위, `JdbcTemplate`은 타입, `jdbc`는 필드 이름이다. `jdbc.queryForObject(...)`는 필드가 참조하는 객체의 메서드를 호출한다. `@Autowired`가 이 필드에 객체를 연결하는 부분은 Java의 변수 선언과 별도로 Spring이 처리한다. 타입을 선언했다고 DB 접속 객체가 자동으로 생기는 것은 아니다.
 
-선택적 연습으로 `main`에서 메서드 선언·호출·매개변수·인수를 각각 표시하고, `static`이 있어서 어떤 인스턴스 생성 없이 호출할 수 있는지 설명해 본다. 힌트는 `SpringApplication.run`의 점 왼쪽과 테스트의 `jdbc.queryForObject`의 점 왼쪽을 비교하는 것이다. 서버 코드를 바꾸거나 연습 답을 제출해야 다음 작업을 진행하는 절차는 없다.
+선택적 연습으로 `main`에서 메서드 선언·호출·매개변수·인수를 각각 표시하고, `static`이 있어서 어떤 인스턴스 생성 없이 호출할 수 있는지 설명해 본다. 힌트는 `SpringApplication.run`의 점 왼쪽과 테스트의 `jdbc.queryForObject`의 점 왼쪽을 비교하는 것이다.
 
 시작 코드를 읽은 뒤에는 같은 테스트 파일에서 다음 표현을 하나씩 찾아본다. 처음부터 모두 외우는 목록이 아니라 코드가 나올 때 돌아올 설명이다.
 
@@ -127,19 +91,19 @@ public class NadeulirangApplication {
 
 람다는 [Java 21 람다 명세](https://docs.oracle.com/javase/specs/jls/se21/html/jls-15.html#jls-15.27), 타입 추론·자원 정리는 [Java 21 지역 변수·try 명세](https://docs.oracle.com/javase/specs/jls/se21/html/jls-14.html)에서 확인할 수 있다. 선택적 연습으로 `throws`가 오류를 처리하는지, `final`과 `var`가 각각 무엇을 제한·추론하는지 말로 구별한다. 힌트는 예외 처리·변수 재대입·타입 추론이 서로 다른 역할이라는 점이다.
 
-### P10 골뱅이 어노테이션은 누가 해석하는가
+### 골뱅이 어노테이션은 누가 해석하는가
 
-**현재 해설:** `@이름`은 Java의 어노테이션 문법이다. 클래스·필드·메서드 등에 정보를 붙이고 컴파일러·도구·프레임워크가 그 정보를 읽어 처리한다. 어노테이션 자체가 메서드를 호출하는 실행문은 아니다. 종류에 따라 컴파일 때만 쓰이거나 실행 중에도 읽을 수 있으므로 모든 어노테이션의 동작 시점이 같지는 않다. [Java 21 어노테이션 명세](https://docs.oracle.com/javase/specs/jls/se21/html/jls-9.html#jls-9.7)
+`@이름`은 Java의 어노테이션 문법이다. 클래스·필드·메서드 등에 정보를 붙이고 컴파일러·도구·프레임워크가 그 정보를 읽어 처리한다. 어노테이션 자체가 메서드를 호출하는 실행문은 아니다. 종류에 따라 컴파일 때만 쓰이거나 실행 중에도 읽을 수 있으므로 모든 어노테이션의 동작 시점이 같지는 않다. [Java 21 어노테이션 명세](https://docs.oracle.com/javase/specs/jls/se21/html/jls-9.html#jls-9.7)
 
-**기록된 근거:** 아래 표는 현재 시작 클래스·테스트에 실제로 붙은 어노테이션이다. 파일 위의 import를 보면 어떤 라이브러리가 정의했는지 알 수 있다.
+아래 표는 현재 시작 클래스·테스트에 실제로 붙은 어노테이션이다. 파일 위의 import를 보면 어떤 라이브러리가 정의했는지 알 수 있다.
 
 | 실제 어노테이션·대상 | 읽는 도구와 역할 | 현재 코드에서 쓰는 이유 |
 |---|---|---|
-| `@SpringBootApplication` · 시작 클래스 | Spring Boot. 구성 클래스 표시·자동 구성·컴포넌트 탐색을 묶는다. 기본 탐색 범위는 이 클래스의 패키지와 하위 패키지다. | 의존성·설정에 따라 앱을 구성하는 출발점을 지정한다. |
-| `@SpringBootTest(webEnvironment = ...RANDOM_PORT)` · 테스트 클래스 | Spring 테스트 지원. 실제 애플리케이션 컨텍스트와 임의 포트의 웹 서버를 준비한다. | DB·마이그레이션과 실제 HTTP 요청을 함께 검사한다. |
-| `@Autowired` · `jdbc`, `flyway` 필드 | Spring 테스트 지원과 컨테이너. 관리하는 Bean을 테스트 필드에 주입한다. | 테스트가 이미 구성된 DB 접근·Flyway 객체를 사용한다. |
-| `@LocalServerPort` · `port` 필드 | Spring Boot 테스트 지원. 실제 할당된 서버 포트를 넣는다. | 테스트가 고정된 8080이나 다른 실행 앱에 요청하지 않도록 한다. |
-| `@DynamicPropertySource` · `isolatedSchema` 메서드 | Spring 테스트 지원. 컨텍스트 준비에 사용할 동적 설정을 등록한다. | 이번 실행의 UUID 스키마를 JDBC·Flyway에 지정한다. |
+| `@SpringBootApplication` · 시작 클래스 | import는 `org.springframework.boot.autoconfigure.SpringBootApplication`. Spring Boot가 구성 클래스·자동 구성·컴포넌트 탐색 기준으로 읽는다. 기본 탐색 범위는 이 클래스의 패키지와 하위 패키지다. | 의존성·설정에 따라 앱을 구성하는 출발점을 지정한다. |
+| `@SpringBootTest(webEnvironment = ...RANDOM_PORT)` · 테스트 클래스 | import는 `org.springframework.boot.test.context.SpringBootTest`. Spring 테스트 지원이 실제 컨텍스트와 임의 포트의 웹 서버를 준비한다. | DB·마이그레이션과 실제 HTTP 요청을 함께 검사한다. |
+| `@Autowired` · `jdbc`, `flyway` 필드 | import는 `org.springframework.beans.factory.annotation.Autowired`. Spring 테스트 지원과 컨테이너가 관리하는 Bean을 주입한다. | 테스트가 이미 구성된 DB 접근·Flyway 객체를 사용한다. |
+| `@LocalServerPort` · `port` 필드 | import는 `org.springframework.boot.test.web.server.LocalServerPort`. Spring Boot 테스트 지원이 실제 할당된 포트를 넣는다. | 고정된 8080이나 다른 실행 앱에 요청하지 않도록 한다. |
+| `@DynamicPropertySource` · `isolatedSchema` 메서드 | import는 `org.springframework.test.context.DynamicPropertySource`. Spring 테스트 지원이 컨텍스트 준비에 사용할 동적 설정을 등록한다. | 이번 실행의 UUID 스키마를 JDBC·Flyway에 지정한다. |
 | `@Test` · 세 검사 메서드 | JUnit. 테스트할 메서드를 표시한다. | 테스트 도구가 일반 메서드와 검사를 구별한다. |
 | `@DisplayName("...")` · 검사 메서드 | JUnit. 결과에 표시할 설명을 지정한다. | 한국어로 검사 목적을 읽게 한다. 검사 내용 자체는 바꾸지 않는다. |
 | `@TestInstance(...PER_CLASS)` · 테스트 클래스 | JUnit. 테스트 클래스당 하나의 인스턴스를 사용한다. | 비정적 `@AfterAll` 메서드에서도 주입받은 `jdbc`를 사용할 수 있다. |
@@ -147,13 +111,15 @@ public class NadeulirangApplication {
 
 `@SpringBootTest(webEnvironment = ...)`의 괄호는 어노테이션의 설정 값이며 테스트 메서드에 넘기는 일반 인수가 아니다. 어노테이션 이름뿐 아니라 대상·설정 값·해석하는 도구를 함께 읽어야 한다. [Spring Boot 구성 설명](https://docs.spring.io/spring-boot/reference/using/using-the-springbootapplication-annotation.html), [JUnit 어노테이션 설명](https://docs.junit.org/6.1.3/writing-tests/annotations.html)
 
-필드 주입은 현재 통합 테스트의 선택이다. 제품 클래스에서 필요한 객체를 생성자의 매개변수로 받는 생성자 주입도 가능한 대안이다. Spring이 관리하는 클래스에 생성자가 하나라면 `@Autowired` 없이 그 생성자를 사용할 수 있다. 따라서 모든 의존성에 반드시 골뱅이를 붙이는 규칙은 아니다. 제품 클래스의 실제 형태는 P11·P12에서 선택하고 기록한다. [Spring 주입 설명](https://docs.spring.io/spring-framework/reference/core/beans/annotation-config/autowired.html)
+표의 JUnit 어노테이션은 각각 `org.junit.jupiter.api.Test`·`DisplayName`·`TestInstance`·`AfterAll`에서 import한다. Spring 구성은 애플리케이션 또는 테스트 컨텍스트를 준비할 때 읽히고, JUnit은 테스트 실행 시 검사와 인스턴스/종료 처리를 결정한다. `DisplayName`의 문자열은 표시할 검사 설명이며 HTTP 응답을 바꾸는 설정이 아니다.
+
+필드 주입은 현재 통합 테스트의 선택이다. 제품 클래스에서 필요한 객체를 생성자의 매개변수로 받는 생성자 주입도 가능한 대안이다. Spring이 관리하는 클래스에 생성자가 하나라면 `@Autowired` 없이 그 생성자를 사용할 수 있다. 따라서 모든 의존성에 반드시 골뱅이를 붙이는 규칙은 아니다. 생성자 주입의 실제 예는 아래 CollectionStore에서 읽을 수 있다. [Spring 주입 설명](https://docs.spring.io/spring-framework/reference/core/beans/annotation-config/autowired.html)
 
 선택적 연습으로 `@Test`·`@Autowired`의 import가 각각 어디에서 오는지 찾아보고, `@DisplayName`의 문구만 바꾸면 HTTP 응답이 바뀌는지 예상한다. 힌트는 응답 검사를 수행하는 메서드 몸체와 결과 설명을 붙이는 어노테이션의 역할을 구별하는 것이다.
 
-### P10 Spring Boot가 시작될 때 일어나는 일
+### Spring Boot가 시작될 때 일어나는 일
 
-**기록된 근거:** [README](../README.md#백엔드-실행검증)는 새 프로젝트의 안정판과 Java 21 지원, 단일 프로젝트의 표준 빌드 흐름·Windows/Linux 실행을 기준으로 Spring Boot 4.1.1·Maven Wrapper 3.9.16을 선택했다고 설명한다.
+읽을 파일은 시작 클래스, pom.xml의 의존성, application.properties의 설정이다. 실행 명령과 버전은 README를 따른다.
 
 [NadeulirangApplication.java](../backend/src/main/java/kr/nadeulirang/backend/NadeulirangApplication.java)의 `main`이 `SpringApplication.run`을 호출한다. `@SpringBootApplication`은 Spring 구성을 시작하는 기준이다. Spring은 의존성과 설정에 맞춰 객체와 기능을 구성하며 애플리케이션에서 관리하는 객체를 Bean이라고 부른다. 객체가 다른 객체를 직접 만들기보다 필요한 객체를 전달받는 방식이 의존성 주입이다. 현재 테스트의 `@Autowired` 필드에서 `JdbcTemplate`·`Flyway`를 전달받는 예를 볼 수 있다.
 
@@ -161,28 +127,28 @@ public class NadeulirangApplication {
 
 1. [use-local-env.ps1](../scripts/use-local-env.ps1)이 DB 설정을 환경 변수로 전달한다. Spring이 루트 `.env`를 직접 읽는 구성은 아니다.
 2. [pom.xml](../backend/pom.xml)의 MVC·JDBC·Flyway·Actuator 의존성과 [application.properties](../backend/src/main/resources/application.properties)가 웹 서버·DB 연결·마이그레이션·health 구성에 사용된다.
-3. DB 연결 뒤 Flyway가 전용 스키마와 이력을 준비하고 V1을 적용한다. 초기 SQL은 스키마 설명을 기록하며 제품 테이블은 아직 만들지 않는다.
+3. DB 연결 뒤 Flyway가 전용 스키마와 이력을 준비하고 미적용 마이그레이션을 순서대로 실행한다. V1은 스키마 설명, V2는 수집·제품 테이블을 정의한다.
 4. 웹 서버가 시작되고 `/actuator/health`로 상태를 확인할 수 있다. 이 엔드포인트는 Actuator가 제공하므로 별도의 사용자 작성 Controller가 없다.
 
-**현재 해설:** 자동 구성은 기본 연결 코드를 줄여 주지만 어떤 의존성과 설정이 동작을 만드는지 확인해야 한다. 환경·설정을 바꾸면 같은 시작 코드에서도 동작이 달라진다. 수동 구성도 가능한 대안이며 현재 규모에서 모든 객체·웹 서버를 직접 구성하면 유지할 코드가 늘어난다. Kotlin·Gradle과의 비교는 가능한 대안에 대한 현재 설명이며 별도 채택 결정은 없다.
+자동 구성은 기본 연결 코드를 줄여 주지만 어떤 의존성과 설정이 동작을 만드는지 확인해야 한다. 환경·설정을 바꾸면 같은 시작 코드에서도 동작이 달라진다. 수동 구성도 가능한 대안이며 현재 규모에서 모든 객체·웹 서버를 직접 구성하면 유지할 코드가 늘어난다.
 
 확인은 README의 백엔드 실행·검증 명령을 따른다. 선택적 연습으로 MVC·JDBC·Flyway·Actuator가 각각 어떤 기능을 담당하는지 `pom.xml`에서 찾아보고, health를 처리하는 사용자 작성 메서드를 찾을 수 없는 이유를 설명한다.
 
-### P10 Flyway와 전용 스키마를 사용한 이유
+### Flyway와 전용 스키마를 사용한 이유
 
-**기록된 근거:** [연결 설정](../backend/src/main/resources/application.properties)은 JDBC와 Flyway에 같은 `nadeulirang` 스키마를 지정하고 SQL 자동 초기화를 끈다. `clean-disabled=true`로 Flyway의 스키마 정리를 금지한다. [V1](../backend/src/main/resources/db/migration/V1__initialize_schema.sql)은 제품 테이블을 P11로 남겨둔다.
+[연결 설정](../backend/src/main/resources/application.properties)은 JDBC와 Flyway에 같은 `nadeulirang` 스키마를 지정하고 SQL 자동 초기화를 끈다. `clean-disabled=true`로 Flyway의 스키마 정리를 금지한다. [V1](../backend/src/main/resources/db/migration/V1__initialize_schema.sql)은 스키마 설명을 기록하고 [V2](../backend/src/main/resources/db/migration/V2__collection_model.sql)는 제품·수집 테이블을 만든다.
 
-**현재 해설:** 마이그레이션은 DB 구조 변경을 버전 파일로 남기는 방법이다. 이력을 함께 관리하면 어느 변경이 적용됐는지 확인하고 다른 환경에도 같은 순서로 적용하기 쉽다. 적용한 SQL을 고치면 기존 DB의 이력과 새 파일이 달라질 수 있으므로 다음 버전으로 변경을 추가한다. 여러 초기화 방식의 중복 사용을 피하는 것은 [Spring Boot 공식 초기화 안내](https://docs.spring.io/spring-boot/how-to/data-initialization.html)의 권장 방식과도 맞는다.
+마이그레이션은 DB 구조 변경을 버전 파일로 남기는 방법이다. 이력을 함께 관리하면 어느 변경이 적용됐는지 확인하고 다른 환경에도 같은 순서로 적용하기 쉽다. 적용한 SQL을 고치면 기존 DB의 이력과 새 파일이 달라질 수 있으므로 다음 버전으로 변경을 추가한다. 여러 초기화 방식의 중복 사용을 피하는 것은 [Spring Boot 공식 초기화 안내](https://docs.spring.io/spring-boot/how-to/data-initialization.html)의 권장 방식과도 맞는다.
 
 전용 스키마는 애플리케이션의 테이블·변경 이력을 구별하게 해 주지만 그 자체가 별도 DB나 권한 분리를 보장하지는 않는다. JDBC 기본 스키마도 일치시켜야 SQL이 의도한 위치의 테이블을 찾는다. `clean-disabled`는 Flyway 기능을 제한하며 직접 실행하는 `DROP` SQL까지 막는 설정은 아니다.
 
-수동 SQL 적용은 시작하기 쉽지만 적용 이력을 따로 맞춰야 한다. Hibernate 자동 DDL도 가능한 대안이나 현재 JPA/Hibernate 저장 모델은 채택하지 않았다. P11에서 저장 접근 방식을 선택할 때 기능·복잡도·학습 비용을 비교한다.
+수동 SQL 적용은 시작하기 쉽지만 적용 이력을 따로 맞춰야 한다. Hibernate 자동 DDL도 가능한 대안이나 현재 JPA/Hibernate 저장 모델은 채택하지 않았다. 현재 저장 코드는 JDBC로 SQL을 직접 실행한다.
 
 선택적 연습으로 같은 앱을 다시 시작할 때 V1이 다시 실행돼야 하는지 예상하고, [migratesSchemaOnce](../backend/src/test/java/kr/nadeulirang/backend/NadeulirangApplicationTests.java)에서 재실행·이력 검사를 찾아본다. 적용된 V1이나 앱 데이터를 수정하는 실험은 하지 않는다.
 
-### P10 health 주소와 404를 구별하기
+### health 주소와 404를 구별하기
 
-**기록된 근거:** [README 실행 안내](../README.md#백엔드-실행검증)는 Spring의 기본 포트 8080과 `/actuator/health`를 사용한다. [테스트](../backend/src/test/java/kr/nadeulirang/backend/NadeulirangApplicationTests.java)의 `servesHealthWithoutDetails`도 이 경로를 요청한다. 프론트의 [app 폴더](../frontend/src/app)에는 `/api/health` 라우트가 없으며 [next.config.ts](../frontend/next.config.ts)에도 Spring으로 전달하는 rewrite 설정이 없다.
+[README 실행 안내](../README.md#백엔드-실행검증)는 Spring의 기본 포트 8080과 `/actuator/health`를 사용한다. [테스트](../backend/src/test/java/kr/nadeulirang/backend/NadeulirangApplicationTests.java)의 `servesHealthWithoutDetails`도 이 경로를 요청한다. 프론트의 [app 폴더](../frontend/src/app)에는 `/api/health` 라우트가 없으며 [next.config.ts](../frontend/next.config.ts)에도 Spring으로 전달하는 rewrite 설정이 없다.
 
 | 요청 주소 | 요청을 받는 서버·현재 동작 |
 |---|---|
@@ -190,7 +156,7 @@ public class NadeulirangApplication {
 | `http://localhost:8080/actuator/health` | 기본 포트의 Spring. 앱·DB가 정상일 때 200과 `{"status":"UP"}`이다. |
 | `http://localhost:8080/api/health` | Spring이 실행 중이어도 현재 이 경로를 만들지 않았으므로 404다. |
 
-**현재 해설:** URL은 서버 주소·포트·경로를 함께 읽는다. 브라우저에서 상대 주소 `/api/health`로 요청하면 현재 페이지의 서버로 간다. `npm run dev`는 Next.js만 시작하고 Spring·PostgreSQL을 함께 시작하지 않는다. `GET /api/health 404 ... (next.js: ...)` 로그는 Next.js가 처리한 요청에서 그 경로를 찾지 못했다는 뜻이며 Spring의 health 검사 결과와 구분해야 한다. 이 로그만으로 요청을 누가 만들었는지는 알 수 없다.
+URL은 서버 주소·포트·경로를 함께 읽는다. 브라우저에서 상대 주소 `/api/health`로 요청하면 현재 페이지의 서버로 간다. `npm run dev`는 Next.js만 시작하고 Spring·PostgreSQL을 함께 시작하지 않는다. `GET /api/health 404 ... (next.js: ...)` 로그는 Next.js가 처리한 요청에서 그 경로를 찾지 못했다는 뜻이며 Spring의 health 검사 결과와 구분해야 한다. 이 로그만으로 요청을 누가 만들었는지는 알 수 없다.
 
 404는 응답한 서버에 그 경로가 없다는 뜻이다. 접속 거부·연결 실패는 서버 미실행·포트 등 연결 상태부터 확인한다. 올바른 health 경로의 503은 서버에 연결됐지만 health 상태가 정상으로 판정되지 않은 경우이며 DB 상태 등을 살펴야 한다. 현재 health는 Actuator가 제공하므로 사용자가 작성한 `/api/health` Controller는 없다. [Actuator 공식 설명](https://docs.spring.io/spring-boot/reference/actuator/endpoints.html)
 
@@ -198,41 +164,19 @@ public class NadeulirangApplication {
 
 선택적 연습으로 위 세 주소의 서버·포트·경로를 표시하고, Spring을 끈 상태와 DB 장애 상태의 예상 결과를 비교해 본다. 힌트는 HTTP 상태 코드를 받았는지와 서버에 연결 자체가 됐는지를 먼저 구별하는 것이다.
 
-### P10 실제 DB 테스트와 health의 역할
+### 실제 DB 테스트와 health의 역할
 
-**기록된 근거:** [NadeulirangApplicationTests](../backend/src/test/java/kr/nadeulirang/backend/NadeulirangApplicationTests.java)는 실제 PostgreSQL을 사용한다. `@DynamicPropertySource`가 실행마다 만든 UUID 스키마를 설정에 전달하고 `@AfterAll`에서 그 스키마만 삭제한다. `RANDOM_PORT`와 Java `HttpClient`로 실제 HTTP 응답도 확인한다.
+[NadeulirangApplicationTests](../backend/src/test/java/kr/nadeulirang/backend/NadeulirangApplicationTests.java)는 실제 PostgreSQL을 사용한다. `@DynamicPropertySource`가 실행마다 만든 UUID 스키마를 설정에 전달하고 `@AfterAll`에서 그 스키마만 삭제한다. `RANDOM_PORT`와 Java `HttpClient`로 실제 HTTP 응답도 확인한다.
 
-**현재 해설:** 실제 DB를 사용하면 PostgreSQL 접속·스키마·시간대·마이그레이션을 함께 검사할 수 있다. 대신 DB 실행·접속 환경이 필요하다. Mock은 외부 의존성을 대체한 가짜 객체로 특정 로직을 빠르게 검사하는 대안이고, 메모리 DB도 가능하지만 실제 PostgreSQL의 모든 동작을 검증하지는 않는다. 제품 로직이 생기면 단위 테스트와 DB 통합 테스트의 역할을 나눠 선택한다.
+실제 DB를 사용하면 PostgreSQL 접속·스키마·시간대·마이그레이션을 함께 검사할 수 있다. 대신 DB 실행·접속 환경이 필요하다. Mock은 외부 의존성을 대체한 가짜 객체로 특정 로직을 빠르게 검사하는 대안이고, 메모리 DB도 가능하지만 실제 PostgreSQL의 모든 동작을 검증하지는 않는다. 현재 CollectionPolicyTests와 CollectionStoreTests에서 정책 단위 테스트와 실제 DB 저장 검사를 나눠 읽을 수 있다.
 
 health는 애플리케이션과 연결된 구성요소의 상태를 확인하는 수단이다. 현재 설정은 상태만 공개하고 DB 상세·환경 설정 엔드포인트는 공개하지 않는다. health의 `UP`은 원천 데이터의 최신성이나 검색 기능의 정확성까지 보증하지 않는다. [Actuator 공식 설명](https://docs.spring.io/spring-boot/reference/actuator/endpoints.html)
 
 선택적 연습으로 `connectsToPostgresql`, `migratesSchemaOnce`, `servesHealthWithoutDetails`가 각각 어떤 오류를 발견하고 무엇을 확인하지 못하는지 적어본다. 테스트 종료 시 UUID 스키마만 지우는 이유와 강제 종료·DB 장애 시 정리가 남을 수 있는 이유도 설명한다.
 
-### P10 P16 P18 빌드와 검사를 나눈 이유
+## 데이터 모델과 수집 코드
 
-**기록된 근거:** [AGENTS의 커밋 규칙](../AGENTS.md#브랜치와-커밋)은 변경에 필요한 검사만 커밋 때 수행하고 전체 빌드는 기능 완료·PR 전 또는 CI에서 확인하도록 정리했다. 백엔드는 훅에서 `test`, CI에서 `verify`를 실행한다.
-
-**현재 해설:** Maven의 `test`는 앞선 컴파일 단계와 테스트까지 수행한다. `verify`는 앞선 패키징과 검증 단계까지 진행하며 현재 Spring Boot 플러그인 구성은 실행 JAR을 만든다. `verify`라고 해서 프로젝트에 작성하지 않은 품질 검사까지 자동으로 생기는 것은 아니다. [Maven 공식 빌드 흐름](https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html)
-
-[check-commit.mjs](../scripts/check-commit.mjs)는 스테이징한 경로로 프론트·백엔드·도구 검사 필요 여부를 정한다. [check-backend.mjs](../scripts/check-backend.mjs)는 Maven 테스트를 실행한다. [.github/workflows/ci.yml](../.github/workflows/ci.yml)은 새 PostgreSQL 서비스와 JDK로 백엔드 테스트·빌드를 수행해 로컬 환경에만 의존하지 않도록 한다.
-
-검사를 나누면 커밋 대기 시간을 줄일 수 있지만 경로 분기가 잘못되면 필요한 검사를 놓칠 수 있다. 모든 검사를 매 커밋에 실행하는 대안은 단순하지만 비용이 늘어난다. 부분 스테이징을 차단하는 이유는 검사한 코드와 커밋될 코드가 달라지는 상황을 줄이기 위해서다. [훅 분기 테스트](../tests/tooling/commit-check.test.mjs)는 실패 차단·수정 후 통과·부분 스테이징·문서 변경을 임시 저장소에서 검사한다.
-
-선택적 연습으로 README만 수정할 때와 백엔드 SQL을 수정할 때 각각 실행돼야 할 검사를 예상하고 코드의 분기와 비교한다. 훅·CI 성공과 사람의 리뷰가 확인하는 내용의 차이도 찾아본다.
-
-### P02 P17 P19 P20 설명과 기록의 역할을 나눈 이유
-
-**기록된 근거:** [AGENTS](../AGENTS.md#문서-역할)는 계획·제품 기준·디자인·실행 안내·실제 결과를 각각의 문서에서 관리한다. P17은 diff 자체 리뷰를, P19는 WORKLOG 로컬 보존을, P20은 검증·리뷰·훅 통과 후 자동 로컬 커밋을 정리했다. 원격 반영은 별도 요청 범위다.
-
-**현재 해설:** 같은 완료 상태를 여러 문서에 복사하면 나중에 일부만 갱신돼 충돌할 수 있다. 담당 문서와 링크를 정하면 변경 위치가 분명해진다. WORKLOG는 이 환경의 실제 결과를 보존하고 커밋·PR은 공유할 변경 이유와 검증을 남긴다. 로컬 기록은 다른 PC에 자동으로 전달되지 않는 비용이 있으므로 학습 설명은 Git으로 관리하는 이 문서에 남긴다.
-
-기존 작업의 이유는 `git show <커밋>`으로 코드와 본문을 함께 읽을 수 있다. 예를 들어 `git show 2465691 -- backend/pom.xml`은 백엔드 준비의 설정 변경을 보여준다. 커밋 메시지가 있어도 실제 코드·테스트와 맞는지 확인하는 자체 리뷰가 필요하다.
-
-선택적 연습으로 새로운 실행 명령, 제품 규칙, 오늘 수행한 결과, 기술 선택 해설을 각각 어느 문서에 기록해야 하는지 구별한다. 새 채팅에서 코드를 설명할 때는 실행 결과를 상상해 채우지 않고 확인 가능한 자료를 연결한다.
-
-## P11 데이터 모델·수집 구현에서 선택한 구조
-
-2026-10-03 구현하고 실제 소량 수집까지 검증한 코드의 설명이다. 공개 후보의 확보 범위는 PLAN에서 관리하며, 이를 전국 데이터 확보나 사용자의 학습 완료로 해석하지 않는다.
+관련 작업: P06·P11.
 
 ### 원문과 제품 항목의 ID를 분리하기
 
@@ -266,98 +210,90 @@ health는 애플리케이션과 연결된 구성요소의 상태를 확인하는
 
 **확인 방법과 한계:** [정책 테스트](../backend/src/test/java/kr/nadeulirang/backend/collection/CollectionPolicyTests.java)는 종류·요금·서울 날짜 경계·응답 검증을, [저장 테스트](../backend/src/test/java/kr/nadeulirang/backend/collection/CollectionStoreTests.java)는 실제 PostgreSQL에서 중복·충돌·호출 예산·동시 예약·롤백·이관·갱신 정책을 검사한다. 같은 응답에 다른 기준일·요금의 중복 행이 있으면 최신 호출의 모든 값을 비교해 충돌을 남긴다. 정상 소개 0건은 과거 날짜를 현재 확인된 일정으로 계속 쓰지 않고 미확인으로 바꾸며, 원문은 보존한다. 실패 때 마지막 성공을 보존하는 처리와 다르다.
 
-2026-10-03 실제 수집에서 시도 요청에 `lDongListYn=Y`를 넣으면 구·군부터 반환돼 20건에 서울만 담기는 문제가 드러났다. 기본 시도 조회와 주소를 대조해 고쳤고, 두 행사 표본의 축약 이름을 실제 정식 이름으로 보완했다. `needsDetails`는 원천 수정 시각과 상세 성공 기한을 비교해 재실행의 불필요한 상세 호출을 줄였다. 테스트 입력과 실제 API 결과는 구분하며 실제 공개 후보 범위는 PLAN의 P11에서 관리한다. 조회 API는 P12, 날짜별 운영 판단과 화면 시나리오는 P13에서 확인한다.
+`needsDetails`는 원천 수정 시각과 상세 성공 기한을 비교해 불필요한 상세 호출을 줄인다. 상세 호출을 줄이는 판단과 원천 데이터가 현재 운영을 보증하는지는 서로 다른 문제다.
 
 선택적 연습: `adultChrge`의 `""`, `"0"`, `"1000"`이 각각 어떤 요금 상태가 될지 예상하고 테스트와 비교한다. 서로 다른 원천의 1,000원과 3,000원을 연결했을 때 원문·일반 요금·내부 ID가 어떻게 되는지 찾아본다. 제품 코드를 바꾸지 않아도 테스트 입력과 기대값을 읽으며 확인할 수 있다.
 
-## P22 작업 폴더와 비밀 설정의 수명을 분리하기
+`parse`와 HTTP 응답 판정의 작은 예제는 [verify-tourapi.mjs](../scripts/verify-tourapi.mjs)의 summarizeResponse와 [도구 테스트](../tests/tooling/tourapi-validation.test.mjs)를 함께 본다. 이 Node.js 도구는 표본 확인용이며 실제 저장 흐름은 CollectionRunner → SourceClient → CollectionStore다.
 
-**문제와 선택:** `.env`는 Git에서 제외되므로 새 작업 폴더나 복제본에 따라오지 않는다. 2026-10-03 사용자 요청에 따라 API 키·DB 설정의 공통 파일을 사용자 홈 `.nadeulirang/.env`에 보관하고, 폴더별 비어 있지 않은 값만 덮어쓰도록 했다. 보관 명령과 실제 경로는 [README](../README.md#작업-폴더-사이의-로컬-설정-유지-p22)에서 관리한다. 작업 폴더는 일시적으로 바뀌어도 공통 파일은 같은 사용자 홈에 남는다.
+## 프론트 파일과 실행 흐름
 
-[local-settings.mjs](../scripts/local-settings.mjs)의 `loadLocalSettings`와 [local-settings.ps1](../scripts/local-settings.ps1)의 `Get-NadeulirangLocalSettings`는 6개 변수만 읽는다. `CollectionRunner.readKeys(Path, Path)`는 Java의 `Map<String, String>`에 원천 키 3개만 담는다. 공통 파일을 먼저 순회한 뒤 폴더별 값을 순회하므로 같은 이름의 비어 있지 않은 값이 교체되고, 빈 값은 기존 공통 값에 영향을 주지 않는다. 파일 내용을 명령으로 평가하지 않으므로 비밀번호의 `$()`도 문자로 읽는다.
+관련 작업: P03·P04·P24·P26·P27·P34·P35.
 
-**이점·비용·대안:** 매번 키를 복사하지 않아도 되지만 공통 설정의 변경은 이를 상속하는 다른 작업 폴더에 영향을 준다. 다른 DB가 필요한 폴더는 자체 설정으로 구분한다. 파일 복사만 하는 대안은 기존 실행 코드를 유지할 수 있어도 값이 여러 사본에 남아 변경이 어긋나기 쉽다. 비밀 관리 서비스는 여러 PC·운영 환경의 권한과 교체를 관리하는 대안이지만 이번 로컬 작업에는 추가하지 않았다. 지금은 접근 권한을 제한한 로컬 파일이며 자동 동기화나 암호화 저장소를 구현한 것은 아니다.
+### 주소·화면·공통 UI의 역할
 
-**확인 방법:** [도구 테스트](../tests/tooling/local-settings.test.mjs)는 폴더 이동·빈 입력·폴더별 우선순위·문자 그대로 읽기와 Windows 보관 파일의 생성/갱신을 검사한다. [백엔드 설정 테스트](../backend/src/test/java/kr/nadeulirang/backend/collection/CollectionSettingsTests.java)는 공통 키 상속과 기존 폴더만 있는 경우를 검사한다. 실제 키와 파일 권한은 값을 출력하지 않는 별도 로컬 확인으로 검증한다. 선택적 연습으로 공통 `DB_URL`과 폴더별 `DB_URL`이 다를 때 어느 값을 사용할지 예상해 본다.
+[홈 page.tsx](../frontend/src/app/page.tsx)의 `HomePage`는 [HomeReview](../frontend/src/features/outings/home.tsx)를 반환한다. `HomeReview`는 [OutingCard](../frontend/src/features/outings/outing-card.tsx)를 사용한다. [layout.tsx](../frontend/src/app/layout.tsx)의 `RootLayout`은 `ReviewProvider`와 `ReviewShell`로 페이지의 `children`을 감싼다.
 
-## P24·P26·P27 시안의 상태와 화면 검토
+| 위치 | 코드에서 맡는 역할 |
+|---|---|
+| src/app | Next.js의 URL별 진입점·공통 레이아웃·파비콘 응답 |
+| src/components | 여러 화면이 함께 쓰는 UI·배치·스크롤 처리 |
+| src/features | 나들이·정책·가이드 기능의 화면·데이터·동작 |
+| src/config | 공통 브랜드 설정 |
+| src/providers | 화면 간 공유 상태와 이동/복귀 처리 |
+| src/styles | 화면과 공통 UI의 스타일 |
+| public/images | /images/... 주소로 제공하는 이미지·출처 자료 |
 
-2026-10-04 외부 HTML 시안에서 홈·스타일 가이드·달력을 검토했다. 같은 날 프로젝트 내부 보관과 P33 임시 경로 연결을 거쳐 P34에서 실제 Next.js·React 구조로 전환했다. 아래는 현재 코드와 연결한 설명이며 외부 원본·과거 이력 경로는 로컬 docs/WORKLOG.md에 보존한다. 숲 초록 팔레트·메뉴 방향은 DESIGN의 사용자 선택을 따르며 전체 시안·제품 완성·사용자의 이해 완료로 취급하지 않는다.
+`page.tsx`·`layout.tsx`는 Next.js 규칙이고 `components`·`features` 등의 이름은 이 프로젝트의 분류 방식이다. 코드를 각 주소 폴더 안에 모으는 대안도 있지만, 공유 UI와 기능 코드를 분리하면 수정 위치를 찾기 쉽다. 파일과 import가 늘어나는 비용은 있다. 전체 안내는 [프론트 README](../frontend/README.md#폴더-구성)를 참고한다.
 
-**적용 조건과 선택 중인 값:** [HomeFilter](../frontend/src/features/outings/home-filter.tsx)는 URL의 지역·종류를 폼의 React state에 복사한다. 폼에서 선택해도 목록은 바뀌지 않고 적용할 때만 주소와 목록을 갱신한다. 취소·Esc·뒤로 가기는 선택 중인 값을 버린다. [DateField·Calendar](../frontend/src/features/ui-design/calendar.tsx)도 적용 값과 pending 값을 분리해 선택 완료에서만 입력을 바꾼다. 지우기 후 취소하면 기존 날짜를 유지한다. 즉시 적용보다 한 단계가 늘지만 취소 의미가 분명하다. 최초 DOM 시안의 calendarPending·setDate·syncHomeFilter는 외부 보존본에서만 확인한다.
+### props·state와 서버/브라우저의 경계
 
-**가이드와 모바일 화면의 폭:** [GuideReview](../frontend/src/features/ui-design/guide.tsx)는 목차·여러 열의 컴포넌트와 320/390/430px iframe을 제공한다. iframe은 별도 viewport에서 실제 홈·검색·상세 페이지를 실행하므로 화면을 복제하지 않고 변경을 같이 확인할 수 있다. 다만 세 페이지의 로딩·스크롤·포커스를 검증해야 한다. 같은 출처의 iframe은 탭 저장을 공유하므로 [HomeReview](../frontend/src/features/outings/home.tsx)는 window.self와 window.top을 비교해 미리보기에서 원래 홈 조건을 덮어쓰지 않는다. 가이드 전체 폭과 iframe 폭은 별개의 설정이다.
+React 컴포넌트는 UI를 표현하는 함수다. `props`는 전달받은 입력, `state`는 상호작용에 따라 바뀌는 값이다. 상세 서버 페이지는 id에 맞는 검토 자료를 찾아 `DetailReview`의 `item` prop으로 전달한다. JSX는 그 입력과 상태를 화면으로 표현한다. 사용자 입력·달력의 미적용 선택·메뉴 동작은 브라우저에서 처리한다.
 
-**P24·P26 데스크톱의 스크롤과 모달 영역:** 문서 전체가 스크롤되면 왼쪽 안내가 사라지고, 기본 dialog는 브라우저 가운데와 전체 배경을 사용해 오른쪽 서비스의 경계를 벗어났다. 사용자 요청으로 [ReviewShell](../frontend/src/components/layout/site-shell.tsx)의 서비스 안에 service-scroll을 두고, 960px부터 화면 높이를 고정한 뒤 본문만 overflow-y: auto로 스크롤한다. 하단바는 그 밖에 두어 항상 보이게 한다. 왼쪽 pc-intro는 후속 요청으로 스크롤과 중복 정책 링크를 제거했다. 짧은 높이에서는 간격을 줄이고 보조 설명부터 생략하며 필수 정책 링크는 오른쪽 서비스 푸터에 유지한다. 단순 overflow 숨김은 소개 내용이 잘릴 수 있으므로 화면 높이에 맞춘 요약을 선택했고 600/440px 높이에서 실제 표시를 확인한다. [service-scroll.ts](../frontend/src/components/layout/service-scroll.ts)의 reviewScrollTop·scrollReviewTo는 실제 스크롤 영역의 위치를 저장·복원하며, 모바일과 가이드에서는 기존 문서 스크롤을 사용한다. 모달이 열려 overflow가 hidden인 경우도 같은 영역으로 인식해야 메뉴에서 이동할 때 위치를 잃지 않는다.
+Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포넌트다. `useState`·사용자 이벤트·`window` 등이 필요한 파일은 맨 위의 `"use client"`로 클라이언트 컴포넌트의 경계를 정한다. 클라이언트 컴포넌트도 첫 HTML의 서버 렌더링에 참여할 수 있으므로 모든 코드가 브라우저에서만 실행된다고 가정하지 않는다. [tsconfig.json](../frontend/tsconfig.json)의 `strict`는 타입 검사이며 실제 외부 응답의 정확성까지 보증하지 않는다.
 
-화면 중앙에 여백을 두기 위해 [review.css](../frontend/src/styles/review.css)의 shell은 같은 너비의 두 열과 사용자 후속 요청한 200px 중앙 간격을 사용하고 안내는 왼쪽 열의 끝, 서비스는 오른쪽 열의 시작에 정렬한다. 너비가 다른 두 화면을 한 묶음으로 가운데 정렬하면 여백의 중심이 화면 중심에서 벗어나므로 사용자 배치 요청에 맞지 않는다. 서비스는 사용자 후속 선택에 따라 CSS의 최대 480px로 제한하되 좁은 데스크톱에서는 열에 맞춰 줄인다. 폭 비교용 상태와 저장값을 읽는 코드를 제거해 이전 520px 선택이 남아 있어도 480px를 사용한다. 이 선택은 중앙 여백과 가로 넘침을 함께 해결하지만 서비스 폭이 항상 고정되지는 않으므로 960px 전환점과 넓은 화면을 확인해야 한다.
+[model.ts](../frontend/src/features/outings/model.ts)의 `Outing`은 JSON 스냅샷 원소의 타입, `reviewItems`는 검토 항목 배열이다. `seoulDate`는 서울 날짜를 계산하고 `publicItems`·`ongoing`·`upcoming`·`permanent`는 종료/기간/상설을 구분한다. 행사 기간 안이라는 판정은 당일 운영 확인과 다르다. 루트 레이아웃의 `force-dynamic`은 렌더링 날짜를 빌드 시점에 고정하지 않게 한다. 현재 자료는 [review-data.json](../frontend/src/features/outings/data/review-data.json)이며 제품 API 연결은 아직 없다.
 
-[ReviewDialog](../frontend/src/components/ui/dialog.tsx)는 getBoundingClientRect로 서비스의 화면상 경계를 읽고 메뉴는 그 안의 가운데, 정책·필터는 그 안의 아래에 둔다. CSS의 backdrop clip-path로 어두운 배경도 같은 경계 안에 제한한다. native showModal의 포커스 잠금과 Escape 동작은 유지하며, 창을 닫으면 잠근 스크롤을 해제하고 원래 버튼으로 포커스를 돌린다. 문서 전체 스크롤·전체 모달을 유지하는 대안은 구현이 간단하지만 요청한 영역 분리에 맞지 않았다. 대신 영역별 위치 저장·리사이즈·좁은 화면의 검증이 필요해졌다. 확인은 오른쪽 스크롤 중 왼쪽/하단바 유지, 상세 복귀, 모달 닫기 전후 위치, 960px 전환과 모바일에서 수행한다. 선택적 연습으로 body만 잠그면 오른쪽 스크롤도 멈추는지 예상해 본다.
+확인은 프론트의 날짜·검색 테스트 입력과 기대값을 읽는다. 선택적 연습으로 카드 이름 표시를 `outing-card.tsx`에서 바꾸면 홈·검색·가이드에 어떻게 반영될지 예상한다.
 
-**P24·P26 320px 검색과 개발 바로가기:** 좁은 화면의 공통 .full 규칙은 grid-column을 auto로 돌리지만 검색 폼은 계속 두 열을 사용해 입력이 반 칸으로 축소됐다. review.css에서 .search-filters .search-keyword를 1 / -1로 지정해 검색 입력은 전체 행, 지역·종류는 다음 두 칸을 쓰도록 한다. 모바일 전체 레이아웃을 바꾸는 대안보다 영향이 작으며 320px의 실제 입력 폭과 검색·초기화를 확인한다. ReviewShell의 UI 가이드 링크는 process.env.NODE_ENV가 development일 때만 표시한다. 프로덕션 빌드에서 조건이 제거되는 점을 확인하되 가이드 URL 자체의 접근 제한을 뜻하지 않는다. 가이드의 뒤로가기 예시는 안내만 표시하고 실제 상세 페이지의 복귀는 유지한다. 홈 종류 목록은 overflow-x만으로 터치/스크롤바 이동이 가능하지만 PC에서 마우스를 끄는 동작은 별도 포인터 처리가 필요하다. HomeReview의 chipDrag는 6px 이상 이동한 경우에만 포인터를 잡아 scrollLeft를 바꾸고 클릭을 억제한다. 링크의 기본 URL 끌기는 draggable=false로 막으며 터치는 네이티브 동작을 유지한다. 대신 드래그 후 정상 클릭·pointercancel·방향키·양방향 이동을 확인할 비용이 있다.
+### URL·탭 저장과 복귀
 
-**로딩 움직임과 상태 안내:** [feedback.tsx](../frontend/src/components/ui/feedback.tsx)의 LoadingState·EmptyState·ErrorState를 가이드와 화면이 공유한다. [review.css](../frontend/src/styles/review.css)의 walking-mark·outing-walk는 파비콘과 같은 원본 심볼을 CSS mask로 표시하고 transform으로 작은 이동·회전을 반복한다. 원본 전체가 움직이며 다리 관절 애니메이션은 아니다. prefers-reduced-motion은 움직임을 제거한다. 로딩은 role=status로 알리고 장식 아이콘은 읽기에서 제외한다. 결과 없음과 요청 실패는 문구·다음 동작을 구분한다. 가이드의 오류·재시도는 예시이며 실제 API 오류 주입은 P13에서 확인한다.
+[review-provider.tsx](../frontend/src/providers/review-provider.tsx)의 `useReviewState`는 `usePathname`·`useSearchParams`로 주소를 읽고 `navigate`·`back`·`openSheet`·`closeSheet`·`replaceSheet`로 이동을 처리한다. 조건은 `URLSearchParams`로 읽으며, 해시는 현재 페이지를 유지한 채 팝업의 열림을 나타낸다. `OutingPreview`는 상세 이동 시 간단 보기 이력을 교체하므로 뒤로 가기가 목록으로 돌아갈 수 있다.
 
-**달력의 비용과 확인 방법:** 날짜·연도 화면을 나누고 연도 이동은 표시 월·포커스만 바꾸며 pending 선택을 유지한다. 오늘은 테두리·오늘 문구로, 과거는 비활성으로 표시한다. 선택 날짜의 아래 중복 표시는 제거했다. 날짜 칸의 터치 영역과 원형 선택 배경의 크기는 구분한다. 스타일을 직접 제어하면 키보드·포커스·스크린리더·기기별 검증 비용이 생긴다. 네이티브 date/showPicker·직접 입력은 최초 시안에서 비교했으며 현재 가이드에서는 사용자 요청으로 제거했다. [MDN showPicker](https://developer.mozilla.org/en-US/docs/Web/API/HTMLInputElement/showPicker)와 [WAI 날짜 선택 예시](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/)의 열람만으로 접근성을 완료했다고 판단하지 않는다. 선택적 연습으로 날짜 선택·지우기 뒤 취소/완료의 결과를 예측하고, iframe 폭을 바꿔 원형 표시를 확인한다. 달력 가이드와 P32 제품 날짜 필터 활성화는 구분한다.
+`useSetting`은 `sessionStorage`와 사용자 정의 이벤트를 `useSyncExternalStore`로 구독한다. 서버에서는 fallback으로 초기 화면을 만들고 브라우저에서 저장한 기간·홈 조건을 읽는다. `sessionStorage`는 탭에 속하므로 계정 간 동기화 저장소가 아니다.
 
-**P24·P26 카드에서 간단 보기와 상세로 이동:** [OutingCard](../frontend/src/features/outings/outing-card.tsx)는 카드 전체를 버튼으로 두고 URL의 outing 해시를 열어 목록 문맥을 유지한다. [OutingPreview](../frontend/src/features/outings/outing-preview.tsx)는 이름·기간·미확인 운영/요금을 먼저 보여주며 상세 이동은 해당 시트 이력을 replace해 상세 뒤로 가기가 목록으로 돌아가게 한다. 상세 주소는 기존 `/detail/[id]`를 재사용한다. 바로 상세로 이동하는 대안보다 한 단계 늘어나지만 여러 후보를 빠르게 읽고 닫을 수 있다. 현재 소량 검토 데이터의 시트는 DOM에 유지하고 open 값만 바꿔 닫는 애니메이션을 보존한다. 실제 API에서 목록이 커지면 마지막 선택 항목만 유지하는 방식과 비용을 P13에서 검토한다.
+`saveScroll`은 주소별 위치를 저장한다. `nextNavigation` ref는 코드로 요청한 이동과 뒤로/앞으로 가기를 구분하며, 복귀 시 [service-scroll.ts](../frontend/src/components/layout/service-scroll.ts)의 실제 스크롤 영역에 위치를 적용한다. 화면 state만 쓰는 대안은 단순하지만 직접 접속·새로고침·복귀에서 조건을 유지하기 어렵다. URL과 저장소를 함께 쓰면 구독·서버 초기값·복귀 검증 비용이 생긴다.
 
-[ReviewDialog](../frontend/src/components/ui/dialog.tsx)의 data-sheet와 [review.css](../frontend/src/styles/review.css)의 translate·opacity·@starting-style은 진입 위치를 아래로 두고 열릴 때 제자리로 이동한다. display·overlay에 allow-discrete를 적용해 native dialog가 닫힐 때도 전환 시간 동안 화면과 최상위 레이어에 남도록 한다. 닫자마자 컴포넌트를 제거하면 이 전환이 사라지므로 필터·정책·간단 보기 시트는 마운트를 유지한다. 필터는 열 때 form.reset으로 미적용 선택을 버리고 URL 조건으로 되돌린다. prefers-reduced-motion에서는 전환을 제거한다. 브라우저별 지원과 실제 웹뷰 동작의 확인 비용이 있으며 이번 검증은 Chrome에 한정한다. 확인 방법은 카드 열기·Escape/닫기·상세 이동/뒤로 가기·필터 취소/재열기와 좁은 화면이다. 선택적 연습으로 시트를 조건부 렌더링할 때 닫는 움직임이 사라지는 이유를 설명해 본다.
+확인은 조건 변경 → 상세 → 뒤로 가기와 새로고침이다. 선택적 연습으로 URL의 조건, 탭의 설정, 컴포넌트 안의 미적용 값을 각각 찾아본다.
 
-**P24·P26 입력 기준과 개발 도구 표시:** 검색창은 아이콘·입력·검색 버튼을 한 줄로 묶으므로 실제 입력 대신 search-keyword의 focus-within에 기존 경계색과 1px box-shadow를 적용한다. 2px outline을 사용하던 개편안은 기존 인풋보다 두꺼워 사용자 후속 요청으로 수정했다. 사진 출처는 초기 펼침 방식에서 사용자 선택으로 항상 보이는 source-link 행으로 바꿨다. 데이터 링크와 같은 위계로 읽되 사진 작성자·원본 링크를 유지한다. 후속 요청으로 사진 아래의 별도 라이선스 문장은 제거하고 이용 조건·화면 표시 변경은 PolicyContent의 서비스 출처 안내로 모았다. 이 선택은 클릭 단계를 줄이는 대신 하단의 표시 높이를 늘리며, 실제 PhotoCredit과 DetailReview에서 좁은 화면의 줄바꿈·출처 접근을 확인한다. [next.config.ts](../frontend/next.config.ts)의 devIndicators.position은 일반 로컬 화면의 개발 도구 N 버튼을 왼쪽 아래에 둔다. 사용자 후속 요청으로 전체 숨김에서 가이드/iframe만 숨기는 방식으로 바꿨다. [ReviewDevTools](../frontend/src/components/layout/review-dev-tools.tsx)는 개발 환경에서만 Next.js 포털의 Shadow DOM에 버튼 전용 스타일을 넣는다. 일반 화면으로 이동하면 스타일과 관찰자를 정리해 버튼을 복원하며 컴파일·실행 오류 오버레이는 유지한다. 공식 설정은 전역 위치만 제공하므로 검토 화면 구분에 설치된 버전의 DOM 식별자를 사용했고, Next.js 갱신 시 이 식별자와 숨김/복원을 재확인해야 하는 비용이 있다. 설정 변경으로 개발 서버가 재시작되면 기존 브라우저의 스타일이 남을 수 있으므로 새로고침 후 확인한다.
+### 팝업·필터의 적용과 취소
 
-## P33 같은 Next.js 서버에서 기존 시안을 열기 · 이전 구조
+[dialog.tsx](../frontend/src/components/ui/dialog.tsx)의 `ReviewDialog`는 `dialogRef`로 실제 dialog를 참조하고 `useEffect`에서 `showModal`을 호출한다. `getBoundingClientRect`로 서비스 경계를 읽어 창을 배치하고 CSS backdrop의 `clip-path`로 배경을 제한한다. 열기 전 활성 요소와 스크롤 상태를 보존하며 닫을 때 overflow 설정과 포커스를 복원한다. body와 오른쪽 서비스 영역의 스크롤은 별도로 잠근다.
 
-**당시 문제와 선택:** 외부 검토 서버에만 있던 /ui-design이 3000번 포트에서 404였다. 기존 시안을 frontend/public/ui-design에 옮기고 next.config.ts의 beforeFiles rewrites로 홈·가이드·검색·상세·정책 주소에 같은 HTML을 제공했다. app.js는 유지된 location.pathname으로 화면을 골랐다. 기존 동작을 빠르게 유지하고 npm run dev 하나로 확인하기 위한 임시 구조였다. 별도 서버를 iframe으로 감싸는 대안은 두 서버·주소 관리를 계속 요구해 선택하지 않았다.
+[HomeFilter](../frontend/src/features/outings/home-filter.tsx)는 URL의 적용 조건을 기본값으로 보여주고 열릴 때 `form.reset`으로 미적용 값을 정리한다. [Calendar](../frontend/src/features/ui-design/calendar.tsx)는 `pending` 선택과 표시 월·포커스를 분리한다. 취소는 적용값을 바꾸지 않고 완료가 선택값을 전달한다. 날짜 입력 예시는 가이드 코드이며 제품의 활성 검색 필터와 구분한다.
 
-**당시 코드와 한계:** src/app/ui-design/[asset]/route.ts가 brand.ts의 팔레트를 CSS·JS·SVG 파비콘으로 응답했다. app.js의 applyPalette·updateFavicon은 로고 mask와 Canvas source-in 합성 PNG 파비콘을 동기화했다. 원본 alpha와 모양을 유지했지만 페이지는 React 레이아웃을 통과하지 않았고 public의 화면 코드와 app의 리소스 코드가 나뉘었다. 사용자 구조 개선 요청에 따라 P34에서 HTML rewrite·이 route·DOM 스크립트를 제거했다. 삭제한 파일은 외부 작업 폴더에 보존하며 현재 파일처럼 링크하지 않는다. P33의 실제 검증·완료 이력은 PLAN과 로컬 WORKLOG에 유지한다.
+[review.css](../frontend/src/styles/review.css)의 `data-sheet`·`translate`·`@starting-style`은 아래에서 올라오는 전환을 만든다. `display`·`overlay`의 `allow-discrete`는 닫을 때도 전환을 유지하는 데 사용한다. 즉시 컴포넌트를 제거하면 퇴장 전환이 사라지므로 현재 필터·정책·간단 보기 시트는 마운트를 유지한다. `prefers-reduced-motion`은 움직임을 제거한다. 네이티브 dialog를 사용해도 포커스 복귀·스크롤·키보드와 브라우저 지원을 직접 확인해야 한다.
 
-## P34 검토 화면을 Next.js 페이지와 React 컴포넌트로 통합
+선택적 연습으로 날짜를 고른 뒤 취소/완료했을 때 `pending`과 입력값이 어떻게 달라질지 코드와 비교한다.
 
-**문제·선택·대안:** HTML 화면과 리소스 응답을 나눠 유지하던 구조를 실제 React 페이지로 정리했다. [ui-design/page.tsx](../frontend/src/app/ui-design/page.tsx)는 GuideReview를, 홈·검색·상세·정책의 page.tsx는 화면 컴포넌트를 제공한다. P35에서 묶여 있던 pages.tsx를 화면별 파일로 분리했으며 현재 연결은 [프론트 폴더 안내](../frontend/README.md#폴더-구성)를 따른다. [layout.tsx](../frontend/src/app/layout.tsx)는 ReviewProvider와 ReviewShell을 한 번 구성한다. public에는 이미지·출처만 두며 HTML 복사나 전체 화면을 iframe으로 감싸는 대안은 사용하지 않는다. 컴포넌트를 공유해 카드·상태·정책 수정이 가이드와 화면에 함께 반영되는 대신 초기 전환과 상호작용 회귀 검증 비용이 생겼다.
+### 레이아웃·입력·드래그·상태 표시
 
-**props와 state:** 상세의 서버 페이지는 id에 맞는 검토 자료를 찾아 DetailReview의 item prop으로 전달한다. 사용자 입력·달력 pending·메뉴 열림은 Client Component의 state로 관리한다. JSX가 state를 화면으로 바꾸므로 innerHTML로 화면 전체를 다시 그리지 않는다. [model.ts](../frontend/src/features/outings/model.ts)는 서울 날짜·행사 기간·검색을 담당하며 [review-data.json](../frontend/src/features/outings/data/review-data.json)은 기존 7개 검토 스냅샷이다. 간단 보기의 district_name은 DB에 보존된 수집 원문의 주소를 대조해 시군구만 보강한 값이다. 화면에서 이름으로 위치를 추측하거나 전체 주소를 실시간 파싱하지 않으며, 세종처럼 시군구가 없으면 null로 두고 시도만 표시한다. 루트의 force-dynamic은 오늘 날짜가 빌드 시점에 고정되지 않도록 한다. 실제 조회 API와 오류 처리는 P12·P13의 후속 범위다.
+[site-shell.tsx](../frontend/src/components/layout/site-shell.tsx)와 `review.css`는 모바일 서비스와 PC 안내/서비스를 구성한다. PC의 오른쪽 스크롤은 `service-scroll.ts`로 읽고 복원한다. 검색창은 `search-keyword`의 `focus-within`에 경계와 포커스 링을 적용한다. 320px에서는 두 grid 열을 모두 차지해 입력 폭을 확보한다.
 
-**URL과 탭 저장:** [review-context.tsx](../frontend/src/providers/review-provider.tsx)는 usePathname·useSearchParams를 읽고 ReviewLink/라우터로 페이지를 이동한다. 필터 적용은 Next.js가 연결한 history.replaceState로 주소와 검색 상태를 같이 갱신한다. 여기에 Next 내부 상태까지 직접 복사하면 라우터가 내부 호출로 인식해 화면 갱신을 건너뛰므로 사용자 상태만 전달한다. 이동 전에 주소별 스크롤을 저장하고, 직접 이동 표시 없는 주소 변경은 복귀로 판별해 스크롤을 복원한다. popstate만 기준으로 삼으면 Next.js의 Navigation API 처리보다 늦을 수 있다. 정책·필터 해시는 원래 페이지를 유지하면서 뒤로 가기로 시트를 닫는다. 기간·홈 조건은 sessionStorage와 useSyncExternalStore로 구독하고 서버 초기값을 따로 둬 서버 렌더링과 탭 설정을 연결한다.
+`HomeReview`의 `chipDrag`는 마우스 이동이 6px 이상일 때 드래그로 처리하고 `scrollLeft`를 바꾼다. 드래그 뒤 클릭을 억제하며 터치는 네이티브 스크롤을 유지한다. `overflow-x`만 쓰는 대안은 간단하지만 마우스로 끄는 동작을 따로 제공하지 않는다. 방향키·정상 클릭·`pointercancel`을 함께 확인한다.
 
-**브랜드와 정책:** [brand.ts](../frontend/src/config/brand.ts)의 한 팔레트를 ReviewShell의 CSS 변수와 [icon.ts](../frontend/src/app/icon.ts)의 첫 파비콘 응답이 공유한다. 파비콘은 기존 PNG alpha를 SVG 필터로 같은 색으로 표시하며 가이드도 /icon을 사용한다. 브랜드 변경 시 개발 서버 갱신·빌드 후 두 표시를 확인한다. React 정책 본문은 바텀시트와 직접 접속 페이지가 공유한다. 출시용 내보내기·정책 확정·실기기 호환성은 각각 P25·P15에 남아 있다.
+[feedback.tsx](../frontend/src/components/ui/feedback.tsx)의 `LoadingState`·`EmptyState`·`ErrorState`는 로딩·정상 0건·요청 실패를 구분한다. 로딩은 `role=status`로 알리고 장식 아이콘은 읽기에서 제외한다. 심볼은 CSS mask와 transform으로 움직이며 reduced-motion에서는 정적이다. 가이드의 재시도는 표시 예시이므로 실제 요청 오류의 검증을 대신하지 않는다.
 
-**확인 방법·선택적 연습:** npm test로 서울 자정·윤년·종료일 포함 경계·7/14일 노출·검색 조건을 확인한다. 브라우저에서 필터 적용/취소, 검색 0건/초기화, 상세 새로고침·뒤로 가기·스크롤, 달력 취소/완료/키보드·정책 복귀·가이드 폭을 확인한다. 선택적 연습으로 카드 문구를 outing-card.tsx에서 바꿀 때 가이드와 검색 어디에 반영될지 예상해 본다. 실제 검증·리뷰는 PLAN P34와 로컬 WORKLOG에 기록하며 실기기·스크린리더·제품 API·사용자 이해는 별도다.
+### 브랜드·이미지·정책·개발 표시
 
-## P35 주소·공통 UI·기능별 파일을 분류하기
+[brand.ts](../frontend/src/config/brand.ts)의 한 팔레트를 `ReviewShell`의 CSS 변수와 [icon.ts](../frontend/src/app/icon.ts)가 공유한다. public의 이미지는 코드처럼 실행되지 않고 URL 요청으로 제공된다. `OutingArtwork`·`PhotoCredit`은 대표 이미지와 출처를 나눠 표시하며 이미지가 없어도 종류와 텍스트를 읽을 수 있다.
 
-**문제와 선택:** src/design 안에 홈·검색·상세, 공통 팝업, 검토 데이터, 브랜드 설정이 함께 있어 파일을 찾기 어려웠다. 기존 기능을 유지하면서 [프론트 폴더 안내](../frontend/README.md#폴더-구성)의 역할별 구조로 옮겼다. components에는 공통 UI·배치, features에는 나들이·정책·UI 디자인 가이드, config에는 브랜드색, providers에는 공유 상태, styles에는 CSS를 둔다. 이 이름들은 프로젝트의 정리 방식이며 Next.js 예약 폴더가 아니다.
+정책 본문은 직접 접속 페이지와 바텀시트가 공유한다. Next.js 개발 표시 위치는 [next.config.ts](../frontend/next.config.ts)에서 정하고, [ReviewDevTools](../frontend/src/components/layout/review-dev-tools.tsx)는 가이드/iframe에서만 Next.js 포털의 Shadow DOM에 스타일을 넣는다. 일반 화면으로 이동하면 스타일·관찰자를 정리한다. 이 DOM 식별자에 의존하므로 Next.js 갱신 때 숨김/복원을 다시 확인할 비용이 있다.
 
-**실제 흐름과 이점·비용:** [홈 page.tsx](../frontend/src/app/page.tsx)는 [HomeReview](../frontend/src/features/outings/home.tsx)를 제공하고 HomeReview는 [OutingCard](../frontend/src/features/outings/outing-card.tsx)를 사용한다. 검색·상세도 같은 기능 폴더의 개별 파일로 분리했다. 여러 기능이 쓰는 팝업·아이콘·상태 UI는 components에서 가져오므로 공통 표시를 수정할 위치가 분명하다. 파일과 import가 늘어나는 비용은 있지만 기능을 추가할 때 모든 코드를 design에 쌓지 않아도 된다. 지금 규모에서는 기능마다 다시 components/hooks/services 계층을 만드는 추가 분류는 하지 않았다.
+## 테스트와 개발 도구
 
-**이미지와 코드의 차이:** public/images의 파일은 브라우저가 /images/... 주소로 요청한다. src의 코드처럼 import 관계에 따라 화면을 실행하지 않는다. 같은 로고를 홈·가이드가 함께 쓰므로 기존 ui-design/assets라는 중간 경로를 제거했다. CSS mask·카드·icon.ts·빌드 추적 설정을 같은 경로로 갱신했으며 사진·로고·권리 안내 원본은 유지한다. 이미지 파일을 TypeScript로 다시 작성하거나 디자인을 새로 채택한 작업은 아니다.
+관련 작업: P10·P16·P18.
 
-**대안·확인 방법·선택적 연습:** 단순히 design 폴더를 components로 이름만 바꾸는 대안은 데이터·화면·상태의 혼재가 그대로 남는다. app의 각 경로 안에 모든 코드를 두는 방식도 가능하지만 카드·정책·가이드를 여러 곳에서 공유하므로 이번에는 공통 UI와 기능 코드를 app 밖에 둔다. 주소는 app의 page.tsx가 그대로 결정한다. import·문서 링크, lint·타입·기존 날짜/검색 테스트·빌드와 이미지/화면 직접 접속을 확인한다. 선택적 연습으로 홈 카드 문구, 팝업 테두리, 브랜드색을 각각 어디에서 바꿀지 찾아볼 수 있다. 커밋·main 반영 검증과 사용자의 이해는 별도로 기록한다.
+### Maven·커밋 훅·CI의 검사 흐름
 
-## 앞으로 작업하며 배울 내용
+읽을 파일은 pom.xml, 검사 스크립트와 CI 설정이다. 실행 명령은 [README](../README.md#커밋-검사)를 따른다.
 
-다음 표는 학습 연결 제안이다. 구현·기술 선택·사용자의 학습 완료를 의미하지 않는다. 기능 범위와 완료 조건은 기존 PLAN·PRD를 따른다.
+Maven의 `test`는 앞선 컴파일 단계와 테스트까지 수행한다. `verify`는 앞선 패키징과 검증 단계까지 진행하며 현재 Spring Boot 플러그인 구성은 실행 JAR을 만든다. `verify`라고 해서 프로젝트에 작성하지 않은 품질 검사까지 자동으로 생기는 것은 아니다. [Maven 공식 빌드 흐름](https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html)
 
-| PLAN | 기능과 연결할 개념 | 구현 전에 비교할 선택 | 구현 뒤 찾아볼 근거 |
-|---|---|---|---|
-| P11 | Java 타입·객체·생성자·컬렉션·예외, 원천 응답 변환, 데이터 모델, DB 제약, 트랜잭션, 중복 방지 | JDBC/JPA 등 저장 접근, 원문·정규화 값의 분리, 저장 실패 범위 | 실제 Java 클래스·변환 메서드·컬렉션의 순회·저장 SQL/객체·중복/실패 테스트 |
-| P12 | Java 인터페이스·매개변수·반환 타입·제네릭, 요청·응답 DTO, 의존성 주입, 조회 SQL, 오류 응답 | HTTP 처리·제품 규칙·저장 접근을 나눌 범위, 페이징·정렬 방식 | 실제 Controller·생성자·메서드 선언/호출과 요청부터 응답까지의 흐름 |
-| P13 | 컴포넌트, props/state, URL 상태, 비동기 조회, 오류 UI | 상태를 둘 위치, Server/Client Component 경계, 데이터 조회 위치 | 실제 컴포넌트·Hook·API 연결·상태/URL 복원 검증 |
-| P14 | HTML 렌더링, 메타데이터, 색인 정책 | 정적/동적 렌더링·갱신, canonical·sitemap 범위 | 실제 페이지 응답·메타데이터·색인 대상 검증 |
-| P15 | 설정·운영 관측, 백업·복구 | 배포 환경·비용, 데이터 갱신과 장애 대응 | 실제 운영 설정·복구 검증과 확인한 이용 조건 |
+[check-commit.mjs](../scripts/check-commit.mjs)는 스테이징한 경로로 프론트·백엔드·도구 검사 필요 여부를 정한다. [check-backend.mjs](../scripts/check-backend.mjs)는 Maven 테스트를 실행한다. [.github/workflows/ci.yml](../.github/workflows/ci.yml)은 새 PostgreSQL 서비스와 JDK로 백엔드 테스트·빌드를 수행해 로컬 환경에만 의존하지 않도록 한다.
 
-## 이후 학습 기록 형식
+검사를 나누면 커밋 대기 시간을 줄일 수 있지만 경로 분기가 잘못되면 필요한 검사를 놓칠 수 있다. 모든 검사를 매 커밋에 실행하는 대안은 단순하지만 비용이 늘어난다. 부분 스테이징을 차단하는 이유는 검사한 코드와 커밋될 코드가 달라지는 상황을 줄이기 위해서다. [훅 분기 테스트](../tests/tooling/commit-check.test.mjs)는 실패 차단·수정 후 통과·부분 스테이징·문서 변경을 임시 저장소에서 검사한다.
 
-기능을 구현하거나 중요한 구성을 바꿀 때 관련 주제를 이 문서에 보완한다. 과거 설명의 오해·오류를 발견하면 근거와 정정 이유를 적고, 별개의 주제는 PLAN 번호가 있는 새 항목으로 추가한다. 긴 실습·자료가 필요할 때만 별도 문서를 만들고 여기에서 연결한다.
+선택적 연습으로 README만 수정할 때와 백엔드 SQL을 수정할 때 각각 실행돼야 할 검사를 예상하고 코드의 분기와 비교한다. 훅·CI 성공과 사람의 리뷰가 확인하는 내용의 차이도 찾아본다.
 
-각 항목은 다음 내용을 독자가 따라갈 수 있는 문장으로 작성한다. 아래는 기록 형식이며 아직 구현한 기능의 설명은 아니다.
-
-- **문제와 목표:** 어떤 입력·실패·사용자 요구를 처리하는가.
-- **선택과 근거:** 실제 선택은 무엇이고 근거가 기록·코드·공식 자료 중 어디에 있는가. 당시 이유가 없으면 현재 해설이라고 표시한다.
-- **이점과 비용:** 바뀌는 동작, 줄어드는 문제, 늘어나는 복잡도·제약을 설명한다.
-- **대안과 적용 조건:** 다른 방법과 그 방법을 택할 만한 조건을 비교한다. 미정 선택은 확정으로 쓰지 않는다.
-- **실제 코드와 흐름:** 파일 링크·핵심 식별자로 입력부터 결과까지 연결한다. Java는 타입·변수·메서드 선언과 호출을 먼저 읽고 어노테이션의 출처·대상·설정·해석 주체를 설명한다. 언어 문법과 Spring/라이브러리의 처리를 구별하며 없는 파일·계층을 이미 구현했다고 적지 않는다.
-- **확인 방법과 한계:** 관련 테스트·수동 확인을 소개하고 실제 결과는 PLAN·WORKLOG에 연결한다. 미실행은 구분한다.
-- **선택적 연습:** 작은 변경·결과 예측·오류 찾기를 제안하고 확인할 근거·힌트를 제공한다. 실제 사용자가 한 결과만 수행 기록으로 남긴다.
-
-사용자가 직접 구현하기로 한 부분은 힌트·리뷰로 지원한다. 일반 작업에서는 설명과 기록을 함께 진행하며 연습 답변을 기다리는 절차를 자동으로 만들지 않는다. 기능이 검증됐다는 사실과 사용자가 그 기능을 이해했는지는 별도로 확인한다.
+`npm test`의 작업 디렉터리에 따라 루트의 공통 도구 테스트와 frontend의 기능 테스트가 달라진다. 실제 명령은 README의 각 검증 절을 따른다.
