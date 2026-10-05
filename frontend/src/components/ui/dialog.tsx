@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, type ReactNode, type CSSProperties } from "react";
 import { Icon } from "@/components/ui/icons";
+import { SheetHandle } from "./sheet-handle";
+import { sheetBounds, type SheetBounds } from "./sheet-drag";
 import {
   reviewScrollTop,
   scrollReviewTo,
@@ -26,6 +28,7 @@ export function ReviewDialog({
   children: ReactNode;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const boundsRef = useRef<SheetBounds | null>(null);
   const closeRef = useRef(onClose);
   useEffect(() => {
     closeRef.current = onClose;
@@ -63,6 +66,13 @@ export function ReviewDialog({
       dialog.style.bottom = sheet ? `${window.innerHeight - bottom}px` : "auto";
       dialog.style.transform = sheet ? "none" : "translate(-50%, -50%)";
       dialog.style.maxHeight = `${sheet ? (bottom - top) * 0.85 : bottom - top - 32}px`;
+      if (sheet) {
+        dialog.style.removeProperty("height");
+        const bounds = sheetBounds(bottom - top, dialog.getBoundingClientRect().height);
+        boundsRef.current = bounds;
+        dialog.style.maxHeight = `${bounds.expanded}px`;
+        dialog.style.height = `${dialog.dataset.expanded === "true" ? bounds.expanded : bounds.collapsed}px`;
+      }
       dialog.style.setProperty(
         "--dialog-backdrop-inset",
         `${top}px ${window.innerWidth - right}px ${window.innerHeight - bottom}px ${left}px`,
@@ -81,8 +91,14 @@ export function ReviewDialog({
     return () => {
       window.removeEventListener("resize", position);
       dialog.close();
+      delete dialog.dataset.expanded;
+      delete dialog.dataset.dragging;
+      dialog.style.removeProperty("height");
+      dialog.style.removeProperty("translate");
+      boundsRef.current = null;
       document.body.style.overflow = previousOverflow;
       if (container) container.style.overflowY = previousContainerOverflow;
+      scrollReviewTo(scroll);
       if (origin?.isConnected) origin.focus({ preventScroll: true });
     };
   }, [open, sheet]);
@@ -114,7 +130,7 @@ export function ReviewDialog({
           ...event.currentTarget.querySelectorAll<HTMLElement>(
             'button:not(:disabled),a[href],select,input:not(:disabled),[tabindex="0"]',
           ),
-        ];
+        ].filter((target) => target.getClientRects().length > 0);
         const first = targets[0],
           last = targets.at(-1);
         if (event.shiftKey && document.activeElement === first) {
@@ -126,7 +142,7 @@ export function ReviewDialog({
         }
       }}
     >
-      {sheet && <div className="sheet-handle" aria-hidden="true" />}
+      {sheet && open && <SheetHandle dialogRef={dialogRef} boundsRef={boundsRef} onClose={onClose} title={title} />}
       <div className={sheet ? "policy-sheet-head" : "dialog-head"}>
         <h2 id={`${id}Title`} className="review-dialog-title">{title}</h2>
         <button
@@ -138,7 +154,7 @@ export function ReviewDialog({
           <Icon name="close" />
         </button>
       </div>
-      {children}
+      {sheet ? <div className="sheet-content">{children}</div> : children}
     </dialog>
   );
 }

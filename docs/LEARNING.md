@@ -346,7 +346,11 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 ### 팝업·필터의 적용과 취소
 
-[dialog.tsx](../frontend/src/components/ui/dialog.tsx)의 `ReviewDialog`는 `dialogRef`로 실제 dialog를 참조하고 `useEffect`에서 `showModal`을 호출한다. `getBoundingClientRect`로 서비스 경계를 읽어 창을 배치하고 CSS backdrop의 `clip-path`로 배경을 제한한다. 열기 전 활성 요소와 스크롤 상태를 보존하며 닫을 때 overflow 설정과 포커스를 복원한다. body와 오른쪽 서비스 영역의 스크롤은 별도로 잠근다.
+[dialog.tsx](../frontend/src/components/ui/dialog.tsx)의 `ReviewDialog`는 `dialogRef`로 실제 dialog를 참조하고 `useEffect`에서 `showModal`을 호출한다. `getBoundingClientRect`로 서비스 경계를 읽어 창을 배치하고 CSS backdrop의 `clip-path`로 배경을 제한한다. 열기 전 활성 요소와 스크롤 상태를 보존하며 닫을 때 overflow 설정·스크롤 위치·포커스를 복원한다. body와 오른쪽 서비스 영역의 스크롤은 별도로 잠근다. Tab 순회는 실제로 보이는 요소만 대상으로 하므로 접힌 출처 링크로 포커스가 이동하지 않는다.
+
+관련 작업: P49. [sheet-handle.tsx](../frontend/src/components/ui/sheet-handle.tsx)의 `SheetHandle`은 44px 높이의 네이티브 버튼 안에 36×4px 막대를 둔다. 핸들의 Pointer Events는 마우스·터치를 같은 좌표 흐름으로 읽으며 `setPointerCapture`가 핸들 밖으로 나간 이동도 이어 받는다. `touch-action: none`은 핸들에만 적용하고 본문에는 적용하지 않아 본문 스크롤을 유지한다. 드래그 취소/캡처 손실은 시작 크기로 돌아가며, 드래그 뒤의 click은 두 번째 토글을 일으키지 않는다. 키보드의 위/아래 화살표와 Enter/Space로도 크기를 조절하며 Escape·X는 기존 닫기를 사용한다.
+
+[sheet-drag.ts](../frontend/src/components/ui/sheet-drag.ts)는 서비스 경계 안의 기본/확장/최소 높이와 제스처 결과를 계산한다. 처음 크기는 내용 높이를 최대 85%로 제한하고, 확장은 서비스 높이의 95%까지다. 48px보다 큰 위/아래 이동은 확장/축소로 정착하고, 기본 높이보다 `max(100px, 기본 높이×0.3)` 이상 아래로 줄이면 닫는다. 본문과 동작 영역을 flex로 나누어 높이가 줄어도 핸들·X·간단 보기의 상세 이동과 필터 적용 영역을 유지한다. 작은 이동·상하 한계·닫기 경계는 프론트 테스트, 실제 스크롤/복귀는 브라우저로 확인한다.
 
 [HomeFilter](../frontend/src/features/outings/home-filter.tsx)는 URL의 적용 조건을 기본값으로 보여주고 열릴 때 `form.reset`으로 미적용 값을 정리한다. [Calendar](../frontend/src/features/ui-design/calendar.tsx)는 `pending` 선택과 표시 월·포커스를 분리한다. 취소는 적용값을 바꾸지 않고 완료가 선택값을 전달한다. 날짜 입력 예시는 가이드 코드이며 제품의 활성 검색 필터와 구분한다.
 
