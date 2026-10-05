@@ -1,6 +1,6 @@
 import type { PolicyType } from "@/features/policies/model";
 
-export function PolicyContent({ type }: { type: PolicyType }) {
+export function PolicyContent({ type, samplePhoto = false }: { type: PolicyType; samplePhoto?: boolean }) {
   const checklist =
     type === "privacy"
       ? [
@@ -40,16 +40,13 @@ export function PolicyContent({ type }: { type: PolicyType }) {
             </p>
             <h2>사진 출처와 이용 조건</h2>
             <p>
-              한국관광공사 TourAPI와 Wikimedia Commons의 사진을 이용하며, 각 이용 조건을 준수합니다.
+              <a href="https://www.data.go.kr/data/15101578/openapi.do" target="_blank" rel="noopener noreferrer">한국관광공사 TourAPI 제공 사진</a>
+              {" · "}
+              <a href="https://www.kogl.or.kr/info/licenseType1.do" target="_blank" rel="noopener noreferrer">공공누리 제1유형(출처 표시)</a>
             </p>
-            <details className="policy-photo-credits">
-              <summary>사진별 출처 보기</summary>
+            {samplePhoto && <details className="policy-photo-credits">
+              <summary>가이드 표본 사진 출처</summary>
               <ul>
-                <li>
-                  <a href="https://www.data.go.kr/data/15101578/openapi.do" target="_blank" rel="noopener noreferrer">한국관광공사 TourAPI 제공 사진</a>
-                  {" · "}
-                  <a href="https://www.kogl.or.kr/info/license.do" target="_blank" rel="noopener noreferrer">공공누리 제1유형(출처 표시)</a>
-                </li>
                 <li>
                   <a href="https://commons.wikimedia.org/wiki/File:Clayarch_Gimhae_Museum.JPG" target="_blank" rel="noopener noreferrer">클레이아크 김해미술관 · HappyMidnight (2015)</a>
                   {" · "}
@@ -57,7 +54,7 @@ export function PolicyContent({ type }: { type: PolicyType }) {
                   {" · 일부 잘라 표시"}
                 </li>
               </ul>
-            </details>
+            </details>}
           </>
         ) : (
           <>

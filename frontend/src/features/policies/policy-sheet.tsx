@@ -6,7 +6,7 @@ import { PolicyContent } from "@/features/policies/policy-content";
 import { useReview } from "@/providers/review-provider";
 
 export function PolicySheet({ type, open }: { type: PolicyType; open: boolean }) {
-  const { closeSheet } = useReview();
+  const { closeSheet, pathname } = useReview();
   return (
     <ReviewDialog
       id={`policyDialog-${type}`}
@@ -21,7 +21,7 @@ export function PolicySheet({ type, open }: { type: PolicyType; open: boolean })
         tabIndex={0}
         aria-label="정책 안내 내용"
       >
-        <PolicyContent type={type} />
+        <PolicyContent type={type} samplePhoto={pathname === "/ui-design"} />
       </div>
     </ReviewDialog>
   );

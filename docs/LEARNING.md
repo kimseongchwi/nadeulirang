@@ -330,7 +330,9 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 ### 사진 출처의 접힌 안내
 
-[policy-content.tsx](../frontend/src/features/policies/policy-content.tsx)의 사진 안내는 제공처와 이용 기준을 짧게 보여 주고, 저작자·원본·라이선스·변경 정보는 네이티브 `details`/`summary` 안에 둔다. `open` 속성을 생략해 처음에는 접히며 브라우저가 클릭·Enter/Space·펼침 상태를 처리하므로 별도 React state나 토글 스크립트가 필요 없다.
+관련 작업: P50. [policy-content.tsx](../frontend/src/features/policies/policy-content.tsx)는 실제 서비스의 사진을 한국관광공사 TourAPI 제공 사진·공공누리 제1유형으로 묶고 제공처·이용 조건의 링크를 표시한다. 현재 API의 `Photo`와 타입 가드는 해당 제공처/유형만 허용하므로 사진이 늘 때마다 이름 목록을 추가하지 않는다. DB의 사진별 URL·근거·이용 조건은 화면의 공통 안내와 별도로 보존한다.
+
+가이드 표본의 Wikimedia 사진은 별도 귀속 조건이 있다. `PolicySheet`가 `/ui-design`일 때만 `samplePhoto` prop을 전달해 작성자·원본·CC BY-SA 4.0·변경 표시를 기본 접힌 `details`/`summary`로 제공한다. 이 prop은 실제 사용 맥락을 구분하며 새 제공처의 이용 조건을 자동 판정하지 않는다. 다른 귀속이 필요한 사진을 도입할 때에는 계약/타입 가드와 해당 사진이 사용되는 곳의 안내를 함께 보완해야 한다. 조건 판단의 공식 근거는 [DATA_SOURCES](DATA_SOURCES.md#이용-조건)를 따른다.
 
 ### URL·탭 저장과 복귀
 
