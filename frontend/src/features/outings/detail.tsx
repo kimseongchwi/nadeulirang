@@ -4,7 +4,6 @@ import { kindNames, period, permanent, photoId, outingSummary } from "./model";
 import { Badge } from "./outing-badge";
 import { OutingArtwork, PhotoCredit } from "./outing-artwork";
 import { BackHeading } from "@/components/layout/back-heading";
-import { Icon } from "@/components/ui/icons";
 import { EvidenceList, checkedTime, sourceNames } from "./evidence";
 import { orderedHours, orderedNotes, safeUrl } from "./api-query";
 import type { Detail } from "./api-types";
@@ -31,12 +30,10 @@ export function DetailReview({ data }: { data: Detail }) {
       <dl className="detail-facts">
         <div><dt>일반 성인 입장료</dt><dd>{data.item.feeConflict ? "원천별 요금이 달라 확인 필요" : data.item.adultFee !== null && data.item.feeStatus !== "UNKNOWN" ? `${data.item.adultFee.toLocaleString("ko-KR")}원${data.item.feeStatus === "FREE" ? " · 무료" : ""}` : "미확인"}</dd></div>
         {groups.map(([key, label]) => <div key={key}><dt>{label}</dt><dd><EvidenceList values={key === "hours" ? orderedHours(data.information[key] || []) : data.information[key] || []} /></dd></div>)}
-        <div><dt>할인 기간·증빙·중복 적용</dt><dd>미확인 · 할인 안내가 있어도 세부 적용 조건은 공식 기관에 확인해 주세요.</dd></div>
-        <div><dt>예약 기간·잔여석</dt><dd>미확인 · 예약 안내가 있어도 예약 가능을 보증하지 않아요.</dd></div>
-        <div><dt>당일 운영 확인</dt><dd>{data.item.operationVerified ? "검토된 운영 자료 있음 · 방문일 운영은 별도 확인" : "미확인"}</dd></div>
+        <div><dt>할인 기간·증빙·중복 적용</dt><dd>미확인</dd></div>
+        <div><dt>예약 기간·잔여석</dt><dd>미확인</dd></div>
       </dl>
       {!!data.information.notes?.length && <><h3>추가 안내</h3><EvidenceList values={orderedNotes(data.information.notes)} /></>}
-      <div className="visit-note"><Icon name="info" /><p>행사 기간과 당일 운영은 다를 수 있어요.<br />휴무·요금·예약은 출발 전에 공식 기관 안내를 확인해 주세요.</p></div>
     </section>
     <section className="detail-section">
       <h2>공식 안내·예약</h2>

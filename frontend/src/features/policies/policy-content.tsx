@@ -65,12 +65,6 @@ export function PolicyContent({ type }: { type: PolicyType }) {
               <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
               이며, 화면에서는 원본 사진의 일부를 잘라 표시합니다.
             </p>
-            <h2>정보를 읽는 기준</h2>
-            <p>
-              행사 기간은 당일 운영·예약 가능을 보증하지 않습니다.
-              요금·운영·할인·예약의 미확인 정보는 추정하지 않으며 출발 전에 공식
-              기관 안내를 확인해야 합니다.
-            </p>
             <h2>시안의 로컬 저장</h2>
             <p>
               이 브라우저 탭의 기간·홈 필터 설정을 sessionStorage에

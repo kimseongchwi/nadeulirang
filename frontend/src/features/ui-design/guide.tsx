@@ -403,11 +403,11 @@ export function GuideReview() {
             <div className="sample">
               <div className="status-list">
                 <span className="badge">행사 기간 진행 중</span>
-                <span className="badge warning">운영 확인 필요</span>
+                <span className="badge warning">운영 정보 미확인</span>
                 <span className="badge neutral">행사 종료</span>
                 <span className="badge error">정보 조회 실패</span>
               </div>
-              <p className="hint">행사 기간과 당일 운영은 구분해요. 상태는 색상과 라벨을 함께 읽습니다.</p>
+              <p className="hint">상태는 색상과 라벨을 함께 읽습니다.</p>
             </div>
             <div className="sample">
               <h3>무료·유료·미확인 · 스타일 예시</h3>
