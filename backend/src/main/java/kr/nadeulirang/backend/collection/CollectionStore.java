@@ -184,6 +184,16 @@ public class CollectionStore {
         return jdbc.queryForList("SELECT region_name, kind, count(*) AS count FROM public_candidate GROUP BY region_name, kind ORDER BY region_name, kind").toString();
     }
 
+    public record TourReview(String name, String kind, String regionCode) { }
+
+    public TourReview reviewedTour(String sourceKey) {
+        return jdbc.query("""
+                SELECT o.name,o.kind,o.region_code FROM source_record r JOIN outing o ON o.id=r.outing_id
+                WHERE r.source='TOUR' AND r.source_key=? AND o.review_status='APPROVED'
+                """, (rs,n) -> new TourReview(rs.getString(1),rs.getString(2),rs.getString(3)),sourceKey)
+                .stream().findFirst().orElse(null);
+    }
+
     public boolean blocked(Source source) {
         return jdbc.queryForObject("SELECT blocked_reason IS NOT NULL FROM collection_source WHERE name = ?", Boolean.class, source.name());
     }

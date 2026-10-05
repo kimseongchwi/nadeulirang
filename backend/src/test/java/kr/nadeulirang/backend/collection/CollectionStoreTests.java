@@ -33,7 +33,7 @@ class CollectionStoreTests {
     }
 
     @BeforeEach void reset() {
-        jdbc.execute("TRUNCATE outing, source_call CASCADE");
+        jdbc.execute("TRUNCATE outing, source_call, collection_checkpoint CASCADE");
         jdbc.update("UPDATE collection_source SET blocked_reason = NULL, last_started_at = NULL");
     }
 

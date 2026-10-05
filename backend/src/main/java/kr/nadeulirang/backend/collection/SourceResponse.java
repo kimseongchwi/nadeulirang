@@ -8,6 +8,12 @@ import tools.jackson.databind.json.JsonMapper;
 public record SourceResponse(String outcome, String code, JsonNode payload, List<JsonNode> rows) {
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
+    public int totalCount() {
+        if (payload == null) return 0;
+        JsonNode response = payload.has("response") ? payload.path("response") : payload;
+        return response.path("body").path("totalCount").asInt();
+    }
+
     public static SourceResponse parse(Source source, int status, String body, String key) {
         // 오류 본문은 인증키나 민감한 진단 내용이 있을 수 있어 저장하지 않는다.
         try {

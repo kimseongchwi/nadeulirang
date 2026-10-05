@@ -89,4 +89,13 @@ class CollectionPolicyTests {
         assertThat(CollectionPolicy.safeLink("https://user:pass@example.com")).isNull();
         assertThat(CollectionPolicy.safeLink("안내 <a href=\"https://example.com/info\">관람</a>")).isEqualTo("https://example.com/info");
     }
+
+    @Test @DisplayName("TourAPI의 감싼 응답과 표준 원천의 바로 시작하는 본문에서 전체 건수를 읽는다")
+    void readsBothTotalShapes() {
+        String response = "{\"header\":{\"resultCode\":\"00\"},\"body\":{\"totalCount\":1076,\"items\":[{\"fcltyNm\":\"검증 박물관\"}]}}";
+        assertThat(SourceResponse.parse(Source.MUSEUM,200,response,"test").totalCount()).isEqualTo(1076);
+        String wrapped = "{\"response\":"+response.replace("\"00\"","\"0000\"")+"}";
+        assertThat(SourceResponse.parse(Source.TOUR,200,wrapped,"test").totalCount()).isEqualTo(1076);
+        assertThat(SourceResponse.failed("CONNECTION_FAILED").totalCount()).isZero();
+    }
 }

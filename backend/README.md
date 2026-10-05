@@ -4,6 +4,8 @@ Spring Boot·Java 21·Maven Wrapper 기반 프로젝트입니다. 버전 선택�
 
 `src/main/resources/db/migration/`의 Flyway 마이그레이션으로 DB 변경을 관리합니다. 이미 적용한 파일은 수정하지 않고 다음 버전 파일을 추가합니다. 기능 테스트는 `src/test/`에 둡니다.
 
+로컬 전국 목록 배치는 [루트 수집 안내](../README.md#데이터-수집-p11p38)를 따릅니다. `V3__collection_checkpoint.sql`은 월별/지정 배치의 페이지·행·성공 응답 참조를 보존합니다. 수집 실행기와 원천 클라이언트·저장소는 `collection/`에 있고 `CollectionBatchTests`는 실제 격리 DB에서 부분 페이지 재개·실패 위치·신규 후보 비공개를 검사합니다.
+
 ## 목록·상세 조회 API
 
 Spring 서버 실행 후 `http://localhost:8080`에서 아래 읽기 전용 API를 호출합니다. Next.js 서버 페이지와 간단 보기의 상세 중계가 이 API를 사용합니다. 요청마다 원천 API를 호출하지 않고 저장된 PostgreSQL 자료를 읽습니다.

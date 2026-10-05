@@ -127,7 +127,7 @@ public class NadeulirangApplication {
 
 1. [use-local-env.ps1](../scripts/use-local-env.ps1)이 DB 설정을 환경 변수로 전달한다. Spring이 루트 `.env`를 직접 읽는 구성은 아니다.
 2. [pom.xml](../backend/pom.xml)의 MVC·JDBC·Flyway·Actuator 의존성과 [application.properties](../backend/src/main/resources/application.properties)가 웹 서버·DB 연결·마이그레이션·health 구성에 사용된다.
-3. DB 연결 뒤 Flyway가 전용 스키마와 이력을 준비하고 미적용 마이그레이션을 순서대로 실행한다. V1은 스키마 설명, V2는 수집·제품 테이블을 정의한다.
+3. DB 연결 뒤 Flyway가 전용 스키마와 이력을 준비하고 미적용 마이그레이션을 순서대로 실행한다. V1은 스키마 설명, V2는 수집·제품 테이블, V3는 목록 배치의 중간 위치를 정의한다.
 4. 웹 서버가 시작되고 `/actuator/health`로 상태를 확인할 수 있다. 이 엔드포인트는 Actuator가 제공하므로 별도의 사용자 작성 Controller가 없다.
 
 자동 구성은 기본 연결 코드를 줄여 주지만 어떤 의존성과 설정이 동작을 만드는지 확인해야 한다. 환경·설정을 바꾸면 같은 시작 코드에서도 동작이 달라진다. 수동 구성도 가능한 대안이며 현재 규모에서 모든 객체·웹 서버를 직접 구성하면 유지할 코드가 늘어난다.
@@ -136,7 +136,7 @@ public class NadeulirangApplication {
 
 ### Flyway와 전용 스키마를 사용한 이유
 
-[연결 설정](../backend/src/main/resources/application.properties)은 JDBC와 Flyway에 같은 `nadeulirang` 스키마를 지정하고 SQL 자동 초기화를 끈다. `clean-disabled=true`로 Flyway의 스키마 정리를 금지한다. [V1](../backend/src/main/resources/db/migration/V1__initialize_schema.sql)은 스키마 설명을 기록하고 [V2](../backend/src/main/resources/db/migration/V2__collection_model.sql)는 제품·수집 테이블을 만든다.
+[연결 설정](../backend/src/main/resources/application.properties)은 JDBC와 Flyway에 같은 `nadeulirang` 스키마를 지정하고 SQL 자동 초기화를 끈다. `clean-disabled=true`로 Flyway의 스키마 정리를 금지한다. [V1](../backend/src/main/resources/db/migration/V1__initialize_schema.sql)은 스키마 설명을 기록하고 [V2](../backend/src/main/resources/db/migration/V2__collection_model.sql)는 제품·수집 테이블, [V3](../backend/src/main/resources/db/migration/V3__collection_checkpoint.sql)는 배치 위치 테이블을 만든다.
 
 마이그레이션은 DB 구조 변경을 버전 파일로 남기는 방법이다. 이력을 함께 관리하면 어느 변경이 적용됐는지 확인하고 다른 환경에도 같은 순서로 적용하기 쉽다. 적용한 SQL을 고치면 기존 DB의 이력과 새 파일이 달라질 수 있으므로 다음 버전으로 변경을 추가한다. 여러 초기화 방식의 중복 사용을 피하는 것은 [Spring Boot 공식 초기화 안내](https://docs.spring.io/spring-boot/how-to/data-initialization.html)의 권장 방식과도 맞는다.
 
@@ -215,6 +215,18 @@ health는 애플리케이션과 연결된 구성요소의 상태를 확인하는
 선택적 연습: `adultChrge`의 `""`, `"0"`, `"1000"`이 각각 어떤 요금 상태가 될지 예상하고 테스트와 비교한다. 서로 다른 원천의 1,000원과 3,000원을 연결했을 때 원문·일반 요금·내부 ID가 어떻게 되는지 찾아본다. 제품 코드를 바꾸지 않아도 테스트 입력과 기대값을 읽으며 확인할 수 있다.
 
 `parse`와 HTTP 응답 판정의 작은 예제는 [verify-tourapi.mjs](../scripts/verify-tourapi.mjs)의 summarizeResponse와 [도구 테스트](../tests/tooling/tourapi-validation.test.mjs)를 함께 본다. 이 Node.js 도구는 표본 확인용이며 실제 저장 흐름은 CollectionRunner → SourceClient → CollectionStore다.
+
+### 목록 배치·커서와 검토 분리
+
+관련 작업: P38. `CollectionRunner.collectBatch`는 행사·시설의 다섯 목록을 순회하고 실행 후보 상한을 나눠 처리한다. `Stream` record는 목록 이름·`Source` enum·오퍼레이션·조회 JSON을 전달한다. API가 반환한 페이지를 읽은 뒤 TourAPI 후보의 공통/소개/반복 또는 표준 행을 기존 저장소에 저장한다. 기존 검토 목록 외의 신규 후보는 `PENDING`이며 저장 성공과 공개 검토는 별개다. `CollectionStore.reviewedTour`는 승인된 TourAPI의 이름·종류·시도 코드를 `TourReview` record로 읽어 재조회 때 대조한다. 이름·종류·시도 주소가 그대로면 승인을 유지하고 바뀌면 재검토 대상으로 저장한다.
+
+[CollectionCheckpointStore](../backend/src/main/java/kr/nadeulirang/backend/collection/CollectionCheckpointStore.java)의 `Cursor` record는 페이지 번호·행 위치·성공 `source_call` UUID·완료 여부를 갖는다. 생성자 인수는 Spring이 제공하는 `JdbcTemplate`·`DataSource`다. `V3__collection_checkpoint.sql`의 외래키로 성공 목록 원문을 참조해 부분 처리한 페이지는 다음 실행에서 같은 응답의 남은 행부터 읽는다. 행 저장 후 커서를 진행하므로 그 사이 중단돼도 원천별 유일 제약으로 제품 ID를 다시 만들지 않는다. 별도의 관측 이력은 남을 수 있다.
+
+`withBatchLock`은 JDBC 연결이 살아 있는 동안 PostgreSQL 세션 잠금을 유지해 같은 배치 커서의 동시 변경을 막고 `finally`에서 해제한다. 이는 네트워크와 저장 전체를 하나의 트랜잭션으로 되돌리는 방식이 아니다. 각 성공 행과 요청 예산은 독립적으로 보존하며 상세 실패 후보는 같은 위치에 남는다. 원천의 월간 목록 변경은 페이지 위치에 영향을 줄 수 있어 최신 변경 전체를 추적하는 예약 갱신과 구분한다.
+
+[CollectionBatchTests](../backend/src/test/java/kr/nadeulirang/backend/collection/CollectionBatchTests.java)는 원천 네트워크를 가짜 응답으로 대체하고 별도 PostgreSQL 스키마에서 위치 재개·실패 후 복구·후보 비공개·페이지 끝·기존 승인 보존과 변경 시 재검토를 검사한다. `SourceResponse.totalCount`는 TourAPI의 `response.body`와 표준 API의 직접 `body` 구조를 모두 읽어 20행이 전량이라고 오판하지 않는다. 실제 키 인증·전국 원문 수집은 로컬 수집 실행에서 별도로 확인한다. 선택적 연습으로 20행 중 19번째(0부터 시작)를 처리한 뒤 `total=20`과 `total=21`일 때 `next`의 완료 여부를 예상해 본다.
+
+`collect-data.ps1`의 `Mode`·`MaxItems`·`Campaign` 매개변수는 Spring 실행 인수로 전달하고 원천 키는 기존 로컬 파일에서 읽는다. Windows PowerShell 5가 한국어 스크립트를 읽도록 파일에 UTF-8 BOM을 보존하고 Java의 표준 출력·오류 인코딩도 UTF-8로 지정한다. 이는 수집 프로세스 설정이며 PC의 영구 환경 설정을 바꾸지 않는다.
 
 ## 목록·상세 HTTP 조회와 공개 경계
 
