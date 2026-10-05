@@ -161,7 +161,7 @@ export function GuideReview() {
               ))}
             </div>
             <details className="guide-home-notes">
-              <summary>홈의 섹션·기간 제안</summary>
+              <summary>채택한 홈 구성·기간 비교</summary>
               <p className="small">
                 진행 중 → 곧 시작 → 상설 시설 순서. 각 섹션 최대 3곳, 더 보기는
                 조건을 유지한 검색으로 이동합니다. 진행 중은 종료일 순, 다가오는
@@ -184,8 +184,8 @@ export function GuideReview() {
                 ))}
               </select>
               <p className="hint">
-                14일은 이번·다음 주 제안. 7일은 빠른 선택, 30일은 미리
-                계획하기에 유리합니다.
+                채택한 기본 구간은 내일부터 14일입니다. 7일·30일은 가이드의
+                비교 옵션이며 기본 기준을 바꾸지 않습니다.
               </p>
             </details>
           </section>
@@ -517,8 +517,8 @@ export function GuideReview() {
           <section id="brand">
             <h2>09 · 현재 로고·심볼</h2>
             <p className="section-description">
-              현재 로고·심볼을 숲 초록으로 표시합니다. 모양의 최종 검토와 웹용
-              내보내기는 P25에서 이어갑니다.
+              채택한 한글 로고·두 사람 심볼을 숲 초록으로 표시합니다.
+              웹에서는 현재 투명 PNG 원본과 같은 심볼의 파비콘을 사용합니다.
             </p>
             <div className="sample">
               <div className="brand-samples">
@@ -542,8 +542,7 @@ export function GuideReview() {
                 ))}
               </div>
               <p className="hint">
-                ‘랑’ 옆점 없이 둥근 열린 받침 유지 · 색 변화와 가장자리 정리는
-                최종 검토 대상
+                ‘랑’ 옆점 없이 둥근 열린 받침 유지 · 현재 모양과 비율 채택
               </p>
             </div>
             <div className="sample">
@@ -582,8 +581,8 @@ export function GuideReview() {
               </div>
               <p className="hint">
                 로고·심볼·파비콘은 같은 브랜드색을 사용합니다. 스타일이 바뀌면
-                함께 갱신하며, 출시용 크기·여백의 최종 정리는 P25, 앱용 아이콘은
-                P23에서 이어갑니다.
+                함께 갱신합니다. 공개 전 유사 상표 확인은 남아 있으며,
+                앱용 아이콘 크기·마스크·여백은 P23에서 준비합니다.
               </p>
             </div>
           </section>
@@ -603,12 +602,12 @@ export function GuideReview() {
             <GuideTable
               rows={[
                 [
-                  "첫 웹 공개 제안",
+                  "첫 웹 공개 확정 · P28",
                   "실제 데이터의 발견 홈 · 이름/지역/종류 검색 · 상세/공식 출처 · 정책 · 검색 유입",
                 ],
                 [
-                  "추가 축소 제안 · P28 검토",
-                  "현재 운영·요금 확인 자료가 부족해 방문일/요금 필터를 후속으로 분리. 정보와 미확인 표시는 상세에 유지",
+                  "첫 공개 제외 · 후속 검토",
+                  "방문일/요금 필터는 운영·요금 확인 자료 확보 뒤 P32에서 검토. 정보와 미확인 표시는 상세에 유지",
                 ],
                 [
                   "후속 보류",
@@ -625,8 +624,9 @@ export function GuideReview() {
               ]}
             />
             <p className="hint">
-              P12 조회 API → P13 웹 화면 → P14 검색 유입·P15 운영 준비 순서.
-              현재 시안은 제품 구현이나 최종 범위 승인으로 취급하지 않습니다.
+              P12 조회 API 완료 → 화면·로고 검토 → P13 웹 화면 연결 → P14
+              검색 유입·P15 운영 준비 순서. 제품 범위는 P28에서 확정했으며,
+              홈 구성·로고는 채택했으며 실제 API 연결은 P13에서 진행합니다.
             </p>
           </section>
         </div>
