@@ -332,6 +332,8 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 `useSetting`은 `sessionStorage`와 사용자 정의 이벤트를 `useSyncExternalStore`로 구독한다. 서버에서는 fallback으로 초기 화면을 만들고 브라우저에서 저장한 기간·홈 조건을 읽는다. `sessionStorage`는 탭에 속하므로 계정 간 동기화 저장소가 아니다.
 
+상단·푸터 로고는 같은 `ReviewLink`와 `homeUrl`을 사용한다. `homeUrl`은 저장한 홈 조건을 쿼리에 담으며 `ReviewLink`는 Next.js `Link`를 감싸 이동 전 스크롤을 보존한다. 실제 `<a>` 링크이므로 클릭과 키보드 Enter로 이동하고, 공통 `brand` 스타일의 최소 높이 44px와 링크 포커스 표시를 함께 적용한다.
+
 `saveScroll`은 주소별 위치를 저장한다. `nextNavigation` ref는 코드로 요청한 이동과 뒤로/앞으로 가기를 구분하며, 복귀 시 [service-scroll.ts](../frontend/src/components/layout/service-scroll.ts)의 실제 스크롤 영역에 위치를 적용한다. 화면 state만 쓰는 대안은 단순하지만 직접 접속·새로고침·복귀에서 조건을 유지하기 어렵다. URL과 저장소를 함께 쓰면 구독·서버 초기값·복귀 검증 비용이 생긴다.
 
 확인은 조건 변경 → 상세 → 뒤로 가기와 새로고침이다. 선택적 연습으로 URL의 조건, 탭의 설정, 컴포넌트 안의 미적용 값을 각각 찾아본다.
