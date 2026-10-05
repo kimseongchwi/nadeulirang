@@ -294,6 +294,8 @@ SQL `CASE`는 저장된 취소/종료 상태를 보존하고, 날짜가 있는 �
 
 React 컴포넌트는 UI를 표현하는 함수다. `props`는 전달받은 입력, `state`는 상호작용에 따라 바뀌는 값이다. 상세 서버 페이지는 공개 가능한 id의 API 응답을 기다린 뒤 `DetailReview`의 `data` prop으로 전달한다. 없는/비공개 id에서는 Next.js의 `notFound()`를 호출한다. JSX는 그 입력과 상태를 화면으로 표현한다. 사용자 입력·달력의 미적용 선택·메뉴 동작은 브라우저에서 처리한다.
 
+`DetailReview`는 `safeUrl`로 표시 가능한 링크만 남긴 뒤 `links.some`으로 실제 예약 링크가 있는지 판단한다. 그 불리언 값에 따라 JSX의 삼항 연산자가 ‘공식 안내·예약’ 또는 ‘공식 안내’ 제목을 선택한다. 예약 링크가 없다는 이유로 예약 필요 여부를 추정하거나 누락 안내를 추가하지 않는다.
+
 Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포넌트다. `useState`·사용자 이벤트·`window` 등이 필요한 파일은 맨 위의 `"use client"`로 클라이언트 컴포넌트의 경계를 정한다. 클라이언트 컴포넌트도 첫 HTML의 서버 렌더링에 참여할 수 있으므로 모든 코드가 브라우저에서만 실행된다고 가정하지 않는다. [tsconfig.json](../frontend/tsconfig.json)의 `strict`는 타입 검사이며 실제 외부 응답의 정확성까지 보증하지 않는다.
 
 [model.ts](../frontend/src/features/outings/model.ts)의 `Outing`은 카드 표시 타입이고 `outingSummary`가 API의 `Summary`를 변환한다. 검토 표본의 주소·출처를 실제 항목에 채우지 않는다. 실제 상태는 서버의 `apiPeriod`로 표시하며 `CANCELLED`·`ENDED`·`UNKNOWN`을 구분한다. 가이드의 [review-model.ts](../frontend/src/features/ui-design/review-model.ts)만 JSON 스냅샷을 읽고 `publicItems`·검색 예시를 계산한다. `seoulDate`·`ongoing` 등 날짜 도우미는 표시와 가이드에서 사용하며 실제 목록 구분은 DB 조회가 결정한다. 루트의 `force-dynamic`과 API 호출의 `no-store`는 빌드 날짜/응답을 현재 자료로 오인하지 않게 한다.
@@ -310,9 +312,19 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 홈의 세 목록을 첫 20개 목록에서 잘라 만들면 해당 페이지 밖의 시설/행사가 빠질 수 있다. Java [OutingQuery](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingQuery.java)의 `days` record 구성 요소는 0 또는 다가오는 구간 7·14·30만 허용한다. 기존 여섯 인수 생성자는 일곱 인수 생성자에 0을 전달한다. [OutingStore.home](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingStore.java)은 한 `Instant`와 외부 호출에 적용된 읽기 트랜잭션 안에서 종료일/시작일/이름 순으로 세 구분을 조회한다. 내부 `list` 호출마다 별도 어노테이션 처리가 실행되는 것은 아니다. 시작일 상한 `today.plusDays(days)`를 건수와 페이지 계산 전에 SQL에 바인딩하고 DB 조회에서 각 구분을 3개로 제한해 반환하고 홈 날짜 동률은 ID로 정한다. 추가 DB 조회 비용은 있지만 이후 데이터가 늘어도 홈의 선정 기준을 유지한다.
 
-간단 보기는 열릴 때 같은 서버의 [상세 중계 route.ts](../frontend/src/app/api/outings/[id]/route.ts)를 호출한다. Web API의 `Request`/`Response`를 쓰며 중계 404와 503을 구분한다. 닫힐 때 `AbortController`로 불필요한 요청을 취소한다. 상세의 [EvidenceList](../frontend/src/features/outings/evidence.tsx)는 원천 문장을 JSX 텍스트로 표시해 HTML을 실행하지 않는다. 원천별 서로 다른 주소/요금·확인 시각·갱신 필요 표시를 유지하고 공식 링크는 명시적 HTTP(S) 주소만 연결한다. `orderedNotes`는 `observationId`별로 제목/본문을 묶어 주차 안내의 무료 문장이 다른 예약 안내와 섞이지 않게 한다.
+간단 보기는 열릴 때 같은 서버의 [상세 중계 route.ts](../frontend/src/app/api/outings/[id]/route.ts)를 호출한다. Web API의 `Request`/`Response`를 쓰며 중계 404와 503을 구분한다. 닫힐 때 `AbortController`로 불필요한 요청을 취소한다. 상세의 [EvidenceList](../frontend/src/features/outings/evidence.tsx)는 원천 문장을 JSX 텍스트로 표시해 HTML을 실행하지 않는다. 서로 다른 주소/요금 문장은 유지하되 항목마다 출처·확인 시각을 반복하지 않는다. DetailReview의 refreshNeeded는 출처 또는 정보/링크의 stale·최근 조회 실패를 합쳐 필요한 경우에만 갱신 안내 한 줄을 표시한다. 공식 링크는 명시적 HTTP(S) 주소만 연결한다. DB/API의 근거는 보존하고 데이터셋·사진 출처와 이용 조건은 PolicyContent의 about 분기에서 공통 푸터 시트·직접 주소에 제공한다.
+
+상세 제목 아래의 최근 자료 확인일은 API의 sourceCheckedAt(마지막 원천 성공의 최근 시각)을 Date로 읽고 유효한 경우에만 기존 seoulDate로 한국 날짜를 표시한다. 날짜 한 줄이 모든 필드의 동시 갱신을 뜻하지 않으므로 필드별 오래됨/실패 근거와 갱신 안내는 유지한다. detail-facts의 dt는 항목 이름, dd는 실제 값이며 CSS grid로 이름을 값 위에 배치한다. 값은 본문색·600, 이름과 detail-unknown은 보조색·400으로 표시한다. EvidenceList의 보조 이름도 span으로 구분해 긴 소개 본문까지 굵게 만들지 않는다. `orderedNotes`는 `observationId`별로 제목/본문을 묶어 주차 안내의 무료 문장이 다른 예약 안내와 섞이지 않게 한다.
 
 [tsconfig.json](../frontend/tsconfig.json)의 `allowImportingTsExtensions`는 `noEmit` 검사 환경에서 `.ts` import를 허용한다. Node.js의 내장 TypeScript 처리로 가이드의 순수 모델과 실제 URL/응답 로직을 테스트하기 위해 사용하며 실행 코드에 별도 변환 의존성을 추가하지 않는다. 확인은 프론트 API 조건/상태/근거 묶기 테스트, 백엔드 서울 경계/페이지 테스트와 실제 HTML/브라우저 흐름으로 한다. 페이지의 예상 조회 오류는 오류·재시도 UI로 반환하고 HTTP 오류 상태 정책은 P14에서 점검한다.
+
+### 상세 위치 정보의 구분
+
+상세의 `locationGroups`는 `eventplace`/`opar`를 행사 장소로 먼저 묶고 주소 필드를 각각 구분한다. 원문 배열을 `filter`로 나누어 독립된 `dt`/`dd` 행에 표시하며 원문 값은 바꾸지 않는다. `EvidenceList`의 `showLabels={false}`는 이미 행 제목이 있는 위치 정보에서만 내부 이름의 반복을 생략한다. 값이 서로 다르면 둘 다 보존하고 실제로 같은 위치인지는 추정하지 않는다.
+
+### 사진 출처의 접힌 안내
+
+[policy-content.tsx](../frontend/src/features/policies/policy-content.tsx)의 사진 안내는 제공처와 이용 기준을 짧게 보여 주고, 저작자·원본·라이선스·변경 정보는 네이티브 `details`/`summary` 안에 둔다. `open` 속성을 생략해 처음에는 접히며 브라우저가 클릭·Enter/Space·펼침 상태를 처리하므로 별도 React state나 토글 스크립트가 필요 없다.
 
 ### URL·탭 저장과 복귀
 
@@ -335,6 +347,8 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 선택적 연습으로 날짜를 고른 뒤 취소/완료했을 때 `pending`과 입력값이 어떻게 달라질지 코드와 비교한다.
 
 ### 레이아웃·입력·드래그·상태 표시
+
+[detail.tsx](../frontend/src/features/outings/detail.tsx)의 `detail-status-meta`는 제목 아래 상태칩과 최근 자료 확인일을 별도 flex 행에 둔다. `justify-content: space-between`은 칩을 왼쪽, 확인일을 오른쪽에 배치하고 `flex-wrap`은 함께 들어가지 않으면 확인일을 다음 줄로 보낸다. 제목의 `max-width: 100%`·`overflow-wrap: anywhere`는 긴 이름을 생략하지 않고 영역 안에서 줄바꿈한다. 상태를 계산하는 `Badge` 로직은 배치와 독립적이다.
 
 [site-shell.tsx](../frontend/src/components/layout/site-shell.tsx)와 `review.css`는 모바일 서비스와 PC 안내/서비스를 구성한다. PC의 오른쪽 스크롤은 `service-scroll.ts`로 읽고 복원한다. 검색창은 `search-keyword`의 `focus-within`에 경계와 포커스 링을 적용한다. 320px에서는 두 grid 열을 모두 차지해 입력 폭을 확보한다.
 

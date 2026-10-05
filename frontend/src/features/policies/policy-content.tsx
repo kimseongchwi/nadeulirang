@@ -19,59 +19,45 @@ export function PolicyContent({ type }: { type: PolicyType }) {
         ];
   return (
     <>
-      <div className="callout warning">
+      {type !== "about" && <div className="callout warning">
         공개 정책 확정 전 · 검토 안내
         <br />
         실제 운영 구성 확인 후 정책·약관을 준비합니다.
-      </div>
+      </div>}
       <div className="policy-content">
         {type === "about" ? (
           <>
-            <h2>나들이랑이 준비하는 것</h2>
-            <p>
-              축제·행사·전시·박물관·문화관광지를 발견하고 상세·공식 출처에서
-              방문 정보를 확인하는 모바일 웹을 준비하고 있어요.
-            </p>
-            <h2>실제 확보 자료</h2>
-            <p>
-              수집 DB에서 공개 검토를 마친 자료를 조회합니다. 종료·취소 행사는
-              홈·검색에서 제외하고 공개 가능한 기존 상세에는 상태를 표시합니다. 전체 지역은 확보한 자료를 함께 본다는
-              뜻이며 전국 모든 시설을 확보했다는 의미가 아닙니다.
-            </p>
             <h2>데이터 출처</h2>
+            <ul>
+              <li><a href="https://www.data.go.kr/data/15101578/openapi.do" target="_blank" rel="noopener noreferrer">한국관광공사 TourAPI</a> · 한국관광공사 제공 관광·행사·시설 정보</li>
+              <li><a href="https://www.data.go.kr/data/15017323/standard.do" target="_blank" rel="noopener noreferrer">전국박물관미술관 표준데이터</a> · 지방자치단체 제공 시설·이용 정보</li>
+              <li><a href="https://www.data.go.kr/data/15013104/standard.do" target="_blank" rel="noopener noreferrer">전국문화축제 표준데이터</a> · 한국관광공사·지방자치단체 제공 축제·일정 정보</li>
+            </ul>
             <p>
-              <a
-                href="https://www.data.go.kr/data/15101578/openapi.do"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                한국관광공사 TourAPI
-              </a>
-              와{" "}
-              <a
-                href="https://www.data.go.kr/data/15017323/standard.do"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                전국박물관미술관 표준데이터
-              </a>
-              를 사용합니다. 원천별 출처와 확인일은 각 상세 화면에 표시합니다.
+              각 제공기관의 이용 조건에 따라 사용합니다. 두 표준데이터는{" "}
+              <a href="https://www.kogl.or.kr/info/license.do" target="_blank" rel="noopener noreferrer">공공누리 제1유형(출처 표시)</a>
+              으로 제공됩니다.
             </p>
             <h2>사진 출처와 이용 조건</h2>
-            <p>한국관광공사 TourAPI 제공 사진은 공공누리 제1유형(출처 표시)에 따라 사용합니다. <a href="https://www.kogl.or.kr/info/license.do" target="_blank" rel="noopener noreferrer">이용 조건 보기</a></p>
             <p>
-              클레이아크 김해미술관 사진은{" "}
-              <a href="https://commons.wikimedia.org/wiki/File:Clayarch_Gimhae_Museum.JPG" target="_blank" rel="noopener noreferrer">HappyMidnight · Wikimedia Commons (2015)</a>
-              의 자료입니다. 이용 조건은{" "}
-              <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
-              이며, 화면에서는 원본 사진의 일부를 잘라 표시합니다.
+              한국관광공사 TourAPI와 Wikimedia Commons의 사진을 이용하며, 각 이용 조건을 준수합니다.
             </p>
-            <h2>시안의 로컬 저장</h2>
-            <p>
-              이 브라우저 탭의 기간·홈 필터 설정을 sessionStorage에
-              보관합니다. 계정·예약·결제·광고·분석 도구는 이 시안에 연결하지
-              않았습니다.
-            </p>
+            <details className="policy-photo-credits">
+              <summary>사진별 출처 보기</summary>
+              <ul>
+                <li>
+                  <a href="https://www.data.go.kr/data/15101578/openapi.do" target="_blank" rel="noopener noreferrer">한국관광공사 TourAPI 제공 사진</a>
+                  {" · "}
+                  <a href="https://www.kogl.or.kr/info/license.do" target="_blank" rel="noopener noreferrer">공공누리 제1유형(출처 표시)</a>
+                </li>
+                <li>
+                  <a href="https://commons.wikimedia.org/wiki/File:Clayarch_Gimhae_Museum.JPG" target="_blank" rel="noopener noreferrer">클레이아크 김해미술관 · HappyMidnight (2015)</a>
+                  {" · "}
+                  <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
+                  {" · 일부 잘라 표시"}
+                </li>
+              </ul>
+            </details>
           </>
         ) : (
           <>
