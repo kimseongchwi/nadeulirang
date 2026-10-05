@@ -1,8 +1,8 @@
 "use client";
 
-import { kindNames, period, permanent, photoId, outingSummary } from "./model";
+import { kindNames, period, permanent, outingSummary } from "./model";
 import { Badge } from "./outing-badge";
-import { OutingArtwork, PhotoCredit } from "./outing-artwork";
+import { OutingArtwork } from "./outing-artwork";
 import { BackHeading } from "@/components/layout/back-heading";
 import { EvidenceList, checkedTime, sourceNames } from "./evidence";
 import { orderedHours, orderedNotes, safeUrl } from "./api-query";
@@ -55,7 +55,6 @@ export function DetailReview({ data }: { data: Detail }) {
           {source.lastFailureAt && <p className="hint">최근 조회 실패 {checkedTime(source.lastFailureAt)} · 마지막 성공 자료를 표시해요.</p>}
         </div>;
       })}
-      {item.id === photoId && <div id="photo-credit"><PhotoCredit /></div>}
     </section>
   </div>;
 }

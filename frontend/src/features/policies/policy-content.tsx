@@ -58,6 +58,7 @@ export function PolicyContent({ type }: { type: PolicyType }) {
               를 사용합니다. 원천별 출처와 확인일은 각 상세 화면에 표시합니다.
             </p>
             <h2>사진 출처와 이용 조건</h2>
+            <p>한국관광공사 TourAPI 제공 사진은 공공누리 제1유형(출처 표시)에 따라 사용합니다. <a href="https://www.kogl.or.kr/info/license.do" target="_blank" rel="noopener noreferrer">이용 조건 보기</a></p>
             <p>
               클레이아크 김해미술관 사진은{" "}
               <a href="https://commons.wikimedia.org/wiki/File:Clayarch_Gimhae_Museum.JPG" target="_blank" rel="noopener noreferrer">HappyMidnight · Wikimedia Commons (2015)</a>

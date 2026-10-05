@@ -1,8 +1,13 @@
+export type Photo = {
+  id: string; url: string; thumbnailUrl: string | null; provider: string;
+  attributionUrl: string; license: "KOGL1"; checkedAt: string;
+};
 export type Summary = {
   id: string; name: string; kind: string; regionCode: string; regionName: string;
   period: string; eventStart: string | null; eventEnd: string | null;
   feeStatus: string; adultFee: number | null; feeConflict: boolean;
   operationVerified: boolean; collectedAt: string | null; sourceCheckedAt: string | null;
+  photo: Photo | null;
 };
 export type Page = { items: Summary[]; page: number; pageSize: number; total: number; asOfDate: string };
 export type Home = { ongoing: Summary[]; upcoming: Summary[]; permanent: Summary[]; total: number; days: number; asOfDate: string };

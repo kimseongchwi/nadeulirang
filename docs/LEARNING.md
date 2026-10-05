@@ -344,7 +344,19 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 ### 브랜드·이미지·정책·개발 표시
 
-[brand.ts](../frontend/src/config/brand.ts)의 한 팔레트를 `ReviewShell`의 CSS 변수와 [icon.ts](../frontend/src/app/icon.ts)가 공유한다. public의 이미지는 코드처럼 실행되지 않고 URL 요청으로 제공된다. `OutingArtwork`·`PhotoCredit`은 대표 이미지와 출처를 나눠 표시하며 이미지가 없어도 종류와 텍스트를 읽을 수 있다.
+#### 실제 대표 사진의 저장과 표시
+
+[V4](../backend/src/main/resources/db/migration/V4__file_asset.sql)의 `file_asset`은 파일 내용 대신 `REMOTE` 저장 방식·원본/미리보기 URL·제공처·이용 유형·확인 시각을 관리한다. `record_id`와 `observation_id` 외래키로 출처 항목과 실제 JSON 원문을 찾을 수 있다. `(record_id, original_url)`의 `UNIQUE`는 같은 사진의 중복 생성을 막고, `WHERE active`가 붙은 유일 인덱스는 한 원천에 활성 대표 사진 하나만 허용한다. 이전 사진은 비활성 이력으로 보존한다.
+
+[CollectionStore](../backend/src/main/java/kr/nadeulirang/backend/collection/CollectionStore.java)의 `ingest`는 성공한 공통 응답을 저장한 트랜잭션 안에서 이전 사진을 비활성화하고 Type1의 허용 URL만 삽입/갱신한다. `ON CONFLICT ... DO UPDATE`는 같은 URL이면 원문 참조와 확인 시각을 갱신한다. 실패 처리에는 사진 삭제가 없으며, 정상 응답에서 사진이 없어지거나 유형이 바뀌면 활성 사진이 사라진다. [PhotoPolicy](../backend/src/main/java/kr/nadeulirang/backend/collection/PhotoPolicy.java)의 `url`은 Java `String.matches`로 호스트·경로·확장자를 확인하고 HTTP 주소는 같은 호스트의 HTTPS로 바꾼다. 임의 URL을 서버에서 다운로드하는 기능은 만들지 않았다.
+
+[OutingStore](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingStore.java)의 `LEFT JOIN LATERAL`은 각 공개 후보의 최신 원문과 연결된 활성 사진 하나를 같은 목록 조회에 붙인다. `LEFT JOIN`이므로 사진이 없어도 나들이 행이 사라지지 않는다. [OutingResponse.Photo](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingResponse.java)는 Java `record`로 API 필드와 타입을 선언하며 생성자에 SQL에서 읽은 UUID·문자열·Instant를 전달한다. 사진이 없으면 `Summary.photo`는 `null`이다. 제공처는 API 공급 기관이며 확인되지 않은 촬영자 이름을 만들지 않는다.
+
+프론트 [api-contract.ts](../frontend/src/features/outings/api-contract.ts)의 `isPhoto`가 이용 유형·URL·제공처를 검사하고 `outingSummary`가 사진을 화면 모델로 전달한다. [OutingArtwork](../frontend/src/features/outings/outing-artwork.tsx)의 `useState`는 로딩 실패한 URL을 기억한다. Next.js `Image`의 `onError`가 이 상태를 갱신하면 해당 사진 대신 종류 아이콘을 렌더링한다. `unoptimized`는 브라우저가 원본 URL을 직접 요청하도록 하며 `object-fit: contain`은 사진 전체를 잘라내지 않고 배치한다. 원천 호스트 장애/변경의 영향을 받는 대신 로컬 파일 저장·동기화 비용이 없다. 가이드의 로컬 표본은 실제 API 상태가 없는 자료에만 적용한다.
+
+확인은 사진 중복/주소 변경·사진 제거/유형 변경·수집 실패 보존·위험 URL·비공개 보호 테스트와 실제 브라우저의 `naturalWidth`·아이콘 대체로 수행한다. DB 메타데이터 확보와 이미지 서버의 현재 로딩 성공은 서로 다른 결과다.
+
+[brand.ts](../frontend/src/config/brand.ts)의 한 팔레트를 `ReviewShell`의 CSS 변수와 [icon.ts](../frontend/src/app/icon.ts)가 공유한다. public의 이미지는 코드처럼 실행되지 않고 URL 요청으로 제공된다. `OutingArtwork`는 대표 이미지 또는 종류 아이콘을 표시하며 이미지가 없어도 종류와 텍스트를 읽을 수 있다. 사진의 작성자·원본 링크·라이선스·잘라 표시한 안내는 공통 서비스·데이터 출처에서 제공한다.
 
 정책 본문은 직접 접속 페이지와 바텀시트가 공유한다. Next.js 개발 표시 위치는 [next.config.ts](../frontend/next.config.ts)에서 정하고, [ReviewDevTools](../frontend/src/components/layout/review-dev-tools.tsx)는 가이드/iframe에서만 Next.js 포털의 Shadow DOM에 스타일을 넣는다. 일반 화면으로 이동하면 스타일·관찰자를 정리한다. 이 DOM 식별자에 의존하므로 Next.js 갱신 때 숨김/복원을 다시 확인할 비용이 있다.
 

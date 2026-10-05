@@ -104,6 +104,8 @@ P07에서 채택한 기반은 시스템 고딕(Malgun Gothic / Apple SD Gothic N
 
 ## 리소스와 검토 완료 기준
 
+- 실제 서비스의 대표 사진은 API `photo`로 전달한 TourAPI 제1유형 URL을 사용한다. 카드에서는 미리보기, 간단 보기·상세에서는 원본을 표시하며 `object-fit: contain`으로 전체 비율을 유지한다. 로딩 실패·사진 없는 자료는 기존 종류 아이콘으로 대체한다. 아래 Wikimedia 사진은 API 상태가 없는 가이드 표본에서만 사용한다.
+
 - 클레이아크 외관 사진: HappyMidnight, 2015-05-10, [원본·출처](https://commons.wikimedia.org/wiki/File:Clayarch_Gimhae_Museum.JPG), [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). 원본·출처 안내를 보존하고 현재 시설 외관을 보증하지 않는다. 원천 이미지 정책은 [DATA_SOURCES](docs/DATA_SOURCES.md#이용-조건)를 따른다.
 - 초기 시안의 Lucide 1.8.0 배포 파일과 ISC·일부 원형 아이콘의 MIT 이용허락은 당시 로컬 자료에 보존했다. 리소스가 바뀌면 실제 채택 파일의 출처·조건을 다시 확인한다.
 - 확정 전 모바일·좁은 PC·짧은 화면·긴 이름·미확인·빈 결과·오류·사진 누락, 키보드·포커스·뒤로 가기·조건/스크롤 복귀·하단 가림·동작 줄이기를 확인한다. 실기기·웹뷰·실제 API·운영 정책 검증은 해당 PLAN 항목에서 수행한다.
