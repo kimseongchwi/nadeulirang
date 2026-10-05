@@ -79,6 +79,7 @@ export function ReviewDialog({
       );
     }
     const scroll = reviewScrollTop();
+    const originUrl = `${location.pathname}${location.search}`;
     const container = serviceScrollContainer();
     const previousContainerOverflow = container?.style.overflowY || "";
     const previousOverflow = document.body.style.overflow;
@@ -100,8 +101,10 @@ export function ReviewDialog({
       window.dispatchEvent(new Event("review-dialog-state"));
       document.body.style.overflow = previousOverflow;
       if (container) container.style.overflowY = previousContainerOverflow;
-      scrollReviewTo(scroll);
-      if (origin?.isConnected) origin.focus({ preventScroll: true });
+      if (`${location.pathname}${location.search}` === originUrl) {
+        scrollReviewTo(scroll);
+        if (origin?.isConnected) origin.focus({ preventScroll: true });
+      }
     };
   }, [open, sheet]);
   return (

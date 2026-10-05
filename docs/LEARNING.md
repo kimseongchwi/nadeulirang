@@ -312,7 +312,7 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 홈의 세 목록을 첫 20개 목록에서 잘라 만들면 해당 페이지 밖의 시설/행사가 빠질 수 있다. Java [OutingQuery](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingQuery.java)의 `days` record 구성 요소는 0 또는 다가오는 구간 7·14·30만 허용한다. 기존 여섯 인수 생성자는 일곱 인수 생성자에 0을 전달한다. [OutingStore.home](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingStore.java)은 한 `Instant`와 외부 호출에 적용된 읽기 트랜잭션 안에서 종료일/시작일/이름 순으로 세 구분을 조회한다. 내부 `list` 호출마다 별도 어노테이션 처리가 실행되는 것은 아니다. 시작일 상한 `today.plusDays(days)`를 건수와 페이지 계산 전에 SQL에 바인딩하고 DB 조회에서 각 구분을 3개로 제한해 반환하고 홈 날짜 동률은 ID로 정한다. 추가 DB 조회 비용은 있지만 이후 데이터가 늘어도 홈의 선정 기준을 유지한다.
 
-간단 보기는 열릴 때 같은 서버의 [상세 중계 route.ts](../frontend/src/app/api/outings/[id]/route.ts)를 호출한다. Web API의 `Request`/`Response`를 쓰며 중계 404와 503을 구분한다. 닫힐 때 `AbortController`로 불필요한 요청을 취소한다. 상세의 [EvidenceList](../frontend/src/features/outings/evidence.tsx)는 원천 문장을 JSX 텍스트로 표시해 HTML을 실행하지 않는다. 서로 다른 주소/요금 문장은 유지하되 항목마다 출처·확인 시각을 반복하지 않는다. DetailReview의 refreshNeeded는 출처 또는 정보/링크의 stale·최근 조회 실패를 합쳐 필요한 경우에만 갱신 안내 한 줄을 표시한다. 공식 링크는 명시적 HTTP(S) 주소만 연결한다. DB/API의 근거는 보존하고 데이터셋·사진 출처와 이용 조건은 PolicyContent의 about 분기에서 공통 푸터 시트·직접 주소에 제공한다.
+간단 보기는 열릴 때 같은 서버의 [상세 중계 route.ts](../frontend/src/app/api/outings/[id]/route.ts)를 호출한다. Web API의 `Request`/`Response`를 쓰며 중계 404와 503을 구분한다. 닫힐 때 `AbortController`로 불필요한 요청을 취소한다. 상세의 [EvidenceList](../frontend/src/features/outings/evidence.tsx)는 원천 문장을 JSX 텍스트로 표시해 HTML을 실행하지 않는다. 서로 다른 주소/요금 문장은 유지하되 항목마다 출처·확인 시각을 반복하지 않는다. DetailReview의 refreshNeeded는 출처 또는 정보/링크의 stale·최근 조회 실패를 합쳐 필요한 경우에만 갱신 안내 한 줄을 표시한다. stale은 현재 서버 기준으로 행사 원천 확인 48시간·상설 시설 30일이 지났거나 성공 확인이 없는 상태다. 원천 전체의 최신 확인일이 최근이어도 상세 필드별 확인이 오래되면 안내가 나온다. 갱신 작업 실행이나 페이지 로딩을 뜻하지 않으므로 화면은 최신 여부의 재확인과 방문 전 공식 안내 확인을 요청한다. 공식 링크는 명시적 HTTP(S) 주소만 연결한다. DB/API의 근거는 보존하고 데이터셋·사진 출처와 이용 조건은 PolicyContent의 about 분기에서 공통 푸터 시트·직접 주소에 제공한다.
 
 상세 하단 공식 링크 아래의 최근 자료 확인일은 API의 sourceCheckedAt(마지막 원천 성공의 최근 시각)을 Date로 읽고 유효한 경우에만 기존 seoulDate로 한국 날짜를 표시한다. time의 dateTime에도 날짜만 전달한다. 날짜 한 줄이 모든 필드의 동시 갱신을 뜻하지 않으므로 필드별 오래됨/실패 근거와 갱신 안내는 유지한다. detail-facts의 dt는 항목 이름, dd는 실제 값이며 CSS grid로 이름을 값 위에 배치한다. 값은 본문색·600, 이름과 detail-unknown은 보조색·400으로 표시한다. EvidenceList의 보조 이름도 span으로 구분해 긴 소개 본문까지 굵게 만들지 않는다.
 
@@ -342,7 +342,9 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 상단·푸터 로고는 같은 `ReviewLink`와 `homeUrl`을 사용한다. `homeUrl`은 저장한 홈 조건을 쿼리에 담으며 `ReviewLink`는 Next.js `Link`를 감싸 이동 전 스크롤을 보존한다. 실제 `<a>` 링크이므로 클릭과 키보드 Enter로 이동하고, 공통 `brand` 스타일의 최소 높이 44px와 링크 포커스 표시를 함께 적용한다.
 
-`saveScroll`은 주소별 위치를 저장한다. `nextNavigation` ref는 코드로 요청한 이동과 뒤로/앞으로 가기를 구분하며, 복귀 시 [service-scroll.ts](../frontend/src/components/layout/service-scroll.ts)의 실제 스크롤 영역에 위치를 적용한다. 화면 state만 쓰는 대안은 단순하지만 직접 접속·새로고침·복귀에서 조건을 유지하기 어렵다. URL과 저장소를 함께 쓰면 구독·서버 초기값·복귀 검증 비용이 생긴다.
+관련 작업: P52. `saveScroll`은 주소별 위치를 저장한다. `nextNavigation` ref는 코드로 요청한 이동과 뒤로/앞으로 가기를 구분하며, 복귀 시 [service-scroll.ts](../frontend/src/components/layout/service-scroll.ts)의 실제 스크롤 영역에 위치를 적용한다. 브라우저의 `history.scrollRestoration`은 Provider가 있는 동안 manual로 설정하고 해제 시 이전 설정으로 복원한다. 페이지가 바뀌는 `popstate`에서는 직전 주소의 위치를 저장하고 복귀 이동으로 표시한다. 모달 해시만 바뀌는 경우에는 페이지 이동으로 처리하지 않는다.
+
+주소/검색 조건의 이동 처리는 `useLayoutEffect`로 화면을 그리기 전에 위치를 적용하고 다음 프레임에서 다시 위치와 `main` 포커스를 맞춘다. 다음 프레임은 네이티브 dialog가 닫히는 처리가 끝난 뒤의 포커스를 보장한다. 이 effect의 의존성에서 해시를 분리해 모달 해시 변경이 예정된 페이지 이동 처리를 취소하지 않게 한다. `ReviewDialog`도 열었을 때의 주소/검색 조건을 기록하고 같은 페이지에서 닫혔을 때만 위치·열기 버튼 포커스를 복원한다. 다른 상세로 이동하면서 닫힐 때 이전 목록 위치를 적용하지 않는다. 같은 주소의 홈 링크는 라우터 변경 없이 상단과 본문 포커스를 적용하고 404의 홈 이동도 공통 `ReviewLink`를 사용한다. 화면 state만 쓰는 대안은 단순하지만 직접 접속·새로고침·복귀에서 조건을 유지하기 어렵다. URL과 저장소를 함께 쓰면 구독·서버 초기값·복귀 검증 비용이 생긴다.
 
 확인은 조건 변경 → 상세 → 뒤로 가기와 새로고침이다. 선택적 연습으로 URL의 조건, 탭의 설정, 컴포넌트 안의 미적용 값을 각각 찾아본다.
 

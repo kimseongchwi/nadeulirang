@@ -7,6 +7,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useId,
   useState,
@@ -90,6 +91,25 @@ function useReviewState(today: string) {
   const upcomingDays = [7, 14, 30].includes(Number(days)) ? Number(days) : 14;
   const nextNavigation = useRef(false);
   const renderedUrl = useRef("");
+  useEffect(() => {
+    const previousRestoration = history.scrollRestoration;
+    history.scrollRestoration = "manual";
+    const onPopState = () => {
+      const previousUrl = renderedUrl.current;
+      if (!previousUrl || previousUrl === `${location.pathname}${location.search}`) return;
+      try {
+        sessionStorage.setItem(`outing-review-scroll:${previousUrl}`, String(reviewScrollTop()));
+      } catch {
+        /* 저장 제한 환경에서도 페이지 복귀는 유지한다. */
+      }
+      nextNavigation.current = false;
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      history.scrollRestoration = previousRestoration;
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, []);
   const saveScroll = useCallback(() => {
     try {
       sessionStorage.setItem(
@@ -97,7 +117,7 @@ function useReviewState(today: string) {
         String(reviewScrollTop()),
       );
     } catch {
-      /* 저장 제한 환경에서는 Next.js의 복귀 처리를 사용한다. */
+      /* 저장 제한 환경에서는 복귀 위치를 기본 상단으로 처리한다. */
     }
     nextNavigation.current = true;
   }, []);
@@ -105,6 +125,7 @@ function useReviewState(today: string) {
     (url: string, replace = false) => {
       if (url === `${location.pathname}${location.search}`) {
         scrollReviewTo(0);
+        document.getElementById("main")?.focus({ preventScroll: true });
         return;
       }
       saveScroll();
@@ -119,7 +140,7 @@ function useReviewState(today: string) {
     if (history.state?.reviewEntry) startTransition(() => router.back());
     else navigate("/search");
   }, [router, navigate]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const previousUrl = renderedUrl.current;
     renderedUrl.current = `${pathname}${search ? `?${search}` : ""}`;
     let frame = 0;
@@ -129,27 +150,23 @@ function useReviewState(today: string) {
       if (nextNavigation.current)
         history.replaceState({ ...history.state, reviewEntry: true }, "");
       nextNavigation.current = false;
+      const saved = Number(readSetting(`outing-review-scroll:${renderedUrl.current}`, "0"));
+      const scroll = restore && Number.isFinite(saved) ? Math.max(0, saved) : 0;
+      scrollReviewTo(scroll);
       frame = requestAnimationFrame(() => {
-        const scroll = restore
-          ? Number(
-              readSetting(
-                `outing-review-scroll:${pathname}${search ? `?${search}` : ""}`,
-                "0",
-              ),
-            )
-          : 0;
         scrollReviewTo(scroll);
         document.getElementById("main")?.focus({ preventScroll: true });
-        if (location.hash === "#photo-credit")
-          document.getElementById("photo-credit")?.scrollIntoView({ block: "start" });
       });
-    } else if (location.hash === "#photo-credit") {
-      frame = requestAnimationFrame(() =>
-        document.getElementById("photo-credit")?.scrollIntoView({ block: "start" }),
-      );
     }
     return () => cancelAnimationFrame(frame);
-  }, [pathname, search, hash]);
+  }, [pathname, search]);
+  useEffect(() => {
+    if (hash !== "#photo-credit") return;
+    const frame = requestAnimationFrame(() =>
+      document.getElementById("photo-credit")?.scrollIntoView({ block: "start" }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [hash, pathname, search]);
   const openSheet = useCallback((value: string) => {
     history.replaceState(
       { ...history.state, reviewSheetScroll: reviewScrollTop() },
@@ -174,11 +191,11 @@ function useReviewState(today: string) {
     }
   }, []);
   const replaceSheet = useCallback((url: string) => {
-    nextNavigation.current = url !== `${location.pathname}${location.search}`;
+    if (url !== `${location.pathname}${location.search}`) saveScroll();
     // Next.js가 내부 라우터 상태를 보존하고 검색 매개변수 변경을 반영한다.
     // 검색 조건 변경은 서버 페이지를 다시 조회해야 하므로 라우터로 이동한다.
     startTransition(() => router.replace(url, { scroll: false }));
-  }, [router]);
+  }, [router, saveScroll]);
   return {
     today,
     pathname,
@@ -225,18 +242,17 @@ export function ReviewLink({
   children,
   ...props
 }: ComponentProps<typeof Link>) {
-  const { saveScroll } = useReview();
+  const { saveScroll, navigate } = useReview();
   return (
     <Link
       {...props}
       scroll={false}
       onNavigate={(event) => {
         onNavigate?.(event);
-        if (
-          typeof props.href !== "string" ||
-          props.href !== `${location.pathname}${location.search}`
-        )
-          saveScroll();
+        if (typeof props.href === "string" && props.href === `${location.pathname}${location.search}`) {
+          event.preventDefault();
+          navigate(props.href);
+        } else saveScroll();
       }}
     >{children}<LinkPending /></Link>
   );

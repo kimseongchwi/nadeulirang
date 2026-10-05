@@ -43,7 +43,7 @@ export function DetailReview({ data }: { data: Detail }) {
       </div>
     </div>
     {!permanent(item) && <dl className="detail-facts detail-period"><div><dt>행사 일정</dt><dd>{period(item)}</dd></div></dl>}
-    {refreshNeeded && <p className="hint">일부 정보의 갱신이 지연되고 있어요.</p>}
+    {refreshNeeded && <p className="hint">일부 정보는 최신 여부를 다시 확인해야 해요. 방문 전 공식 안내를 확인해 주세요.</p>}
     {!!content.description.length && <DetailIntroduction key={item.id} values={content.description} />}
     <section className="detail-section">
       <h2>이용 정보</h2>
