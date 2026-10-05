@@ -4,7 +4,33 @@ import { backendQuery, orderedHours, orderedNotes, parameters, previewLocation, 
 import { isDetail, isOptions, isPage, isPhoto } from "../src/features/outings/api-contract.ts";
 import { badgeInfo, outingSummary } from "../src/features/outings/model.ts";
 
+import { detailContent } from "../src/features/outings/detail-content.ts";
+
 const options = { regions: [{ code: "11", name: "서울특별시", count: 2 }], kinds: [{ code: "MUSEUM", count: 2 }], total: 2, asOfDate: "2026-10-05" };
+test("화면 중복만 정리하고 다른 소개·프로그램·주차 안내와 원문을 보존한다", () => {
+  const entry = (observationId, field, value) => ({ observationId, field, value });
+  const information = {
+    description: [entry("소개", "overview", "바다에서 열리는 행사입니다.")],
+    hours: [entry("시간", "usetime", "10:00~18:00")],
+    notes: [entry("반복 소개", "infoname", "행사소개"), entry("프로그램", "infoname", "행사내용"),
+      entry("반복 소개", "infotext", "바다에서 열리는\n행사입니다."), entry("프로그램", "infotext", "드론 비행 및 투표 이벤트"),
+      entry("새 소개", "infoname", "행사소개"), entry("새 소개", "infotext", "우천 시 일정이 변경될 수 있습니다."),
+      entry("주차", "infoname", "주차 안내"), entry("주차", "infotext", "주차장 무료"),
+      entry("시간 반복", "infoname", "운영 시간"), entry("시간 반복", "infotext", "10:00~18:00"),
+      entry("빈 안내", "infoname", "준비물"), entry("빈 안내", "infotext", "  ")],
+  };
+  const original = structuredClone(information);
+  const content = detailContent(information);
+  assert.deepEqual(content.description.map((value) => value.value), ["바다에서 열리는 행사입니다.", "우천 시 일정이 변경될 수 있습니다."]);
+  assert.deepEqual(content.programs.map((note) => [note.title, note.values[0].value]), [["주요 프로그램", "드론 비행 및 투표 이벤트"]]);
+  assert.deepEqual(content.notes.map((note) => [note.title, note.values[0].value]), [["주차 안내", "주차장 무료"]]);
+  assert.deepEqual(information, original);
+  const free = detailContent({ generalFee: [entry("입장", "usefee", "무료")],
+    notes: [entry("주차", "infoname", "주차 안내"), entry("주차", "infotext", "무료")] });
+  assert.equal(free.notes[0].values[0].value, "무료");
+  assert.deepEqual(detailContent({}), { description: [], programs: [], notes: [] });
+  assert.deepEqual(detailContent({ description: information.description, notes: information.notes.slice(0, 1).concat(information.notes[2]) }).notes, []);
+});
 test("허용 사진의 제공처·이용 유형·주소를 검사하고 외부 호스트와 인증 쿼리를 거부한다", () => {
   const photo = { id: "사진", url: "https://tong.visitkorea.or.kr/cms/resource/01/123_image2_1.jpg", thumbnailUrl: null,
     provider: "한국관광공사 TourAPI", attributionUrl: "https://www.data.go.kr/data/15101578/openapi.do", license: "KOGL1", checkedAt: "2026-10-05T00:00:00Z" };

@@ -5,7 +5,9 @@ import { Badge } from "./outing-badge";
 import { OutingArtwork } from "./outing-artwork";
 import { BackHeading } from "@/components/layout/back-heading";
 import { EvidenceList } from "./evidence";
-import { orderedHours, orderedNotes, safeUrl } from "./api-query";
+import { orderedHours, previewLocation, safeUrl } from "./api-query";
+import { detailContent } from "./detail-content";
+import { DetailIntroduction } from "./detail-introduction";
 import type { Detail } from "./api-types";
 
 const groups = [
@@ -20,6 +22,7 @@ const locationGroups = [
 ] as const;
 export function DetailReview({ data }: { data: Detail }) {
   const item = outingSummary(data.item);
+  const content = detailContent(data.information);
   const links = data.links.filter((link) => safeUrl(link.url));
   const locations = locationGroups.map(([fields, label]) => ({
     label, values: (data.information.address || []).filter((entry) => fields.some((field) => field === entry.field)),
@@ -33,16 +36,15 @@ export function DetailReview({ data }: { data: Detail }) {
     <BackHeading title="상세 정보" labelOnly />
     <div className="detail-cover"><OutingArtwork item={item} large /></div>
     <div className="detail-title">
-      <div className="outing-card-meta">{item.region_name} · {kindNames[item.kind]}</div>
+      <div className="outing-card-meta">{previewLocation(data)} · {kindNames[item.kind]}</div>
       <h1>{item.name}</h1>
       <div className="detail-status-meta">
         <Badge item={item} />
-        {checkedDate && <p className="detail-checked">최근 자료 확인 <time dateTime={data.item.sourceCheckedAt!}>{checkedDate}</time></p>}
       </div>
     </div>
     {!permanent(item) && <dl className="detail-facts detail-period"><div><dt>행사 일정</dt><dd>{period(item)}</dd></div></dl>}
     {refreshNeeded && <p className="hint">일부 정보의 갱신이 지연되고 있어요.</p>}
-    {!!data.information.description?.length && <section className="detail-section"><h2>소개</h2><EvidenceList values={data.information.description} /></section>}
+    {!!content.description.length && <DetailIntroduction key={item.id} values={content.description} />}
     <section className="detail-section">
       <h2>이용 정보</h2>
       <dl className="detail-facts">
@@ -52,8 +54,18 @@ export function DetailReview({ data }: { data: Detail }) {
         <div><dt>할인 기간·증빙·중복 적용</dt><dd><span className="detail-unknown">미확인</span></dd></div>
         <div><dt>예약 기간·잔여석</dt><dd><span className="detail-unknown">미확인</span></dd></div>
       </dl>
-      {!!data.information.notes?.length && <><h3>추가 안내</h3><EvidenceList values={orderedNotes(data.information.notes)} /></>}
     </section>
+    {!!content.programs.length && <section className="detail-section">
+      <details className="detail-programs"><summary>주요 프로그램</summary>
+        {content.programs.map((note) => <EvidenceList key={note.id} values={note.values} showLabels={false} />)}
+      </details>
+    </section>}
+    {!!content.notes.length && <section className="detail-section"><h2>추가 안내</h2>
+      {content.notes.map((note) => <div className="detail-note" key={note.id}>
+        {note.title && <h3>{note.title}</h3>}
+        <EvidenceList values={note.values} showLabels={false} />
+      </div>)}
+    </section>}
     <section className="detail-section">
       <h2>{links.some((link) => link.purpose === "reservation") ? "공식 안내·예약" : "공식 안내"}</h2>
       {links.map((link, index) => <div key={`${link.purpose}-${index}`}>
@@ -61,5 +73,6 @@ export function DetailReview({ data }: { data: Detail }) {
       </div>)}
       {!links.some((link) => link.purpose === "officialWebsite") && <p className="detail-unknown">공식 기관 안내 주소 미확인</p>}
     </section>
+    {checkedDate && <p className="detail-checked">최근 자료 확인 <time dateTime={seoulDate(checkedAt!)}>{checkedDate}</time></p>}
   </div>;
 }

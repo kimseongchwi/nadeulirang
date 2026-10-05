@@ -314,13 +314,19 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 간단 보기는 열릴 때 같은 서버의 [상세 중계 route.ts](../frontend/src/app/api/outings/[id]/route.ts)를 호출한다. Web API의 `Request`/`Response`를 쓰며 중계 404와 503을 구분한다. 닫힐 때 `AbortController`로 불필요한 요청을 취소한다. 상세의 [EvidenceList](../frontend/src/features/outings/evidence.tsx)는 원천 문장을 JSX 텍스트로 표시해 HTML을 실행하지 않는다. 서로 다른 주소/요금 문장은 유지하되 항목마다 출처·확인 시각을 반복하지 않는다. DetailReview의 refreshNeeded는 출처 또는 정보/링크의 stale·최근 조회 실패를 합쳐 필요한 경우에만 갱신 안내 한 줄을 표시한다. 공식 링크는 명시적 HTTP(S) 주소만 연결한다. DB/API의 근거는 보존하고 데이터셋·사진 출처와 이용 조건은 PolicyContent의 about 분기에서 공통 푸터 시트·직접 주소에 제공한다.
 
-상세 제목 아래의 최근 자료 확인일은 API의 sourceCheckedAt(마지막 원천 성공의 최근 시각)을 Date로 읽고 유효한 경우에만 기존 seoulDate로 한국 날짜를 표시한다. 날짜 한 줄이 모든 필드의 동시 갱신을 뜻하지 않으므로 필드별 오래됨/실패 근거와 갱신 안내는 유지한다. detail-facts의 dt는 항목 이름, dd는 실제 값이며 CSS grid로 이름을 값 위에 배치한다. 값은 본문색·600, 이름과 detail-unknown은 보조색·400으로 표시한다. EvidenceList의 보조 이름도 span으로 구분해 긴 소개 본문까지 굵게 만들지 않는다. `orderedNotes`는 `observationId`별로 제목/본문을 묶어 주차 안내의 무료 문장이 다른 예약 안내와 섞이지 않게 한다.
+상세 하단 공식 링크 아래의 최근 자료 확인일은 API의 sourceCheckedAt(마지막 원천 성공의 최근 시각)을 Date로 읽고 유효한 경우에만 기존 seoulDate로 한국 날짜를 표시한다. time의 dateTime에도 날짜만 전달한다. 날짜 한 줄이 모든 필드의 동시 갱신을 뜻하지 않으므로 필드별 오래됨/실패 근거와 갱신 안내는 유지한다. detail-facts의 dt는 항목 이름, dd는 실제 값이며 CSS grid로 이름을 값 위에 배치한다. 값은 본문색·600, 이름과 detail-unknown은 보조색·400으로 표시한다. EvidenceList의 보조 이름도 span으로 구분해 긴 소개 본문까지 굵게 만들지 않는다.
+
+### 상세 소개의 펼침과 화면 중복 정리
+
+관련 작업: P48. [detail-content.ts](../frontend/src/features/outings/detail-content.ts)의 `detailContent`는 표시용 배열을 만들며 API 입력을 바꾸지 않는다. `orderedNotes`로 같은 `observationId`의 제목/본문을 묶고 제목으로 연결한 같은 정보 범위에서 공백·줄바꿈을 제외한 같은 본문만 중복으로 판단한다. 입장료의 무료와 주차의 무료처럼 값이 같아도 의미가 다른 안내는 보존한다. 행사소개의 새 문장은 소개에 포함하고 행사내용은 주요 프로그램으로 분리하며 나머지 본문이 있을 때만 추가 안내를 만든다. 다른 문장을 제목이 같다는 이유만으로 삭제하지 않는다.
+
+[detail-introduction.tsx](../frontend/src/features/outings/detail-introduction.tsx)의 `DetailIntroduction`은 CSS의 줄높이 5배로 소개의 초기 높이를 제한한다. `ResizeObserver`는 화면 폭·내용 높이가 바뀔 때 실제 전체 높이를 측정해 짧은 소개에는 더 보기 버튼을 표시하지 않는다. React의 `useState`는 펼침 상태, `useRef`는 측정할 DOM 요소, `useId`는 버튼의 `aria-controls`와 본문의 연결에 사용한다. 펼침 토글은 네이티브 button을 유지하면서 CSS로 배경·테두리를 없애 글씨와 작은 화살표만 표시한다. aria-expanded에 따라 화살표를 뒤집으며 클릭 영역 44px와 Enter/Space 동작을 보존한다. 키보드 포커스는 사각형 외곽선 대신 글씨 밑줄로 구분한다. 주요 프로그램은 기본 `open` 속성이 없는 네이티브 `details`/`summary`로 키보드 펼침을 제공한다. 확인은 실제 긴 소개의 펼침/접기·좁은 화면과 중복 안내·원문 보존 테스트로 한다.
 
 [tsconfig.json](../frontend/tsconfig.json)의 `allowImportingTsExtensions`는 `noEmit` 검사 환경에서 `.ts` import를 허용한다. Node.js의 내장 TypeScript 처리로 가이드의 순수 모델과 실제 URL/응답 로직을 테스트하기 위해 사용하며 실행 코드에 별도 변환 의존성을 추가하지 않는다. 확인은 프론트 API 조건/상태/근거 묶기 테스트, 백엔드 서울 경계/페이지 테스트와 실제 HTML/브라우저 흐름으로 한다. 페이지의 예상 조회 오류는 오류·재시도 UI로 반환하고 HTTP 오류 상태 정책은 P14에서 점검한다.
 
 ### 상세 위치 정보의 구분
 
-상세의 `locationGroups`는 `eventplace`/`opar`를 행사 장소로 먼저 묶고 주소 필드를 각각 구분한다. 원문 배열을 `filter`로 나누어 독립된 `dt`/`dd` 행에 표시하며 원문 값은 바꾸지 않는다. `EvidenceList`의 `showLabels={false}`는 이미 행 제목이 있는 위치 정보에서만 내부 이름의 반복을 생략한다. 값이 서로 다르면 둘 다 보존하고 실제로 같은 위치인지는 추정하지 않는다.
+상세의 `locationGroups`는 `eventplace`/`opar`를 행사 장소로 먼저 묶고 주소 필드를 각각 구분한다. 원문 배열을 `filter`로 나누어 독립된 `dt`/`dd` 행에 표시하며 원문 값은 바꾸지 않는다. `EvidenceList`의 `showLabels={false}`는 이미 제목이 있는 위치·소개·프로그램·추가 안내에서 내부 이름의 반복을 생략한다. 값이 서로 다르면 둘 다 보존하고 실제로 같은 위치인지는 추정하지 않는다.
 
 ### 사진 출처의 접힌 안내
 
@@ -350,7 +356,7 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 ### 레이아웃·입력·드래그·상태 표시
 
-[detail.tsx](../frontend/src/features/outings/detail.tsx)의 `detail-status-meta`는 제목 아래 상태칩과 최근 자료 확인일을 별도 flex 행에 둔다. `justify-content: space-between`은 칩을 왼쪽, 확인일을 오른쪽에 배치하고 `flex-wrap`은 함께 들어가지 않으면 확인일을 다음 줄로 보낸다. 제목의 `max-width: 100%`·`overflow-wrap: anywhere`는 긴 이름을 생략하지 않고 영역 안에서 줄바꿈한다. 상태를 계산하는 `Badge` 로직은 배치와 독립적이다.
+[detail.tsx](../frontend/src/features/outings/detail.tsx)의 `detail-status-meta`는 제목 아래 상태칩을 왼쪽에 둔다. 확인일은 하단 공식 링크 뒤에 따로 표시한다. 제목의 `max-width: 100%`·`overflow-wrap: anywhere`는 긴 이름을 생략하지 않고 영역 안에서 줄바꿈한다. 상태를 계산하는 `Badge` 로직은 배치와 독립적이다.
 
 [site-shell.tsx](../frontend/src/components/layout/site-shell.tsx)와 `review.css`는 모바일 서비스와 PC 안내/서비스를 구성한다. PC의 오른쪽 스크롤은 `service-scroll.ts`로 읽고 복원한다. 검색창은 `search-keyword`의 `focus-within`에 경계와 포커스 링을 적용한다. 320px에서는 두 grid 열을 모두 차지해 입력 폭을 확보한다.
 
