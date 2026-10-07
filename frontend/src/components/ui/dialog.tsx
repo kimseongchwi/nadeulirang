@@ -41,7 +41,7 @@ export function ReviewDialog({
         ? document.activeElement
         : null;
     function position() {
-      if (!dialog) return;
+      if (!dialog || dialog.dataset.dragging) return;
       const service = document
         .querySelector(".service")
         ?.getBoundingClientRect();
@@ -89,8 +89,16 @@ export function ReviewDialog({
     position();
     scrollReviewTo(scroll);
     if (container) container.style.overflowY = "hidden";
+    // 로딩·오류 안내와 사진이 바뀌면 고정 높이 대신 현재 내용으로 다시 계산한다.
+    const contentObserver = sheet ? new ResizeObserver(position) : null;
+    dialog.querySelectorAll(".outing-preview-body > *").forEach((content) => {
+      contentObserver?.observe(content);
+    });
+    dialog.addEventListener("sheet-settle", position);
     window.addEventListener("resize", position);
     return () => {
+      contentObserver?.disconnect();
+      dialog.removeEventListener("sheet-settle", position);
       window.removeEventListener("resize", position);
       dialog.close();
       delete dialog.dataset.expanded;

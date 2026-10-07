@@ -366,6 +366,8 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 [sheet-drag.ts](../frontend/src/components/ui/sheet-drag.ts)는 서비스 경계 안의 기본/확장/최소 높이와 제스처 결과를 계산한다. 처음 크기는 내용 높이를 최대 85%로 제한하고, 확장은 서비스 높이의 95%까지다. 48px보다 큰 위/아래 이동은 확장/축소로 정착하고, 기본 높이보다 `max(100px, 기본 높이×0.3)` 이상 아래로 줄이면 닫는다. 본문과 동작 영역을 flex로 나누어 높이가 줄어도 핸들·X·간단 보기의 상세 이동과 필터 적용 영역을 유지한다. 작은 이동·상하 한계·닫기 경계는 프론트 테스트, 실제 스크롤/복귀는 브라우저로 확인한다.
 
+관련 작업: P58. 간단 보기는 최초 조회 중의 로딩 안내가 사라지거나 사진 실패로 아이콘으로 바뀌면서 내용 높이가 달라진다. `ReviewDialog`의 `ResizeObserver`는 `.outing-preview-body` 안의 사진과 정보 블록을 관찰하고 `position`을 다시 호출한다. 기존 `height`를 잠시 제거해 현재 내용 높이를 측정한 뒤 기본/확장 경계를 갱신하므로, 로딩 때의 큰 높이가 빈 공간으로 남지 않는다. 시트 전체 높이를 관찰하면 직접 설정한 높이가 다시 관찰을 일으킬 수 있어 내부 블록을 대상으로 삼는다. 드래그 중에는 재계산을 미루고 `SheetHandle`이 크기를 정착시킨 뒤 보내는 `sheet-settle` 이벤트로 최신 내용을 다시 측정한다. 확장 상태는 유지하고 축소할 때 현재 내용에 맞추며, 닫힐 때 관찰과 이벤트 구독을 해제한다. 확인은 처음 조회 완료 후 정보 바로 아래에 버튼 영역이 붙는지, 확장 후 축소와 짧은 화면의 본문 스크롤이 유지되는지 보는 것이다.
+
 [HomeFilter](../frontend/src/features/outings/home-filter.tsx)는 URL의 적용 조건을 기본값으로 보여주고 열릴 때 `form.reset`으로 미적용 값을 정리한다. [Calendar](../frontend/src/features/ui-design/calendar.tsx)는 `pending` 선택과 표시 월·포커스를 분리한다. 취소는 적용값을 바꾸지 않고 완료가 선택값을 전달한다. 날짜 입력 예시는 가이드 코드이며 제품의 활성 검색 필터와 구분한다.
 
 [review.css](../frontend/src/styles/review.css)의 `data-sheet`·`translate`·`@starting-style`은 아래에서 올라오는 전환을 만든다. `display`·`overlay`의 `allow-discrete`는 닫을 때도 전환을 유지하는 데 사용한다. 즉시 컴포넌트를 제거하면 퇴장 전환이 사라지므로 현재 필터·정책·간단 보기 시트는 마운트를 유지한다. `prefers-reduced-motion`은 움직임을 제거한다. 네이티브 dialog를 사용해도 포커스 복귀·스크롤·키보드와 브라우저 지원을 직접 확인해야 한다.

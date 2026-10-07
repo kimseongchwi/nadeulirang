@@ -20,6 +20,7 @@ export function SheetHandle({ dialogRef, boundsRef, onClose, title }: {
     dialog.style.maxHeight = `${bounds.expanded}px`;
     dialog.style.removeProperty("translate");
     delete dialog.dataset.dragging;
+    dialog.dispatchEvent(new Event("sheet-settle"));
     setExpanded(next === "expanded");
   }
   function finish(event: PointerEvent<HTMLButtonElement>, cancelled = false) {
