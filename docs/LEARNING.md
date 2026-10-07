@@ -310,7 +310,9 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 [api-query.ts](../frontend/src/features/outings/api-query.ts)는 URL의 `q`를 백엔드 `keyword`로, 기존 지역명을 현재 시도 코드로, 홈 `scope`를 기간 구분으로 바꾼다. 없는 지역을 전체 지역으로 넓히지 않는다. 페이지·정렬·다가오는 구간을 URL에 유지하고 검색 폼을 제출할 때 페이지는 1로 돌아간다. 기간 조건만 해제할 때 이름/지역/종류는 보존한다.
 
-관련 작업: P54. [search.tsx](../frontend/src/features/outings/search.tsx)의 `pageUrl`은 `URLSearchParams`를 복사하고 `page`만 바꾸므로 번호·이전/다음 이동에서도 검색 조건을 보존한다. `Math.min`·`Math.max`로 첫/마지막 경계 안의 번호 최대 5개를 만들며 좁은 화면에서는 5페이지 이상일 때 주변 3개를 표시한다. 현재 번호는 `aria-current="page"`, 이동 가능한 번호는 실제 `ReviewLink`, 양 끝 화살표는 네이티브 `disabled` 버튼으로 구분한다. 같은 44px 크기를 유지하고 페이지 전환의 로딩·상단 포커스·이력 복귀는 공통 Provider를 사용한다.
+관련 작업: P54·P55. [search.tsx](../frontend/src/features/outings/search.tsx)의 `pageUrl`은 `URLSearchParams`를 복사하고 `page`만 바꾸므로 번호·이전/다음 이동에서도 검색 조건을 보존한다. 번호 창과 표시 구조는 [pagination.tsx](../frontend/src/features/outings/pagination.tsx)의 `Pagination`으로 공유한다. `Math.min`·`Math.max`로 첫/마지막 경계 안의 번호 최대 5개를 만들며 좁은 화면에서는 5페이지 이상일 때 주변 3개를 표시한다. 현재 번호는 `aria-current="page"`, 양 끝 화살표는 네이티브 `disabled` 버튼으로 구분한다. 같은 44px 크기를 유지하고 검색에서 실제 `ReviewLink`로 이동할 때 로딩·상단 포커스·이력 복귀는 공통 Provider를 사용한다.
+
+`PaginationProps`의 유니언 타입은 검색의 `pageUrl` 또는 가이드의 `onPageChange` 중 한 가지 동작만 받는다. 검색에서는 URL을 만든 링크를, 가이드에서는 `useState`의 선택값만 바꾸는 버튼을 렌더링한다. [guide.tsx](../frontend/src/features/ui-design/guide.tsx)의 `PaginationExample`은 각 예시의 상태를 따로 관리하므로 한 예시에서 선택해도 다른 예시와 실제 검색 조건은 바뀌지 않는다. 가이드의 예시 너비 선택은 기존 모바일 미리보기 너비와 공유하며, `data-compact`는 넓은 PC 안에서도 320px 예시의 주변 번호 3개를 확인할 수 있게 한다. 확인은 실제 검색의 조건이 포함된 링크와 가이드의 번호/화살표·Enter·처음 상태 복귀, 320/390/430px 배치다.
 
 홈의 세 목록을 첫 20개 목록에서 잘라 만들면 해당 페이지 밖의 시설/행사가 빠질 수 있다. Java [OutingQuery](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingQuery.java)의 `days` record 구성 요소는 0 또는 다가오는 구간 7·14·30만 허용한다. 기존 여섯 인수 생성자는 일곱 인수 생성자에 0을 전달한다. [OutingStore.home](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingStore.java)은 한 `Instant`와 외부 호출에 적용된 읽기 트랜잭션 안에서 종료일/시작일/이름 순으로 세 구분을 조회한다. 내부 `list` 호출마다 별도 어노테이션 처리가 실행되는 것은 아니다. 시작일 상한 `today.plusDays(days)`를 건수와 페이지 계산 전에 SQL에 바인딩하고 DB 조회에서 각 구분을 3개로 제한해 반환하고 홈 날짜 동률은 ID로 정한다. 추가 DB 조회 비용은 있지만 이후 데이터가 늘어도 홈의 선정 기준을 유지한다.
 

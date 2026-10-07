@@ -12,6 +12,7 @@ import { ReviewLink, useReview } from "@/providers/review-provider";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/feedback";
 import { OutingCard } from "@/features/outings/outing-card";
 import { PolicyLinks } from "@/features/policies/policy-links";
+import { Pagination } from "@/features/outings/pagination";
 
 const sections = [
   ["brand-colors", "브랜드 색상"],
@@ -20,6 +21,7 @@ const sections = [
   ["inputs", "입력·선택"],
   ["dates", "달력"],
   ["buttons", "버튼·뒤로가기"],
+  ["pagination", "페이지네이션"],
   ["cards", "카드"],
   ["states", "로딩·빈 결과·오류"],
   ["tokens", "스타일 값"],
@@ -46,6 +48,17 @@ function GuideTable({
       </tbody>
     </table>
   );
+}
+function PaginationExample({ title, initialPage, width }: { title: string; initialPage: number; width: number }) {
+  const [page, setPage] = useState(initialPage);
+  return <article className="guide-pagination-example">
+    <h3>{title}</h3>
+    <div className="guide-pagination-frame" style={{ width }} data-compact={width <= 360 || undefined}>
+      <Pagination page={page} pages={8} onPageChange={setPage} label={`${title} 예시 페이지`} />
+      <p className="hint" role="status" aria-live="polite">현재 {page}페이지 · 전체 8페이지</p>
+    </div>
+    <button type="button" className="text-button" onClick={() => setPage(initialPage)}>처음 상태로</button>
+  </article>;
 }
 export function GuideReview() {
   const {
@@ -388,6 +401,28 @@ export function GuideReview() {
                 레이아웃 크기는 유지해요.
               </p>
             </div>
+          </section>
+          <section id="pagination">
+            <div className="guide-section-head">
+              <div>
+                <h2>페이지네이션</h2>
+                <p className="section-description">번호와 화살표를 눌러 현재 페이지와 양 끝의 비활성 상태를 확인해 보세요.</p>
+              </div>
+              <div className="guide-width-control">
+                <label htmlFor="paginationWidth">페이지네이션 예시 너비</label>
+                <select id="paginationWidth" value={previewWidth} onChange={(event) => setPreviewWidth(Number(event.target.value))}>
+                  <option value="320">320px · 작은 화면</option>
+                  <option value="390">390px · 기본</option>
+                  <option value="430">430px · 넓은 화면</option>
+                </select>
+              </div>
+            </div>
+            <div className="guide-pagination-grid">
+              <PaginationExample title="첫 페이지에서 시작" initialPage={1} width={previewWidth} />
+              <PaginationExample title="중간 페이지에서 시작" initialPage={4} width={previewWidth} />
+              <PaginationExample title="마지막 페이지에서 시작" initialPage={8} width={previewWidth} />
+            </div>
+            <p className="hint">검색 화면과 같은 44px 선택 영역과 현재 페이지 표시예요. 번호는 최대 5개, 360px 이하에서는 주변 3개로 줄어듭니다. 결과가 한 페이지뿐이면 페이지네이션은 생략해요. 예시의 선택은 이 영역 안에서만 바뀝니다.</p>
           </section>
           <section id="cards">
             <h2>06 · 카드·상태</h2>

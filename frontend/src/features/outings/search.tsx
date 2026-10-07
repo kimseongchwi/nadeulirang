@@ -9,6 +9,7 @@ import { OutingCard } from "@/features/outings/outing-card";
 import { ReviewLink, useReview } from "@/providers/review-provider";
 import { Icon } from "@/components/ui/icons";
 import type { Options, Page } from "./api-types";
+import { Pagination } from "./pagination";
 
 export function SearchReview({ data, options, query }: { data: Page; options: Options; query: string }) {
   const { navigate } = useReview();
@@ -22,9 +23,6 @@ export function SearchReview({ data, options, query }: { data: Page; options: Op
   };
   const results = data.items.map(outingSummary);
   const pages = Math.ceil(data.total / data.pageSize);
-  const firstPage = Math.max(1, Math.min(data.page - 2, pages - 4));
-  const compactFirstPage = Math.max(1, Math.min(data.page - 1, pages - 2));
-  const visiblePages = Array.from({ length: Math.min(pages, 5) }, (_, index) => firstPage + index);
   const pageUrl = (page: number) => { const next = new URLSearchParams(filters); next.set("page", String(page)); return `/search?${next}`; };
   const withoutScope = new URLSearchParams(filters);
   for (const key of ["scope", "days", "page"]) withoutScope.delete(key);
@@ -124,20 +122,7 @@ export function SearchReview({ data, options, query }: { data: Page; options: Op
             </ReviewLink>
           </EmptyState>
         )}
-        {pages > 1 && <nav className="result-pages" aria-label="검색 결과 페이지">
-          {data.page > 1
-            ? <ReviewLink className="result-page" href={pageUrl(Math.min(data.page - 1, pages))} aria-label="이전 페이지"><Icon name="back" /></ReviewLink>
-            : <button className="result-page" type="button" disabled aria-label="이전 페이지"><Icon name="back" /></button>}
-          {visiblePages.map((page) => {
-            const className = `result-page result-page-number${pages > 4 && (page < compactFirstPage || page > compactFirstPage + 2) ? " is-extra" : ""}`;
-            return page === data.page
-              ? <span key={page} className={className} aria-current="page" aria-label={`${page}페이지, 현재 페이지`}>{page}</span>
-              : <ReviewLink key={page} className={className} href={pageUrl(page)} aria-label={`${page}페이지`}>{page}</ReviewLink>;
-          })}
-          {data.page < pages
-            ? <ReviewLink className="result-page" href={pageUrl(data.page + 1)} aria-label="다음 페이지"><Icon name="next" /></ReviewLink>
-            : <button className="result-page" type="button" disabled aria-label="다음 페이지"><Icon name="next" /></button>}
-        </nav>}
+        <Pagination page={data.page} pages={pages} pageUrl={pageUrl} />
       </section>
     </div>
   );
