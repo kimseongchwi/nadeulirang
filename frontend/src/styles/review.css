@@ -2389,11 +2389,11 @@ body.filter-open {
 .outing-artwork[data-kind="EXHIBITION"] { background: #eeeaf3; color: #887e9b; }
 .outing-artwork[data-kind="CULTURAL_SITE"] { background: #edf0e8; color: #738260; }
 .outing-artwork img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.outing-artwork[data-photo="true"]:has(img[src^="https://tong.visitkorea.or.kr/"]) img { object-fit: contain; }
 .outing-artwork-symbol { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
 .outing-artwork-symbol > svg { width: 32px; height: 32px; stroke-width: 1.1; }
 .outing-artwork.large { width: 100%; height: 166px; border-radius: 16px; background-image: radial-gradient(circle at 12% 10%, rgb(255 255 255 / 70%) 0, transparent 70%); }
-.outing-artwork.large[data-photo="true"] { height: 200px; }
+.outing-artwork.large[data-photo="true"] { height: auto; aspect-ratio: auto; }
+.outing-artwork.large[data-photo="true"] img { height: auto; object-fit: contain; }
 .outing-artwork.large .outing-artwork-symbol > svg { width: 50px; height: 50px; }
 .outing-artwork.large .outing-artwork-symbol > span { font-size: 12px; letter-spacing: .12em; }
 .search-intro { margin-bottom: 24px; }
@@ -2433,7 +2433,7 @@ dialog[data-sheet][data-dragging] { transition: none; }
 .policy-sheet-head { border-bottom: 0; padding: 8px 20px 12px; }
 .outing-preview-body { overflow-y: auto; max-height: calc(85dvh - 162px); padding: 0 20px; overscroll-behavior: contain; }
 .outing-preview .outing-artwork.large { height: 112px; }
-.outing-preview .outing-artwork.large[data-photo="true"] { height: 160px; }
+.outing-preview .outing-artwork.large[data-photo="true"] { height: auto; }
 .outing-preview .outing-artwork-symbol > span { display: none; }
 .outing-preview-content { padding-top: 18px; padding-bottom: 12px; }
 .outing-preview-content h2 { font-size: 24px; line-height: 1.4; letter-spacing: -.035em; margin: 6px 0 12px; word-break: keep-all; }
@@ -2450,7 +2450,7 @@ dialog[data-sheet][data-dragging] { transition: none; }
 .outing-detail .page-head { margin-bottom: 20px; }
 .outing-detail .page-head h1 { font-size: 16px; font-weight: 500; }
 .detail-cover .outing-artwork.large { height: 190px; border-radius: 20px; }
-.detail-cover .outing-artwork.large[data-photo="true"] { height: 230px; }
+.detail-cover .outing-artwork.large[data-photo="true"] { height: auto; }
 .detail-title { margin: 24px 0 20px; }
 .detail-title h1 { min-width: 0; max-width: 100%; font-size: 28px; letter-spacing: -.04em; line-height: 1.4; margin: 8px 0 14px; word-break: keep-all; overflow-wrap: anywhere; }
 .detail-status-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; }
