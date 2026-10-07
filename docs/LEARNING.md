@@ -376,6 +376,8 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 [site-shell.tsx](../frontend/src/components/layout/site-shell.tsx)와 `review.css`는 모바일 서비스와 PC 안내/서비스를 구성한다. PC의 오른쪽 스크롤은 `service-scroll.ts`로 읽고 복원한다. 검색창은 `search-keyword`의 `focus-within`에 경계와 포커스 링을 적용한다. 320px에서는 두 grid 열을 모두 차지해 입력 폭을 확보한다.
 
+관련 작업: P57. 일반 서비스의 `.service-scroll`은 세로 flex로 header·main·footer를 배치하고 `main`의 `flex: 1 0 auto`가 짧은 화면의 남는 높이를 채운다. header·footer는 줄어들지 않으므로 긴 본문에서는 전체 내용이 스크롤되고 푸터도 끝에 놓인다. 모바일은 `min-height: 100dvh`로 현재 화면 높이를 최소값으로 사용하고, PC는 서비스 높이에서 하단바를 제외한 스크롤 영역의 높이를 사용한다. 고정 본문 높이는 긴 내용이나 작은 화면을 잘라낼 수 있어 사용하지 않는다. 일반 서비스의 `scrollbar-gutter: auto`는 스크롤이 없을 때 예약 여백을 없애고, 실제로 넘치는 내용에는 기본 스크롤바를 표시한다. 가이드 자체의 문서 배치는 이 규칙에서 제외한다.
+
 `HomeReview`의 `chipDrag`는 마우스 이동이 6px 이상일 때 드래그로 처리하고 `scrollLeft`를 바꾼다. 드래그 뒤 클릭을 억제하며 터치는 네이티브 스크롤을 유지한다. `overflow-x`만 쓰는 대안은 간단하지만 마우스로 끄는 동작을 따로 제공하지 않는다. 방향키·정상 클릭·`pointercancel`을 함께 확인한다.
 
 [feedback.tsx](../frontend/src/components/ui/feedback.tsx)의 `LoadingState`·`EmptyState`·`ErrorState`는 로딩·정상 0건·요청 실패를 구분한다. 로딩은 사람 심볼만 눈에 보이고 `role=status`·`aria-live`와 시각적으로 숨긴 글씨로 읽기 도구에 알린다. 장식 심볼은 읽기에서 제외하며 CSS mask와 transform으로 움직이고 reduced-motion에서는 정적이다. 가이드의 재시도는 표시 예시이므로 실제 요청 오류의 검증을 대신하지 않는다.

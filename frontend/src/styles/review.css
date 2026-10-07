@@ -132,6 +132,18 @@ select:focus {
   min-height: 100vh;
   background: var(--surface);
 }
+.review-root:not(.guide-mode) .service-scroll {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+.review-root:not(.guide-mode) .service-scroll > main {
+  flex: 1 0 auto;
+}
+.review-root:not(.guide-mode) .service-scroll > header,
+.review-root:not(.guide-mode) .service-scroll > footer {
+  flex-shrink: 0;
+}
 .service-header {
   display: flex;
   align-items: center;
@@ -939,7 +951,7 @@ dialog::backdrop {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    scrollbar-gutter: stable;
+    scrollbar-gutter: auto;
     overscroll-behavior: contain;
     scroll-padding-top: 20px;
     scroll-padding-bottom: 24px;
@@ -1466,6 +1478,9 @@ dialog {
 /* P24·P27·P15 현재 검토안 */
 html {
   scrollbar-gutter: stable;
+}
+html:has(.review-root:not(.guide-mode)) {
+  scrollbar-gutter: auto;
 }
 body.policy-open {
   overflow: hidden;
