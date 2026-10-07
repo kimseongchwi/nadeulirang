@@ -44,6 +44,18 @@ export function windowDays(value: string | null) {
   if (!["7", "14", "30"].includes(value)) throw new Error("기간 구간을 확인해 주세요.");
   return Number(value);
 }
+export function searchFormQuery(form: URLSearchParams) {
+  const input = new URLSearchParams(form);
+  const scope = input.get("scope") || "";
+  input.delete("page");
+  input.delete("days");
+  if (scope === "upcoming") input.set("days", "14");
+  else if (scope === "upcoming:7" || scope === "upcoming:30") {
+    input.set("scope", "upcoming");
+    input.set("days", scope.split(":")[1]);
+  }
+  return queryParameters(input, null);
+}
 export function backendQuery(query: URLSearchParams) {
   const result = new URLSearchParams();
   for (const key of ["region", "kind", "page", "sort"]) {

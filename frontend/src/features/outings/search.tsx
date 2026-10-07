@@ -10,22 +10,17 @@ import { ReviewLink, useReview } from "@/providers/review-provider";
 import { Icon } from "@/components/ui/icons";
 import type { Options, Page } from "./api-types";
 import { Pagination } from "./pagination";
+import { searchFormQuery } from "./api-query";
 
 export function SearchReview({ data, options, query }: { data: Page; options: Options; query: string }) {
   const { navigate } = useReview();
   const filters = new URLSearchParams(query);
   const upcomingDays = Number(filters.get("days") || 14);
   const scope = filters.get("scope") || "";
-  const scopeTitles: Record<string, string> = {
-    ongoing: "기간 진행 중",
-    upcoming: `${upcomingDays}일 안에 시작`,
-    permanent: "상설 시설",
-  };
+  const customUpcoming = scope === "upcoming" && upcomingDays !== 14;
   const results = data.items.map(outingSummary);
   const pages = Math.ceil(data.total / data.pageSize);
   const pageUrl = (page: number) => { const next = new URLSearchParams(filters); next.set("page", String(page)); return `/search?${next}`; };
-  const withoutScope = new URLSearchParams(filters);
-  for (const key of ["scope", "days", "page"]) withoutScope.delete(key);
   return (
     <div className="outing-search">
       <div className="intro search-intro">
@@ -41,7 +36,8 @@ export function SearchReview({ data, options, query }: { data: Page; options: Op
           const next = new URLSearchParams();
           for (const [key, value] of data)
             if (String(value).trim()) next.set(key, String(value).trim());
-          navigate(`/search${next.size ? `?${next}` : ""}`);
+          const submitted = searchFormQuery(next);
+          navigate(`/search${submitted.size ? `?${submitted}` : ""}`);
         }}
       >
         <div className="full search-keyword">
@@ -86,24 +82,23 @@ export function SearchReview({ data, options, query }: { data: Page; options: Op
             ))}
           </select>
         </div>
-        <div className="full">
+        <div className="search-scope">
+          <label htmlFor="scope">검색 범위</label>
+          <select id="scope" name="scope" defaultValue={customUpcoming ? `upcoming:${upcomingDays}` : scope}>
+            <option value="">전체</option>
+            <option value="ongoing">행사 기간 진행 중</option>
+            <option value="upcoming">14일 안에 시작</option>
+            <option value="permanent">상설 시설</option>
+            {customUpcoming && <option value={`upcoming:${upcomingDays}`}>{upcomingDays}일 안에 시작</option>}
+          </select>
+        </div>
+        <div className="search-sort">
           <label htmlFor="sort">정렬</label>
           <select id="sort" name="sort" defaultValue={filters.get("sort") || (scope === "ongoing" ? "END_DATE" : scope === "upcoming" ? "START_DATE" : scope === "permanent" ? "NAME" : "DEFAULT")}>
             <option value="DEFAULT">기본 순서</option><option value="NAME">이름 순</option>
             <option value="START_DATE">시작일 순</option><option value="END_DATE">종료일 순</option>
           </select>
         </div>
-        {scope && (
-          <>
-            <input type="hidden" name="scope" value={scope} />
-            {scope === "upcoming" && <input type="hidden" name="days" value={upcomingDays} />}
-            <div className="full callout">
-              홈에서 선택한 조건: {scopeTitles[scope]}
-              <br />
-              <ReviewLink href={`/search${withoutScope.size ? `?${withoutScope}` : ""}`}>기간 조건 해제</ReviewLink>
-            </div>
-          </>
-        )}
       </form>
       <section className="search-results">
         <div className="section-head">

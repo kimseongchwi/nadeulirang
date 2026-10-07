@@ -308,7 +308,9 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 `ApiResult<T>`는 `ok: true`의 `data`와 `ok: false`의 `status`·`message`를 나눈 유니온 타입이다. `T`는 응답 모양을 지정하는 타입 매개변수다. 외부 JSON을 TypeScript 타입으로 단정하면 잘못된 응답도 통과하므로 [api-contract.ts](../frontend/src/features/outings/api-contract.ts)의 타입 가드가 `unknown` 값의 배열·필드·null·숫자를 실제로 검사한다. 정상 0건은 빈 배열이고 접속 실패·8초 초과·비정상 JSON은 오류 결과다. 이전 검토 표본으로 대체하지 않는다. `React.cache`는 같은 렌더링 요청의 선택지/상세 중복 호출을 줄이며 날짜를 영구 캐시하지 않는다.
 
-[api-query.ts](../frontend/src/features/outings/api-query.ts)는 URL의 `q`를 백엔드 `keyword`로, 기존 지역명을 현재 시도 코드로, 홈 `scope`를 기간 구분으로 바꾼다. 없는 지역을 전체 지역으로 넓히지 않는다. 페이지·정렬·다가오는 구간을 URL에 유지하고 검색 폼을 제출할 때 페이지는 1로 돌아간다. 기간 조건만 해제할 때 이름/지역/종류는 보존한다.
+[api-query.ts](../frontend/src/features/outings/api-query.ts)는 URL의 `q`를 백엔드 `keyword`로, 기존 지역명을 현재 시도 코드로, `scope`를 기간 구분으로 바꾼다. 없는 지역을 전체 지역으로 넓히지 않는다. 페이지·정렬·다가오는 구간을 URL에 유지한다.
+
+관련 작업: P62. [search.tsx](../frontend/src/features/outings/search.tsx)의 검색 범위 `select`는 URL에서 읽은 `scope`를 `defaultValue`로 미리 선택한다. `key={query}`는 URL 조건이 바뀌거나 뒤로 복귀하면 폼을 새 조건으로 다시 구성한다. 폼 제출 시 `FormData`의 선택값을 `URLSearchParams`로 만든 뒤 `searchFormQuery`를 호출한다. 이 함수는 입력을 복사하고 `page`·이전 `days`를 제거한다. 14일 선택일 때만 `scope=upcoming&days=14`를 만들며 기존 검토 주소의 `upcoming:7`/`upcoming:30` 선택은 원래 구간으로 변환한다. 전체 선택은 빈 `scope`이므로 검색 범위를 해제하지만 이름·지역·종류·정렬을 지우지 않는다. `queryParameters`로 유효한 조건만 남긴 뒤 공통 `navigate`가 조회·로딩·첫 페이지/상단 포커스 이동을 수행한다. 제출을 하지 않은 선택만으로 결과가 바뀌지는 않는다. 확인은 범위별 백엔드 period/days 전달·페이지 제거·입력 불변 테스트, 실제 홈에서 넘어온 선택값·검색/이력 복귀·320px 줄바꿈이다.
 
 관련 작업: P54·P55. [search.tsx](../frontend/src/features/outings/search.tsx)의 `pageUrl`은 `URLSearchParams`를 복사하고 `page`만 바꾸므로 번호·이전/다음 이동에서도 검색 조건을 보존한다. 번호 창과 표시 구조는 [pagination.tsx](../frontend/src/features/outings/pagination.tsx)의 `Pagination`으로 공유한다. `Math.min`·`Math.max`로 첫/마지막 경계 안의 번호 최대 5개를 만들며 좁은 화면에서는 5페이지 이상일 때 주변 3개를 표시한다. 현재 번호는 `aria-current="page"`, 양 끝 화살표는 네이티브 `disabled` 버튼으로 구분한다. 같은 44px 크기를 유지하고 검색에서 실제 `ReviewLink`로 이동할 때 로딩·상단 포커스·이력 복귀는 공통 Provider를 사용한다.
 

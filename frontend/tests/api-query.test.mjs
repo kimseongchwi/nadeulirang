@@ -1,11 +1,25 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { backendQuery, orderedHours, orderedNotes, parameters, previewLocation, queryParameters, safeUrl, windowDays } from "../src/features/outings/api-query.ts";
+import { backendQuery, orderedHours, orderedNotes, parameters, previewLocation, queryParameters, safeUrl, searchFormQuery, windowDays } from "../src/features/outings/api-query.ts";
 import { isDetail, isOptions, isPage, isPhoto, isSummary } from "../src/features/outings/api-contract.ts";
 import { badgeInfo, outingSummary, regionLabel } from "../src/features/outings/model.ts";
 import { detailContent } from "../src/features/outings/detail-content.ts";
 
 const options = { regions: [{ code: "11", name: "서울특별시", count: 2 }], kinds: [{ code: "MUSEUM", count: 2 }], total: 2, asOfDate: "2026-10-05" };
+test("검색 범위 변경은 구간·페이지를 정리하고 이름·지역·종류·정렬을 보존한다", () => {
+  const form = new URLSearchParams({ q: " 꽃 ", region: "48", kind: "FESTIVAL", sort: "NAME", scope: "upcoming", days: "30", page: "3" });
+  const original = form.toString();
+  for (const [scope, period, days] of [["upcoming", "UPCOMING", "14"], ["ongoing", "ONGOING", null], ["permanent", "PERMANENT", null], ["", null, null], ["upcoming:7", "UPCOMING", "7"], ["upcoming:30", "UPCOMING", "30"]]) {
+    const input = new URLSearchParams(form); input.set("scope", scope);
+    const query = searchFormQuery(input);
+    assert.equal(query.get("q"), "꽃"); assert.equal(query.get("region"), "48"); assert.equal(query.get("kind"), "FESTIVAL"); assert.equal(query.get("sort"), "NAME");
+    assert.equal(query.has("page"), false); assert.equal(query.get("days"), days);
+    assert.equal(backendQuery(query).get("period"), period);
+    assert.equal(backendQuery(query).get("days"), days);
+  }
+  assert.equal(form.toString(), original);
+  assert.throws(() => searchFormQuery(new URLSearchParams("scope=upcoming:15")));
+});
 test("화면 중복만 정리하고 다른 소개·프로그램·주차 안내와 원문을 보존한다", () => {
   const entry = (observationId, field, value) => ({ observationId, field, value });
   const information = {
