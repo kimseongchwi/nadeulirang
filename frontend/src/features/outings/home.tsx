@@ -89,7 +89,7 @@ export function HomeReview({ data, options, query }: { data: Home; options: Opti
           나들이 갈까요?
         </h1>
         <p>
-          가볍게 떠나고 싶은 날,<br />마음이 가는 곳을 발견해요.
+          가볍게 떠나고 싶은 날,<br />마음이 가는 곳을 발견해요
         </p>
         <ReviewLink className="hero-link" href={query ? `/search?${query}` : "/search"}>나들이 찾아보기 <Icon name="next" /></ReviewLink>
       </div>
@@ -175,7 +175,7 @@ export function HomeReview({ data, options, query }: { data: Home; options: Opti
       )}
       <HomeSection
         title="지금 만나는 나들이"
-        description="오늘의 즐거움을 발견해보세요."
+        description="오늘의 즐거움을 발견해보세요"
         items={data.ongoing.map(outingSummary)}
         query={query} days={days}
         scope="ongoing"
@@ -183,7 +183,7 @@ export function HomeReview({ data, options, query }: { data: Home; options: Opti
       />
       <HomeSection
         title="곧 시작하는 나들이"
-        description={`내일부터 ${days}일 안에 시작해요.`}
+        description={`내일부터 ${days}일 안에 시작해요`}
         items={data.upcoming.map(outingSummary)}
         query={query} days={days}
         scope="upcoming"
@@ -191,7 +191,7 @@ export function HomeReview({ data, options, query }: { data: Home; options: Opti
       />
       <HomeSection
         title="일상에서 만나는 나들이"
-        description="일상에 작은 쉼표를 더해보세요."
+        description="일상에 작은 쉼표를 더해보세요"
         items={data.permanent.map(outingSummary)}
         query={query} days={days}
         scope="permanent"
