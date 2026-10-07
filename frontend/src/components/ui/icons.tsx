@@ -39,6 +39,7 @@ const shapes = {
   landmark: <><path d="m3 8 9-5 9 5H3ZM5 10v8m5-8v8m4-8v8m5-8v8M3 21h18" /></>,
   ticket: <><path d="M3 6h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4V6Z" /><path d="M15 6v3m0 3v2m0 3v1" /></>,
   info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v6m0-10v.1" /></>,
+  warning: <><path d="m12 3 10 18H2L12 3Z" /><path d="M12 9v5m0 3v.1" /></>,
 } satisfies Record<string, ReactNode>;
 export type IconName = keyof typeof shapes;
 export function Icon({ name }: { name: IconName }) {

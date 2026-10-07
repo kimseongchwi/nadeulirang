@@ -1,6 +1,25 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Icon } from "./icons";
+
+export function InlineNotice({
+  tone = "info",
+  title,
+  children,
+}: {
+  tone?: "info" | "warning";
+  title: string;
+  children: ReactNode;
+}) {
+  return <div className={`inline-notice inline-notice-${tone}`} role="note">
+    <Icon name={tone === "warning" ? "warning" : "info"} />
+    <div className="inline-notice-content">
+      <strong className="inline-notice-title">{title}</strong>
+      <p>{children}</p>
+    </div>
+  </div>;
+}
 
 function StateArt({ type }: { type: "loading" | "empty" | "error" }) {
   if (type === "loading")

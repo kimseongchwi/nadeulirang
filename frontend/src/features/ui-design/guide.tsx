@@ -9,7 +9,7 @@ import { Icon, type IconName } from "@/components/ui/icons";
 import { ongoing, photoId } from "@/features/outings/model";
 import { publicItems } from "./review-model";
 import { ReviewLink, useReview } from "@/providers/review-provider";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ui/feedback";
+import { EmptyState, ErrorState, InlineNotice, LoadingState } from "@/components/ui/feedback";
 import { OutingCard } from "@/features/outings/outing-card";
 import { PolicyLinks } from "@/features/policies/policy-links";
 import { Pagination } from "@/features/outings/pagination";
@@ -23,7 +23,7 @@ const sections = [
   ["buttons", "버튼·뒤로가기"],
   ["pagination", "페이지네이션"],
   ["cards", "카드"],
-  ["states", "로딩·빈 결과·오류"],
+  ["states", "힌트·확인 안내·상태"],
   ["tokens", "스타일 값"],
   ["brand", "로고"],
   ["policies", "정책·안내"],
@@ -70,6 +70,7 @@ export function GuideReview() {
   } = useReview();
   const items = publicItems(today);
   const [previewWidth, setPreviewWidth] = useState(390);
+  const [noticeWidth, setNoticeWidth] = useState(390);
   const [message, setMessage] = useState("");
   const [menu, setMenu] = useState(false);
   useEffect(() => {
@@ -460,7 +461,25 @@ export function GuideReview() {
             </div>
           </section>
           <section id="states">
-            <h2>07 · 로딩·빈 결과·오류</h2>
+            <h2>07 · 힌트·확인 안내·상태</h2>
+            <p className="section-description">
+              일반 힌트는 추가 설명, 확인 필요는 정보가 오래됐거나 서로 다를 때 사용합니다.
+              아이콘·제목·배경으로 구분하고 방문에 필요한 안내는 본문에 계속 표시합니다.
+            </p>
+            <div className="guide-notice-controls">
+              <label htmlFor="noticeWidth">안내 예시 너비</label>
+              <select id="noticeWidth" value={noticeWidth} onChange={(event) => setNoticeWidth(Number(event.target.value))}>
+                <option value="320">320px · 작은 화면</option>
+                <option value="390">390px · 기본</option>
+                <option value="430">430px · 넓은 화면</option>
+              </select>
+            </div>
+            <div className="guide-notice-examples" style={{ width: noticeWidth }}>
+              <InlineNotice title="힌트">공식 안내에서 자세한 방문 정보를 살펴볼 수 있어요.</InlineNotice>
+              <InlineNotice tone="warning" title="최신 정보 확인 필요">일부 정보는 최신 여부를 다시 확인해야 해요. 방문 전 공식 안내를 확인해 주세요.</InlineNotice>
+            </div>
+            <p className="hint">위 안내는 스타일 예시입니다. 조회 자체가 실패한 경우에는 아래 오류 안내와 다시 시도를 제공합니다.</p>
+            <h3>로딩·빈 결과·오류</h3>
             <p className="section-description">
               같은 숲 초록 톤으로 상황을 구분합니다. 로딩에는 두 사람 심볼을
               사용하고, 빈 결과와 실패에는 차분한 안내와 다음 동작을 둡니다.

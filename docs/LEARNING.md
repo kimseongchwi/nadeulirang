@@ -322,6 +322,12 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 상세 하단 공식 링크 아래의 최근 자료 확인일은 API의 sourceCheckedAt(마지막 원천 성공의 최근 시각)을 Date로 읽고 유효한 경우에만 기존 seoulDate로 한국 날짜를 표시한다. time의 dateTime에도 날짜만 전달한다. 날짜 한 줄이 모든 필드의 동시 갱신을 뜻하지 않으므로 필드별 오래됨/실패 근거와 갱신 안내는 유지한다. detail-facts의 dt는 항목 이름, dd는 실제 값이며 CSS grid로 이름을 값 위에 배치한다. 값은 본문색·600, 이름과 detail-unknown은 보조색·400으로 표시한다. EvidenceList의 보조 이름도 span으로 구분해 긴 소개 본문까지 굵게 만들지 않는다.
 
+### 공통 힌트와 확인 필요 안내
+
+관련 작업: P61. [feedback.tsx](../frontend/src/components/ui/feedback.tsx)의 `InlineNotice`는 `tone?: "info" | "warning"` 유니언으로 두 종류만 허용한다. `title`은 제목 문자열, `children: ReactNode`는 본문이며 기본 `tone`은 `info`다. 삼항 연산자로 원형 정보/삼각형 주의 아이콘을 선택하고 CSS 클래스에 같은 값을 연결한다. 가이드도 같은 컴포넌트를 사용하며 아이콘·제목·배경으로 두 종류를 구분한다.
+
+`role="note"`는 보조 안내의 의미를 제공하고 정적인 주의 문구를 긴급 `alert`로 읽게 하지 않는다. 아이콘은 기존 `Icon`의 `aria-hidden`으로 장식 처리하며 제목과 본문이 의미를 전달한다. CSS의 `min-width: 0`과 `overflow-wrap: anywhere`는 좁은 flex 영역에서 긴 문장을 줄바꿈한다. 가이드의 `noticeWidth` 상태는 예시 너비만 바꾸며 기존 모바일 미리보기 너비나 서비스 검색 조건은 바꾸지 않는다. 확인은 가이드 너비 선택·좁은 화면·색상/아이콘/제목 구분으로 한다.
+
 ### 상세 소개의 펼침과 화면 중복 정리
 
 관련 작업: P48. [detail-content.ts](../frontend/src/features/outings/detail-content.ts)의 `detailContent`는 표시용 배열을 만들며 API 입력을 바꾸지 않는다. `orderedNotes`로 같은 `observationId`의 제목/본문을 묶고 제목으로 연결한 같은 정보 범위에서 공백·줄바꿈을 제외한 같은 본문만 중복으로 판단한다. 입장료의 무료와 주차의 무료처럼 값이 같아도 의미가 다른 안내는 보존한다. 행사소개의 새 문장은 소개에 포함하고 행사내용은 주요 프로그램으로 분리하며 나머지 본문이 있을 때만 추가 안내를 만든다. 다른 문장을 제목이 같다는 이유만으로 삭제하지 않는다.
