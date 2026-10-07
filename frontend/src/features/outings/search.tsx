@@ -24,7 +24,7 @@ export function SearchReview({ data, options, query }: { data: Page; options: Op
   return (
     <div className="outing-search">
       <div className="intro search-intro">
-        <p className="eyebrow">가고 싶은 곳을, 더 쉽게</p>
+        <p className="eyebrow">마음에 드는 곳을 찾아봐요</p>
         <h1>나들이 검색</h1>
       </div>
       <form
