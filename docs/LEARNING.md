@@ -304,6 +304,8 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 ### 서버 조회·응답 타입과 실제 본문 HTML
 
+관련 작업: P65. 상세 경로의 [loading.tsx](../frontend/src/app/detail/[id]/loading.tsx)는 Next.js가 `page.tsx` 아래에 만드는 Suspense 경계의 대기 화면이다. `getDetail`의 서버 조회가 끝나기 전 공통 `LoadingState`를 표시하고 완료·오류·없는 항목 화면으로 자동 교체한다. 기존 Provider의 `pending`은 브라우저 안의 이동 상태이므로 새로고침 대기를 자체적으로 감지하지 못한다. 로딩 컴포넌트는 `useReview().pending`이 참이면 기존 이동 표시를 사용해 중복을 피한다. 인위적인 지연은 추가하지 않는다.
+
 [api-server.ts](../frontend/src/features/outings/api-server.ts)는 Next.js 서버에서만 사용하는 호출 코드다. `BACKEND_URL`은 Spring 주소이고 인증키·DB 설정을 브라우저로 전달하지 않는다. 페이지 → API 호출 → Spring 컨트롤러 → JDBC → 응답 → 화면 props 순으로 흐른다. 첫 HTML에도 실제 이름·이용 정보와 `href=/detail/...` 링크가 있으므로 브라우저가 나중에 목록을 채울 때까지 빈 본문을 제공하지 않는다.
 
 `ApiResult<T>`는 `ok: true`의 `data`와 `ok: false`의 `status`·`message`를 나눈 유니온 타입이다. `T`는 응답 모양을 지정하는 타입 매개변수다. 외부 JSON을 TypeScript 타입으로 단정하면 잘못된 응답도 통과하므로 [api-contract.ts](../frontend/src/features/outings/api-contract.ts)의 타입 가드가 `unknown` 값의 배열·필드·null·숫자를 실제로 검사한다. 정상 0건은 빈 배열이고 접속 실패·8초 초과·비정상 JSON은 오류 결과다. 이전 검토 표본으로 대체하지 않는다. `React.cache`는 같은 렌더링 요청의 선택지/상세 중복 호출을 줄이며 날짜를 영구 캐시하지 않는다.
