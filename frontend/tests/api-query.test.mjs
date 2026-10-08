@@ -93,6 +93,16 @@ test("실제 API 상태를 표시에 사용하고 미확인 요금·주소에 �
   assert.equal(isSummary(summary), true);
   assert.equal(isSummary({ ...summary, districtName: undefined }), false);
   assert.equal(isSummary({ ...summary, districtName: 123 }), false);
+  const detail = { item: summary, sources: [], information: {}, links: [], unconfirmed: [], asOfDate: "2026-10-05" };
+  assert.equal(isDetail(detail), true);
+  assert.equal(isDetail({ ...detail, evidence: [] }), true);
+  assert.equal(isDetail({ ...detail, evidence: [{ field: "adultChrge", value: "0" }] }), false);
+  assert.equal(isDetail({ ...detail, evidence: null }), false);
+  const missingFee = { field: "adultChrge", value: null, source: "MUSEUM", sourceKey: "시설", url: "https://example.org",
+    sourceReference: null, collectedAt: "2026-10-05T00:00:00Z", checkedAt: "2026-10-05T00:00:00Z", stale: true, observationId: "근거" };
+  assert.equal(isDetail({ ...detail, evidence: [missingFee] }), true);
+  assert.equal(isDetail({ ...detail, information: { generalFee: [missingFee] } }), false);
+  assert.equal(isDetail({ ...detail, evidence: [{ ...missingFee, checkedAt: 1 }] }), false);
   const confirmed = { ...summary, districtName: "종로구" };
   const card = outingSummary(confirmed);
   assert.equal(isSummary(confirmed), true);

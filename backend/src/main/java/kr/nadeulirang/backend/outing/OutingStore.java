@@ -67,7 +67,7 @@ public class OutingStore {
         Map.entry("officialWebsite", List.of("homepage", "homepageUrl", "eventhomepage")),
         Map.entry("contact", List.of("tel", "infocenter", "infocenterculture", "phoneNumber", "operPhoneNumber")),
         // 반복 안내는 주차·일반 요금 등이 섞이므로 제목/본문을 임의로 요금으로 해석하지 않는다.
-        Map.entry("notes", List.of("infoname", "infotext", "relateInfo", "placeinfo"))
+        Map.entry("notes", List.of("infoname", "infotext", "program", "subevent", "relateInfo", "placeinfo"))
     );
     private static final List<String> GROUPS = List.of("address", "description", "hours", "closedDays", "generalFee",
             "extraFee", "discount", "reservation", "officialWebsite", "contact", "notes");
@@ -149,21 +149,43 @@ public class OutingStore {
                 rs.getString("source_reference"), instant(rs, "collected_at"), instant(rs, "checked_at"),
                 CollectionPolicy.stale(event, instant(rs, "checked_at"), now), rs.getObject("observation_id", UUID.class)), id);
         Map<String, List<OutingResponse.Evidence>> information = new LinkedHashMap<>();
+        var selectedEvidence = jdbc.query("""
+            WITH selected AS (
+                SELECT record_id,operation,field_name,value,source_url,source_reference,collected_at,checked_at,observation_id
+                FROM effective_field_evidence WHERE NOT (operation='detailInfo2' AND field_name='infoname')
+                UNION
+                SELECT v.record_id,v.operation,t.field_name,t.value,t.source_url,t.source_reference,v.collected_at,t.checked_at,t.observation_id
+                FROM effective_field_evidence v JOIN field_evidence t ON t.observation_id=v.observation_id
+                WHERE v.operation='detailInfo2' AND v.field_name='infotext' AND t.field_name='infoname'
+            )
+            SELECT f.field_name, f.value #>> '{}' AS value, r.source, r.source_key, f.source_url,
+                f.source_reference, f.collected_at, f.checked_at, f.observation_id
+            FROM source_record r JOIN selected f ON f.record_id=r.id
+            JOIN source_observation b ON b.id=f.observation_id
+            WHERE r.outing_id=? AND r.license IN ('KOGL1_DATA','TOUR_DATA')
+            ORDER BY r.source,r.source_key,f.operation,
+                CASE WHEN b.raw_row->>'serialnum' ~ '^[0-9]+$' THEN lpad(b.raw_row->>'serialnum',20,'0') ELSE '' END,
+                f.observation_id,f.field_name
+            """, (rs, n) -> new OutingResponse.Evidence(rs.getString("field_name"), rs.getString("value"),
+                rs.getString("source"), rs.getString("source_key"), rs.getString("source_url"),
+                rs.getString("source_reference"), instant(rs, "collected_at"), instant(rs, "checked_at"),
+                CollectionPolicy.stale(event, instant(rs, "checked_at"), now), rs.getObject("observation_id", UUID.class)), id);
         List<String> unconfirmed = new ArrayList<>();
         for (String group : GROUPS) {
-            var values = evidence.stream().filter(e -> FIELDS.get(group).contains(e.field())
+            var values = selectedEvidence.stream().filter(e -> FIELDS.get(group).contains(e.field())
                     && e.value() != null && !e.value().isBlank()).distinct().toList();
-            information.put(group, values);
+            information.put(group, OutingInformation.compact(group, OutingInformation.preferStandard(values)));
             if (values.isEmpty() && !group.equals("notes") && !group.equals("description")) unconfirmed.add(group);
         }
         if (!item.operationVerified()) unconfirmed.add("operation");
         if (event && (item.eventStart() == null || item.eventEnd() == null)) unconfirmed.add("eventDates");
         if (item.feeStatus().equals("UNKNOWN")) unconfirmed.add("adultFee");
         List<OutingResponse.Link> links = new ArrayList<>();
+        var linked = new java.util.HashSet<String>();
         for (String group : List.of("officialWebsite", "reservation")) {
             for (var value : information.get(group)) {
                 String link = CollectionPolicy.safeLink(value.value());
-                if (link != null) links.add(new OutingResponse.Link(group, link, value));
+                if (link != null && linked.add(group + ":" + link)) links.add(new OutingResponse.Link(group, link, value));
             }
         }
         if (links.stream().noneMatch(link -> link.purpose().equals("officialWebsite"))) unconfirmed.add("officialWebsiteLink");
@@ -172,7 +194,8 @@ public class OutingStore {
         unconfirmed.add("discountConditions");
         // 수집된 예약 문장은 예약 기간/잔여석의 확인을 뜻하지 않는다.
         unconfirmed.add("reservationPeriod");
-        return new OutingResponse.Detail(item, sources, information, List.copyOf(links), List.copyOf(unconfirmed), today);
+        var retainedEvidence = evidence.stream().filter(e -> FIELDS.values().stream().anyMatch(fields -> fields.contains(e.field()))).toList();
+        return new OutingResponse.Detail(item, sources, information, List.copyOf(links), List.copyOf(unconfirmed), today, retainedEvidence);
     }
 
     private static OutingResponse.Summary summary(ResultSet rs) throws SQLException {

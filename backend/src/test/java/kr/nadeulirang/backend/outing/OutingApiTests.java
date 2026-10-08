@@ -201,7 +201,7 @@ class OutingApiTests {
         }
     }
 
-    @Test @DisplayName("상세는 최신 성공 근거와 실패 시각을 유지하고 정상 0건 뒤 과거 정보를 복원하지 않는다")
+    @Test @DisplayName("상세는 실패·0건 뒤에도 기존 유효 값의 근거·확인 시각을 보존한다")
     void preservesProvenanceAndUnknowns() throws Exception {
         UUID id = save("방문 정보", "MUSEUM", "11", "", "");
         String key = jdbc.queryForObject("SELECT source_key FROM source_record WHERE outing_id = ?", String.class, id);
@@ -224,9 +224,29 @@ class OutingApiTests {
         assertThat(detail.toString()).doesNotContain("review_key", "raw_row", "serviceKey");
         collection.emptyOperation(Source.TOUR, key, "detailIntro2", NOW.plusSeconds(1));
         var cleared = body(get("/" + id));
-        assertThat(cleared.path("information").path("hours").size()).isZero();
-        assertThat(cleared.path("item").path("feeStatus").asText()).isEqualTo("UNKNOWN");
-        assertThat(cleared.path("item").path("adultFee").isNull()).isTrue();
+        assertThat(cleared.path("information").path("hours").get(0).path("value").asText()).isEqualTo("09:00~18:00");
+        assertThat(cleared.path("item").path("feeStatus").asText()).isEqualTo("FREE");
+        assertThat(cleared.path("item").path("adultFee").asInt()).isZero();
+        assertThat(cleared.path("sources").get(0).path("lastFailureCode").asText()).isEqualTo("EMPTY_DETAIL");
+    }
+
+    @Test @DisplayName("반복 안내의 빈 보완 본문은 기존 본문과 같은 원문의 제목·근거를 함께 보존한다")
+    void preservesNoteTitleFromSameObservation() throws Exception {
+        UUID id = save("반복 안내", "EVENT", "11", "20261001", "20261008");
+        String key = jdbc.queryForObject("SELECT source_key FROM source_record WHERE outing_id=?", String.class, id);
+        var row = json.createObjectNode().put("contentid", key).put("serialnum", "1")
+                .put("infoname", "행사내용").put("infotext", "주요프로그램 : 드론 공연");
+        Instant old = NOW.minusSeconds(10);
+        ingest(row, "detailInfo2", "EVENT", "11", old);
+        ingest(row.deepCopy().put("infoname", "변경된 빈 안내").put("infotext", ""), "detailInfo2", "EVENT", "11", NOW);
+        var notes = body(get("/" + id)).path("information").path("notes");
+        assertThat(notes.size()).isEqualTo(2);
+        var title = notes.get(0).path("field").asText().equals("infoname") ? notes.get(0) : notes.get(1);
+        var text = notes.get(0).path("field").asText().equals("infotext") ? notes.get(0) : notes.get(1);
+        assertThat(title.path("value").asText()).isEqualTo("행사내용");
+        assertThat(text.path("value").asText()).isEqualTo("주요프로그램 : 드론 공연");
+        assertThat(title.path("observationId").asText()).isEqualTo(text.path("observationId").asText());
+        assertThat(text.path("checkedAt").asText()).isEqualTo(old.toString());
     }
 
     @Test @DisplayName("유효하지 않은 입력은 400이며 DB 장애는 상세 없음과 다른 재시도 가능한 503이다")
@@ -350,6 +370,44 @@ class OutingApiTests {
         ingest(row.put("addr1", ""), "detailCommon2", "EVENT", "26", NOW);
         assertThat(outings.detail(id, NOW).item().districtName()).isNull();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM field_evidence WHERE field_name='addr1' AND value #>> '{}' LIKE '%해운대구%'", Integer.class)).isPositive();
+    }
+
+    @Test @DisplayName("최신 표준 안내를 표시하고 이전 요금 차이와 모든 근거를 보존한다")
+    void compactsDisplayWithoutLosingEvidence() throws Exception {
+        UUID id = save("중복 박물관", "MUSEUM", "27", "", "");
+        ingest(json.createObjectNode().put("contentid", "1").put("title", "중복 박물관")
+                .put("addr1", "대구광역시 도로 66").put("homepage", "https://example.org/info")
+                .put("tel", "053-659-4900"), "detailCommon2", "MUSEUM", "27", NOW.minusSeconds(10));
+        var first = json.createObjectNode().put("fcltyNm", "중복 박물관").put("rdnmadr", "대구광역시 도로 66")
+                .put("lnmadr", "대구광역시 상리 971").put("operInstitutionNm", "박물관")
+                .put("weekdayOperOpenHhmm", "09:30").put("holidayOperOpenHhmm", "09:30")
+                .put("adultChrge", "3000").putNull("childChrge").put("phoneNumber", "053-659-4900")
+                .put("homepageUrl", "https://example.org/info").put("referenceDate", "2025-12-10");
+        var second = first.deepCopy().put("adultChrge", "0").put("referenceDate", "2026-06-24");
+        UUID call = UUID.randomUUID();
+        jdbc.update("INSERT INTO source_call(id, source, operation, query, started_at, outcome) VALUES (?, 'MUSEUM', 'list', '{}'::jsonb, ?, 'STARTED')",
+                call, java.sql.Timestamp.from(NOW));
+        collection.finish(call, Source.MUSEUM, new SourceResponse("SUCCESS", "00", first, java.util.List.of(first, second)), NOW);
+        for (var row : java.util.List.of(first, second)) collection.ingest(Source.MUSEUM, call, row, "list", "TOUR:1",
+                "MUSEUM", "27", "대구광역시", "테스트 검토", NOW);
+        var detail = body(get("/" + id));
+        assertThat(detail.path("information").path("address").size()).isEqualTo(2);
+        assertThat(detail.path("information").path("hours").size()).isEqualTo(2);
+        assertThat(detail.path("information").path("contact").size()).isEqualTo(1);
+        assertThat(detail.path("information").path("generalFee").size()).isEqualTo(1);
+        assertThat(detail.path("information").path("generalFee").get(0).path("value").asText()).isEqualTo("0");
+        assertThat(detail.path("information").path("generalFee").get(0).path("sourceReference").asText()).isEqualTo("2026-06-24");
+        assertThat(detail.path("links").size()).isEqualTo(1);
+        assertThat(detail.path("item").path("feeConflict").asBoolean()).isFalse();
+        assertThat(detail.path("item").path("adultFee").asInt()).isZero();
+        var evidence = detail.path("evidence");
+        assertThat(evidence.size()).isEqualTo(19);
+        int missingFees = 0;
+        for (var entry : evidence) if (entry.path("field").asText().equals("childChrge") && entry.path("value").isNull()) missingFees++;
+        assertThat(missingFees).isEqualTo(2);
+        assertThat(evidence.toString()).doesNotContain("fcltyNm", "operInstitutionNm", "contentid");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM source_observation b JOIN source_record r ON r.id=b.record_id WHERE r.outing_id=?",
+                Integer.class, id)).isEqualTo(4);
     }
 
     private UUID save(String name, String kind, String region, String start, String end) {

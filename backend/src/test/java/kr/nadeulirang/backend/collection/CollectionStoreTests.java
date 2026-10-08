@@ -64,19 +64,19 @@ class CollectionStoreTests {
         var nullFee = museum("대동로 3", "0", "2026-01-01");
         ((tools.jackson.databind.node.ObjectNode) nullFee).putNull("adultChrge");
         save(Source.MUSEUM, nullFee, "museum:null", now.plusSeconds(8));
-        assertThat(jdbc.queryForObject("SELECT fee_status FROM outing WHERE review_key = 'museum:null'", String.class)).isEqualTo("UNKNOWN");
+        assertThat(jdbc.queryForObject("SELECT fee_status FROM outing WHERE review_key = 'museum:null'", String.class)).isEqualTo("FREE");
     }
 
-    @Test @DisplayName("최신 정상 응답에서 사라진 요금과 정상 0건을 과거 요금으로 채우지 않는다")
+    @Test @DisplayName("보완 응답의 누락·null·정상 0건은 기존 유효 요금을 지우지 않는다")
     void invalidatesRemovedFee() {
         save(Source.MUSEUM, museum("대동로 1", "3000", "2025-01-01"), "museum:one", now);
         var withoutFee = museum("대동로 1", "3000", "2026-01-01");
         ((tools.jackson.databind.node.ObjectNode) withoutFee).remove("adultChrge");
         save(Source.MUSEUM, withoutFee, "museum:one", now.plusSeconds(2));
-        assertThat(jdbc.queryForObject("SELECT fee_status FROM outing", String.class)).isEqualTo("UNKNOWN");
-        save(Source.MUSEUM, museum("대동로 1", "0", "2026-01-01"), "museum:one", now.plusSeconds(4));
+        assertThat(jdbc.queryForObject("SELECT fee_status FROM outing", String.class)).isEqualTo("PAID");
+        save(Source.MUSEUM, museum("대동로 1", "0", "2026-02-01"), "museum:one", now.plusSeconds(4));
         store.emptyOperation(Source.MUSEUM, CollectionPolicy.hash(CollectionStore.identity(Source.MUSEUM, withoutFee)), "list", now.plusSeconds(6));
-        assertThat(jdbc.queryForObject("SELECT fee_status FROM outing", String.class)).isEqualTo("UNKNOWN");
+        assertThat(jdbc.queryForObject("SELECT fee_status FROM outing", String.class)).isEqualTo("FREE");
         assertThat(count("source_observation")).isEqualTo(3);
     }
 
@@ -173,10 +173,10 @@ class CollectionStoreTests {
         assertThat(store.needsDetails("1", "20260101090000", false, now.plusSeconds(3))).isTrue();
     }
 
-    @Test @DisplayName("같은 응답의 중복 행도 요금이 다르면 임의의 한 행을 채택하지 않는다")
+    @Test @DisplayName("같은 응답의 동일 기준일 요금 충돌은 임의로 합치지 않는다")
     void keepsConflictsWithinOneResponse() {
         UUID call = store.reserve(Source.MUSEUM, "list", json.createObjectNode(), now);
-        var first = museum("대동로 1", "1000", "2025-01-01");
+        var first = museum("대동로 1", "1000", "2026-01-01");
         var second = museum("대동로 1", "3000", "2026-01-01");
         store.finish(call, Source.MUSEUM, new SourceResponse("SUCCESS", "00", first, java.util.List.of(first, second)), now);
         for (var row : java.util.List.of(first, second)) {
@@ -188,15 +188,16 @@ class CollectionStoreTests {
         assertThat(jdbc.queryForObject("SELECT fee_status FROM outing", String.class)).isEqualTo("UNKNOWN");
     }
 
-    @Test @DisplayName("정상 소개 0건은 행사 날짜를 미확인으로 바꾸고 원문을 보존한다")
+    @Test @DisplayName("정상 소개 0건은 기존 행사 날짜·원문을 보존하고 재확인 사유를 남긴다")
     void clearsDatesAfterEmptyIntroduction() {
         var row = json.readTree("{\"contentid\":\"1\",\"title\":\"행사\",\"eventstartdate\":\"20261001\",\"eventenddate\":\"20261003\"}");
         UUID call = store.reserve(Source.TOUR, "detailIntro2", json.createObjectNode(), now);
         store.finish(call, Source.TOUR, new SourceResponse("SUCCESS", "0000", row, java.util.List.of(row)), now);
         store.ingest(Source.TOUR, call, row, "detailIntro2", "TOUR:1", "EVENT", "27", "대구광역시", "검토 테스트", now);
         store.emptyOperation(Source.TOUR, "1", "detailIntro2", now.plusSeconds(2));
-        assertThat(jdbc.queryForObject("SELECT event_start FROM outing", java.time.LocalDate.class)).isNull();
-        assertThat(jdbc.queryForObject("SELECT lifecycle FROM outing", String.class)).isEqualTo("UNKNOWN");
+        assertThat(jdbc.queryForObject("SELECT event_start FROM outing", java.time.LocalDate.class)).isEqualTo(java.time.LocalDate.parse("2026-10-01"));
+        assertThat(jdbc.queryForObject("SELECT lifecycle FROM outing", String.class)).isEqualTo("ACTIVE");
+        assertThat(jdbc.queryForObject("SELECT last_failure_code FROM source_record", String.class)).isEqualTo("EMPTY_DETAIL");
         assertThat(count("source_observation")).isEqualTo(1);
     }
 
@@ -224,10 +225,52 @@ class CollectionStoreTests {
         assertThat(count("source_call")).isEqualTo(1);
     }
 
+    @Test @DisplayName("나중에 받은 오래된 기준일은 최신 사실을 덮지 않고 재처리도 대상·필드를 중복 생성하지 않는다")
+    void preservesLatestReferenceAndReplay() {
+        save(Source.MUSEUM, museum("대동로 1", "3000", "2026-06-24"), "museum:one", now);
+        save(Source.MUSEUM, museum("대동로 1", "1000", "2025-12-10"), "museum:one", now.plusSeconds(2));
+        assertThat(jdbc.queryForObject("SELECT adult_fee FROM outing", java.math.BigDecimal.class)).isEqualByComparingTo("3000");
+        var row = museum("대동로 1", "", "2026-07-01");
+        UUID call = store.reserve(Source.MUSEUM, "list", json.createObjectNode(), now.plusSeconds(4));
+        store.finish(call, Source.MUSEUM, new SourceResponse("SUCCESS", "00", row, java.util.List.of(row)), now.plusSeconds(4));
+        for (int i = 0; i < 2; i++) store.ingest(Source.MUSEUM, call, row, "list", "museum:one", null, null, null, null, now.plusSeconds(4));
+        assertThat(count("outing")).isEqualTo(1);
+        assertThat(count("source_record")).isEqualTo(1);
+        assertThat(count("source_observation")).isEqualTo(3);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM field_evidence", Integer.class)).isEqualTo(row.size() * 3);
+        assertThat(jdbc.queryForObject("SELECT value #>> '{}' FROM effective_field_evidence WHERE field_name='adultChrge'", String.class)).isEqualTo("3000");
+        assertThat(jdbc.queryForObject("SELECT source_reference FROM effective_field_evidence WHERE field_name='adultChrge'", String.class)).isEqualTo("2026-06-24");
+    }
+
     private void save(Source source, JsonNode row, String key, Instant time) {
         UUID call = store.reserve(source, "list", json.createObjectNode(), time);
         store.finish(call, source, new SourceResponse("SUCCESS", "00", row, java.util.List.of(row)), time);
         store.ingest(source, call, row, "list", key, "MUSEUM", "27", "대구광역시", "검토 테스트", time);
+    }
+
+    @Test @DisplayName("행사 일정도 유효 기준일을 우선하고 누락·잘못된 날짜로 기존 날짜 쌍을 지우지 않는다")
+    void preservesReferencedDatePair() {
+        var row = json.createObjectNode().put("contentid", "1").put("title", "행사")
+                .put("modifiedtime", "20261001090000").put("eventstartdate", "20261001").put("eventenddate", "20261003");
+        save(Source.TOUR, row, "TOUR:1", now);
+        save(Source.TOUR, row.deepCopy().put("modifiedtime", "20250901090000")
+                .put("eventstartdate", "20250901").put("eventenddate", "20250903"), "TOUR:1", now.plusSeconds(2));
+        assertThat(jdbc.queryForObject("SELECT event_start FROM outing", java.time.LocalDate.class)).isEqualTo(java.time.LocalDate.parse("2026-10-01"));
+        save(Source.TOUR, row.deepCopy().put("modifiedtime", "20261002090000")
+                .put("eventstartdate", "").put("eventenddate", "잘못된 날짜"), "TOUR:1", now.plusSeconds(4));
+        assertThat(jdbc.queryForObject("SELECT event_end FROM outing", java.time.LocalDate.class)).isEqualTo(java.time.LocalDate.parse("2026-10-03"));
+        assertThat(count("source_observation")).isEqualTo(3);
+    }
+
+    @Test @DisplayName("같은 기준일의 다른 행사 날짜 쌍은 단일 일정으로 선택하지 않고 원문을 보존한다")
+    void preservesConflictingDatePairs() {
+        var row = json.createObjectNode().put("contentid", "1").put("title", "행사")
+                .put("modifiedtime", "20261001090000").put("eventstartdate", "20261001").put("eventenddate", "20261003");
+        save(Source.TOUR, row, "TOUR:1", now);
+        save(Source.TOUR, row.deepCopy().put("eventenddate", "20261004"), "TOUR:1", now.plusSeconds(2));
+        assertThat(jdbc.queryForObject("SELECT event_start FROM outing", java.time.LocalDate.class)).isNull();
+        assertThat(jdbc.queryForObject("SELECT lifecycle FROM outing", String.class)).isEqualTo("UNKNOWN");
+        assertThat(count("source_observation")).isEqualTo(2);
     }
 
     private JsonNode museum(String address, String fee, String reference) {

@@ -20,6 +20,7 @@ export type Evidence = {
   sourceReference: string | null; collectedAt: string; checkedAt: string;
   stale: boolean; observationId: string;
 };
+export type SourceEvidence = Omit<Evidence, "value"> & { value: string | null };
 export type SourceInfo = {
   source: string; sourceKey: string; url: string; license: string;
   collectedAt: string | null; checkedAt: string | null;
@@ -29,5 +30,6 @@ export type Detail = {
   item: Summary; sources: SourceInfo[]; information: Record<string, Evidence[]>;
   links: { purpose: string; url: string; evidence: Evidence }[];
   unconfirmed: string[]; asOfDate: string;
+  evidence?: SourceEvidence[];
 };
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; status: number; message: string };

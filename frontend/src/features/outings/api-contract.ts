@@ -1,4 +1,4 @@
-import type { Detail, Evidence, Home, Options, Page, Photo, SourceInfo, Summary } from "./api-types";
+import type { Detail, Evidence, Home, Options, Page, Photo, SourceEvidence, SourceInfo, Summary } from "./api-types";
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -27,6 +27,9 @@ function isEvidence(value: unknown): value is Evidence {
   return record(value) && strings(value, ["field", "value", "source", "sourceKey", "url", "collectedAt", "checkedAt", "observationId"])
     && nullable(value, ["sourceReference"]) && typeof value.stale === "boolean";
 }
+function isSourceEvidence(value: unknown): value is SourceEvidence {
+  return isEvidence(value) || record(value) && value.value === null && isEvidence({ ...value, value: "" });
+}
 function isSource(value: unknown): value is SourceInfo {
   return record(value) && strings(value, ["source", "sourceKey", "url", "license"])
     && nullable(value, ["collectedAt", "checkedAt", "lastFailureAt", "lastFailureCode"]) && typeof value.stale === "boolean";
@@ -47,6 +50,7 @@ export function isOptions(value: unknown): value is Options {
 export function isDetail(value: unknown): value is Detail {
   return record(value) && isSummary(value.item) && arrayOf(value.sources, isSource) && record(value.information)
     && Object.values(value.information).every((entries) => arrayOf(entries, isEvidence))
+    && (value.evidence === undefined || arrayOf(value.evidence, isSourceEvidence))
     && Array.isArray(value.links) && value.links.every((link: unknown) => record(link) && strings(link, ["purpose", "url"]) && isEvidence(link.evidence))
     && Array.isArray(value.unconfirmed) && value.unconfirmed.every((entry: unknown) => typeof entry === "string") && typeof value.asOfDate === "string";
 }

@@ -368,6 +368,16 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 확인은 조건 변경 → 상세 → 뒤로 가기와 새로고침이다. 선택적 연습으로 URL의 조건, 탭의 설정, 컴포넌트 안의 미적용 값을 각각 찾아본다.
 
+### 상세 정보의 동일 값과 출처별 근거
+
+관련 작업: P59·P64. Java의 `record`는 모든 구성 요소로 `equals`를 비교한다. [OutingResponse.java](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingResponse.java)의 `Evidence`는 값뿐 아니라 출처·시각·`observationId`도 갖기 때문에 `stream().distinct()`만으로는 화면에 같은 값을 한 번 표시할 수 없다. [OutingInformation.java](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingInformation.java)의 `compact`는 정보 그룹·필드 의미·공백을 정리한 값으로 키를 만들고 `LinkedHashMap`에 모은다. 이 맵은 최초 표시 순서를 유지한다. `merge`는 같은 키의 근거가 들어왔을 때 확인 시각이 더 최근인 근거를 대표로 남긴다. 통합 단계에 들어온 서로 다른 값은 다른 키로 남는다. 시간의 시작/종료·평일/휴일과 연령별 요금은 서로 다른 필드로 유지한다. 이름/기관 식별용 정규화는 괄호를 제거하므로 정보 값의 비교에 재사용하지 않는다.
+
+P71의 [V5](../backend/src/main/resources/db/migration/V5__effective_field_evidence.sql)는 원문을 합성하지 않는 SQL 조회 뷰다. `dense_rank() OVER (PARTITION BY ...)`는 원천 대상·오퍼레이션·필드·반복 안내 슬롯마다 유효 기준일 순위를 매기고 같은 기준일은 같은 순위로 보존한다. `pg_input_is_valid`로 실제 날짜를 검사한다. 공란/null은 후보에서 제외하므로 새 응답에 빠진 필드도 이전 유효 값의 관측 ID·기준일·확인 시각으로 조회된다. 기준일 없는 상세의 수집 순서는 응답 선택 기준이며 사실의 최신성 보장이 아니다. `preferStandard`는 그룹 표시 우선순위이며 교차 원천의 최신 사실 판정이 아니다.
+
+[OutingStore.java](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingStore.java)의 `detail`은 V5 유효 근거→그룹 표시 우선→동일 값 정리로 `information`을 만든다. 반복 안내 제목은 선택한 본문의 `observation_id`로 원래 `field_evidence`와 연결한다. 제목과 본문을 다른 응답에서 조합하지 않는다. 마지막 응답의 빈 값은 `evidence`, 과거 원문은 DB에 유지한다. [CollectionStore.java](../backend/src/main/java/kr/nadeulirang/backend/collection/CollectionStore.java)의 `recalculateFee`도 같은 뷰를 사용한다. 오래된 기준일을 나중에 받거나 빈 보완 응답을 받아도 유효 금액을 지우지 않으며 교차 원천·같은 기준일의 서로 다른 요금은 충돌이다. `recalculateDates`는 같은 관측의 시작/종료를 `DateRange` record로 읽고 `LocalDate`로 검사한다. 유효한 날짜 쌍이 하나이면 일정 요약을 갱신하고 서로 다른 쌍이면 요약은 미확인, 원문은 각각 보존한다. 누락·잘못된 날짜로 유효 쌍이 없으면 기존 일정을 유지한다. 빈 응답은 기존 성공 호출을 유지하고 `EMPTY_DETAIL` 사유를 남긴다. DB/API 회귀는 유효 기준일·누락·실패·0원·재처리 중복과 근거 보존을 확인한다.
+
+`SourceEvidence`는 `Omit<Evidence, "value">`로 기존 근거의 값 타입만 제외한 뒤 `value: string | null`을 붙인 타입이다. 화면용 `Evidence`의 값은 문자열만 허용하고 출처별 근거는 원천의 `null`도 보존한다. `isSourceEvidence`는 값이 `null`인 경우에도 나머지 출처·시각·행 ID의 타입을 검사한다. 누락 요금을 0원으로 만들거나 정상 원천의 `null` 때문에 전체 상세를 조회 오류로 바꾸지 않도록 API/프론트 회귀에서 두 형식을 구분한다.
+
 ### 팝업·필터의 적용과 취소
 
 [dialog.tsx](../frontend/src/components/ui/dialog.tsx)의 `ReviewDialog`는 `dialogRef`로 실제 dialog를 참조하고 `useEffect`에서 `showModal`을 호출한다. `getBoundingClientRect`로 서비스 경계를 읽어 창을 배치하고 CSS backdrop의 `clip-path`로 배경을 제한한다. 열기 전 활성 요소와 스크롤 상태를 보존하며 닫을 때 overflow 설정·스크롤 위치·포커스를 복원한다. body와 오른쪽 서비스 영역의 스크롤은 별도로 잠근다. Tab 순회는 실제로 보이는 요소만 대상으로 하므로 접힌 출처 링크로 포커스가 이동하지 않는다.

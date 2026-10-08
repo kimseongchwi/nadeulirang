@@ -143,20 +143,7 @@ public class CollectionStore {
             if (flag.equals("0") || flag.equals("1")) {
                 jdbc.update("UPDATE outing SET visibility = ? WHERE id = ?", flag.equals("0") ? "HIDDEN" : "VISIBLE", outing);
             }
-            String start = text(row, source == Source.TOUR ? "eventstartdate" : "fstvlStartDate");
-            String end = text(row, source == Source.TOUR ? "eventenddate" : "fstvlEndDate");
-            var startDate = CollectionPolicy.date(start);
-            var endDate = CollectionPolicy.date(end);
-            if (startDate != null && endDate != null && !startDate.isAfter(endDate)) {
-                jdbc.update("UPDATE outing SET event_start = ?, event_end = ?, lifecycle = CASE WHEN lifecycle = 'CANCELLED' THEN lifecycle ELSE ? END WHERE id = ?",
-                        startDate, endDate, CollectionPolicy.lifecycle(startDate, endDate, false, now), outing);
-            } else if (source == Source.FESTIVAL || source == Source.TOUR && operation.equals("detailIntro2")) {
-                jdbc.update("""
-                        UPDATE outing SET event_start = NULL, event_end = NULL, operation_verified = false,
-                        lifecycle = CASE WHEN lifecycle = 'CANCELLED' THEN lifecycle ELSE 'UNKNOWN' END
-                        WHERE id = ? AND kind IN ('FESTIVAL', 'EVENT', 'EXHIBITION')
-                        """, outing);
-            }
+            recalculateDates(outing, now);
             jdbc.update("""
                     UPDATE outing SET lifecycle = CASE WHEN lifecycle = 'CANCELLED' THEN lifecycle
                     WHEN event_end < ? THEN 'ENDED' ELSE 'ACTIVE' END WHERE id = ? AND event_start IS NOT NULL AND event_end IS NOT NULL
@@ -165,13 +152,33 @@ public class CollectionStore {
         });
     }
 
+    private void recalculateDates(UUID outing, Instant now) {
+        // 시작·종료는 같은 응답의 쌍으로 읽는다. 서로 다른 원천/동일 기준일 차이를 임의로 합치지 않는다.
+        var dates = jdbc.query("""
+                SELECT start.value #>> '{}' AS start_date, ending.value #>> '{}' AS end_date
+                FROM source_record r JOIN effective_field_evidence start ON start.record_id=r.id
+                JOIN effective_field_evidence ending ON ending.observation_id=start.observation_id
+                WHERE r.outing_id=? AND
+                  ((start.field_name='eventstartdate' AND ending.field_name='eventenddate') OR
+                   (start.field_name='fstvlStartDate' AND ending.field_name='fstvlEndDate'))
+                """, (rs, n) -> new DateRange(CollectionPolicy.date(rs.getString("start_date")),
+                        CollectionPolicy.date(rs.getString("end_date"))), outing).stream()
+                .filter(pair -> pair.start() != null && pair.end() != null && !pair.start().isAfter(pair.end()))
+                .distinct().toList();
+        if (dates.size() == 1) {
+            var pair = dates.getFirst();
+            jdbc.update("UPDATE outing SET event_start=?, event_end=?, lifecycle=CASE WHEN lifecycle='CANCELLED' THEN lifecycle ELSE ? END WHERE id=?",
+                    pair.start(), pair.end(), CollectionPolicy.lifecycle(pair.start(), pair.end(), false, now), outing);
+        } else if (dates.size() > 1) {
+            jdbc.update("UPDATE outing SET event_start=NULL, event_end=NULL, lifecycle=CASE WHEN lifecycle='CANCELLED' THEN lifecycle ELSE 'UNKNOWN' END WHERE id=?", outing);
+        }
+    }
+
     private void recalculateFee(UUID outing) {
-        // 각 원천·필드의 마지막 값만 비교한다. 과거 요금은 이력에서 지우지 않는다.
+        // 각 원천·필드의 유효 기준일 근거를 비교한다. 과거 요금은 이력에서 지우지 않는다.
         var fees = jdbc.query("""
                 SELECT DISTINCT f.field_name, f.value #>> '{}' AS value
-                FROM source_record r JOIN source_observation b ON b.record_id = r.id
-                JOIN field_evidence f ON f.observation_id = b.id
-                JOIN record_operation op ON op.record_id = r.id AND op.last_success_call = b.call_id
+                FROM source_record r JOIN effective_field_evidence f ON f.record_id = r.id
                 WHERE r.outing_id = ? AND f.field_name IN ('adultChrge', 'usefee', 'usetimefestival', 'admissionAdult')
                 """, (rs, n) -> new FeeValue(rs.getString(1), rs.getString(2)), outing);
         var amounts = fees.stream().map(f -> CollectionPolicy.numericFee(f.value())).filter(java.util.Objects::nonNull).distinct().toList();
@@ -213,6 +220,11 @@ public class CollectionStore {
         return jdbc.queryForObject("SELECT blocked_reason IS NOT NULL FROM collection_source WHERE name = ?", Boolean.class, source.name());
     }
 
+    public boolean hasSource(Source source, String key) {
+        return jdbc.queryForObject("SELECT count(*) FROM source_record WHERE source=? AND source_key=?",
+                Integer.class, source.name(), key) == 1;
+    }
+
     public boolean matchesReviewedTarget(String target, JsonNode row) {
         var addresses = jdbc.query("""
                 SELECT b.raw_row->>'addr1' FROM outing o JOIN source_record r ON r.outing_id = o.id
@@ -252,7 +264,7 @@ public class CollectionStore {
                 INSERT INTO record_operation(record_id, operation, last_success_at)
                 SELECT id, ?, ? FROM source_record WHERE source = ? AND source_key = ?
                 ON CONFLICT(record_id, operation) DO UPDATE SET last_success_at = EXCLUDED.last_success_at,
-                last_success_call = NULL, last_failure_at = NULL, failure_code = NULL
+                last_failure_at = EXCLUDED.last_success_at, failure_code = 'EMPTY_DETAIL'
                 """, operation, Timestamp.from(now), source.name(), key);
             jdbc.update("""
                     UPDATE source_record r SET last_failure_at = (SELECT max(last_failure_at) FROM record_operation WHERE record_id = r.id),
@@ -261,14 +273,6 @@ public class CollectionStore {
                     """, source.name(), key);
             var outings = jdbc.query("SELECT outing_id FROM source_record WHERE source = ? AND source_key = ?",
                 (rs, n) -> rs.getObject(1, UUID.class), source.name(), key);
-            if (source == Source.TOUR && operation.equals("detailIntro2")) {
-                jdbc.update("""
-                        UPDATE outing SET event_start = NULL, event_end = NULL, operation_verified = false,
-                        lifecycle = CASE WHEN lifecycle = 'CANCELLED' THEN lifecycle ELSE 'UNKNOWN' END
-                        WHERE id IN (SELECT outing_id FROM source_record WHERE source = ? AND source_key = ?)
-                        AND kind IN ('FESTIVAL', 'EVENT', 'EXHIBITION')
-                        """, source.name(), key);
-            }
             outings.forEach(this::recalculateFee);
         });
     }
@@ -309,5 +313,6 @@ public class CollectionStore {
 
     public static String text(JsonNode row, String field) { return row.path(field).asText("").strip(); }
     private record FeeValue(String field, String value) { }
+    private record DateRange(java.time.LocalDate start, java.time.LocalDate end) { }
     private record OperationState(Timestamp success, Timestamp failure) { }
 }
