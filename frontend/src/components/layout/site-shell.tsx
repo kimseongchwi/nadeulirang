@@ -2,20 +2,20 @@
 
 import { useState, type ReactNode } from "react";
 import { brandPalette } from "@/config/brand";
-import { ReviewDialog, type ReviewStyle } from "@/components/ui/dialog";
+import { Dialog, type DialogStyle } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icons";
 import { policyTitles, type PolicyType } from "@/features/policies/model";
-import { ReviewLink, useReview } from "@/providers/review-provider";
+import { NavigationLink, useNavigation } from "@/providers/navigation-provider";
 import { PolicyLinks } from "@/features/policies/policy-links";
 import { PolicySheet } from "@/features/policies/policy-sheet";
-import { ReviewDevTools } from "@/components/layout/review-dev-tools";
+import { GuideDevTools } from "@/features/ui-design/guide-dev-tools";
 import { NavigationProgress } from "./navigation-progress";
 
-export function ReviewShell({ children }: { children: ReactNode }) {
-  const { pathname, homeUrl, searchUrl, hash, pending } = useReview();
+export function SiteShell({ children }: { children: ReactNode }) {
+  const { pathname, homeUrl, searchUrl, hash, pending } = useNavigation();
   const [menuOpen, setMenuOpen] = useState(false);
   const guide = pathname === "/ui-design";
-  const style: ReviewStyle = {};
+  const style: DialogStyle = {};
   for (const [key, value] of Object.entries(brandPalette))
     style[`--${key}`] = value;
   const navigation = [
@@ -24,20 +24,20 @@ export function ReviewShell({ children }: { children: ReactNode }) {
   ] as const;
   return (
     <div
-      className={`review-root${guide ? " guide-mode" : ""}`}
+      className={`service-root${guide ? " guide-mode" : ""}`}
       style={style}
       data-nav="combined"
     >
-      <ReviewDevTools guide={guide} />
+      <GuideDevTools guide={guide} />
       <a href="#main" className="skip">
         본문 바로가기
       </a>
       <div className="shell">
         {!guide && (
           <aside className="pc-intro" aria-label="나들이랑 소개">
-            <ReviewLink href={homeUrl} className="brand">
+            <NavigationLink href={homeUrl} className="brand">
               <span className="wordmark" role="img" aria-label="나들이랑" />
-            </ReviewLink>
+            </NavigationLink>
             <p className="eyebrow">가까운 하루, 새로운 발견</p>
             <h2>
               어디든 좋은 날,
@@ -72,9 +72,9 @@ export function ReviewShell({ children }: { children: ReactNode }) {
               ))}
             </ol>
             {process.env.NODE_ENV === "development" && (
-              <ReviewLink href="/ui-design" className="local-guide-link">
+              <NavigationLink href="/ui-design" className="local-guide-link">
                 UI 가이드 보기 <Icon name="next" />
-              </ReviewLink>
+              </NavigationLink>
             )}
           </aside>
         )}
@@ -83,21 +83,21 @@ export function ReviewShell({ children }: { children: ReactNode }) {
             {!guide && (
               <>
                 <header className="service-header">
-                  <ReviewLink href={homeUrl} className="brand">
+                  <NavigationLink href={homeUrl} className="brand">
                     <span
                       className="wordmark"
                       role="img"
                       aria-label="나들이랑 홈"
                     />
-                  </ReviewLink>
+                  </NavigationLink>
                   <div className="header-actions">
-                    <ReviewLink
+                    <NavigationLink
                       href={pathname === "/" ? searchUrl : "/search"}
                       className="icon-button"
                       aria-label="검색 페이지 열기"
                     >
                       <Icon name="search" />
-                    </ReviewLink>
+                    </NavigationLink>
                     <button
                       className="icon-button"
                       onClick={() => setMenuOpen(true)}
@@ -123,13 +123,13 @@ export function ReviewShell({ children }: { children: ReactNode }) {
             {!guide && (
               <footer className="service-footer">
                 <div className="footer-intro">
-                  <ReviewLink
+                  <NavigationLink
                     href={homeUrl}
                     className="brand"
                     aria-label="나들이랑 홈으로 이동"
                   >
                     <span className="wordmark" role="img" aria-label="나들이랑" />
-                  </ReviewLink>
+                  </NavigationLink>
                   <p className="footer-tagline">가까운 하루, 새로운 발견</p>
                   <p className="footer-description">
                     마음이 가는 곳을 발견하고,
@@ -151,7 +151,7 @@ export function ReviewShell({ children }: { children: ReactNode }) {
               className="bottom-nav"
               aria-label="주요 페이지"
             >
-              <ReviewLink
+              <NavigationLink
                 href={homeUrl}
                 aria-current={pathname === "/" ? "page" : undefined}
               >
@@ -159,7 +159,7 @@ export function ReviewShell({ children }: { children: ReactNode }) {
                   <Icon name="home" />
                 </span>
                 홈
-              </ReviewLink>
+              </NavigationLink>
               <button
                 type="button"
                 disabled
@@ -176,7 +176,7 @@ export function ReviewShell({ children }: { children: ReactNode }) {
         </div>
       </div>
       {pending && <NavigationProgress />}
-      <ReviewDialog
+      <Dialog
         open={menuOpen}
         id="menuDialog"
         title="메뉴"
@@ -185,7 +185,7 @@ export function ReviewShell({ children }: { children: ReactNode }) {
       >
         <nav aria-label="전체 메뉴">
           {navigation.map(([href, name, label]) => (
-            <ReviewLink
+            <NavigationLink
               key={name}
               href={href}
               onClick={() => setMenuOpen(false)}
@@ -195,10 +195,10 @@ export function ReviewShell({ children }: { children: ReactNode }) {
               <span className="menu-chevron">
                 <Icon name="next" />
               </span>
-            </ReviewLink>
+            </NavigationLink>
           ))}
         </nav>
-      </ReviewDialog>
+      </Dialog>
       {(Object.keys(policyTitles) as PolicyType[]).map((type) => (
         <PolicySheet key={type} type={type} open={hash === `#policy-${type}`} />
       ))}

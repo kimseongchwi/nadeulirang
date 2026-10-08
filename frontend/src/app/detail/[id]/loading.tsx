@@ -1,9 +1,9 @@
 "use client";
 
 import { LoadingState } from "@/components/ui/feedback";
-import { useReview } from "@/providers/review-provider";
+import { useNavigation } from "@/providers/navigation-provider";
 
 export default function DetailLoading() {
-  const { pending } = useReview();
+  const { pending } = useNavigation();
   return pending ? null : <LoadingState />;
 }

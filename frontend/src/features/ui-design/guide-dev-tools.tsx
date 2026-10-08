@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-export function ReviewDevTools({ guide }: { guide: boolean }) {
+export function GuideDevTools({ guide }: { guide: boolean }) {
   useEffect(() => {
     if (process.env.NODE_ENV !== "development") return;
     if (!guide && window.self === window.top) return;

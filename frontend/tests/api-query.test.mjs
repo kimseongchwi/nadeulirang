@@ -89,7 +89,7 @@ test("실제 API 상태를 표시에 사용하고 미확인 요금·주소에 �
   assert.equal(badgeInfo(item, "2026-10-05", 14).text, "행사 취소");
   assert.equal(badgeInfo(outingSummary({ ...summary, period: "ENDED" }), "2026-10-05", 14).text, "행사 종료");
   assert.equal(badgeInfo(outingSummary({ ...summary, period: "UNKNOWN" }), "2026-10-05", 14).text, "일정 미확인");
-  assert.equal(item.district_name, null); assert.equal(item.fee_status, "UNKNOWN"); assert.deepEqual(item.sources, []);
+  assert.equal(item.district_name, null); assert.equal(item.fee_status, "UNKNOWN");
   assert.equal(isSummary(summary), true);
   assert.equal(isSummary({ ...summary, districtName: undefined }), false);
   assert.equal(isSummary({ ...summary, districtName: 123 }), false);

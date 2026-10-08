@@ -5,8 +5,8 @@ import { createPortal } from "react-dom";
 import { LoadingState } from "@/components/ui/feedback";
 
 function subscribe(listener: () => void) {
-  window.addEventListener("review-dialog-state", listener);
-  return () => window.removeEventListener("review-dialog-state", listener);
+  window.addEventListener("service-dialog-state", listener);
+  return () => window.removeEventListener("service-dialog-state", listener);
 }
 function target() {
   return document.querySelector("dialog[open]") || document.querySelector(".service");

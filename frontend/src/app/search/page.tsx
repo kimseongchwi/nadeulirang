@@ -1,4 +1,4 @@
-import { SearchReview } from "@/features/outings/search";
+import { SearchScreen } from "./search-screen";
 import { getOptions, getPage } from "@/features/outings/api-server";
 import { backendQuery, parameters, queryParameters } from "@/features/outings/api-query";
 import { QueryFeedback } from "@/features/outings/query-feedback";
@@ -12,6 +12,6 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
   try { query = queryParameters(parameters(input), options.data); }
   catch (error) { return <QueryFeedback status={400} message={error instanceof Error ? error.message : "조건을 확인해 주세요."} />; }
   const result = await getPage(backendQuery(query));
-  return result.ok ? <SearchReview data={result.data} options={options.data} query={query.toString()} />
+  return result.ok ? <SearchScreen data={result.data} options={options.data} query={query.toString()} />
     : <QueryFeedback status={result.status} message={result.message} />;
 }

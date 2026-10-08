@@ -1,35 +1,33 @@
 "use client";
 
-import { ReviewDialog } from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icons";
 import { Badge } from "./outing-badge";
 import { OutingArtwork } from "@/features/outings/outing-artwork";
 import { kindNames, period, permanent, regionLabel, type Outing } from "@/features/outings/model";
-import { useReview } from "@/providers/review-provider";
+import { useNavigation } from "@/providers/navigation-provider";
 import { useEffect, useState } from "react";
 import type { Detail } from "./api-types";
 import { LoadingState, ErrorState, EmptyState } from "@/components/ui/feedback";
 import { previewLocation } from "./api-query";
 import { isDetail } from "./api-contract";
+import { requestJson } from "./api-request";
 
 export function OutingPreview({ item, open, sample = false }: { item: Outing; open: boolean; sample?: boolean }) {
-  const { closeSheet, navigate, pending } = useReview();
+  const { closeSheet, navigate, pending } = useNavigation();
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<{ data?: Detail; status?: number } | null>(null);
   useEffect(() => {
     if (sample || !open) return;
     const controller = new AbortController();
-    fetch(`/api/outings/${item.id}`, { signal: controller.signal, cache: "no-store" })
-      .then(async (response) => {
-        if (!response.ok) { if (!controller.signal.aborted) setResult({ status: response.status }); return; }
-        const data: unknown = await response.json();
-        if (!controller.signal.aborted) setResult(isDetail(data) ? { data } : { status: 503 });
-      })
-      .catch(() => { if (!controller.signal.aborted) setResult({ status: 503 }); });
+    // 닫힌 시트나 이전 항목의 늦은 응답이 현재 화면을 바꾸지 않게 취소한다.
+    requestJson(`/api/outings/${item.id}`, isDetail, controller.signal).then((reply) => {
+      if (!controller.signal.aborted) setResult(reply.ok ? { data: reply.data } : { status: reply.status });
+    });
     return () => controller.abort();
   }, [item.id, sample, attempt, open]);
   return (
-    <ReviewDialog id={`outingPreview-${item.id}`} title="간단 보기" open={open} onClose={closeSheet} sheet className="policy-sheet outing-preview">
+    <Dialog id={`outingPreview-${item.id}`} title="간단 보기" open={open} onClose={closeSheet} sheet className="policy-sheet outing-preview">
       <div className="outing-preview-body">
         <OutingArtwork item={item} large />
         <div className="outing-preview-content">
@@ -45,6 +43,6 @@ export function OutingPreview({ item, open, sample = false }: { item: Outing; op
         </div>
       </div>
       <div className="outing-preview-actions"><button type="button" className="button primary" onClick={() => navigate(`/detail/${item.id}`, true)}>상세 정보 보기 <Icon name="next" /></button></div>
-    </ReviewDialog>
+    </Dialog>
   );
 }

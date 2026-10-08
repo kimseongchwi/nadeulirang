@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { ReviewProvider } from "@/providers/review-provider";
-import { ReviewShell } from "@/components/layout/site-shell";
+import { NavigationProvider } from "@/providers/navigation-provider";
+import { SiteShell } from "@/components/layout/site-shell";
 import { seoulDate } from "@/features/outings/model";
 import "./globals.css";
 
@@ -20,9 +20,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ko">
       <body>
-        <ReviewProvider today={seoulDate()}>
-          <ReviewShell>{children}</ReviewShell>
-        </ReviewProvider>
+        <NavigationProvider today={seoulDate()}>
+          <SiteShell>{children}</SiteShell>
+        </NavigationProvider>
       </body>
     </html>
   );
