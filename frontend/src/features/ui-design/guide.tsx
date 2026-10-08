@@ -4,11 +4,11 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { brandPalette } from "@/config/brand";
 import { DateField } from "@/features/ui-design/calendar";
-import { ReviewDialog, type ReviewStyle } from "@/components/ui/dialog";
+import { Dialog, type DialogStyle } from "@/components/ui/dialog";
 import { Icon, type IconName } from "@/components/ui/icons";
 import { ongoing, photoId } from "@/features/outings/model";
 import { publicItems } from "./review-model";
-import { ReviewLink, useReview } from "@/providers/review-provider";
+import { NavigationLink, useNavigation } from "@/providers/navigation-provider";
 import { EmptyState, ErrorState, InlineNotice, LoadingState } from "@/components/ui/feedback";
 import { OutingCard } from "@/features/outings/outing-card";
 import { PolicyLinks } from "@/features/policies/policy-links";
@@ -67,7 +67,7 @@ export function GuideReview() {
     searchUrl,
     upcomingDays,
     setUpcomingDays,
-  } = useReview();
+  } = useNavigation();
   const items = publicItems(today);
   const [previewWidth, setPreviewWidth] = useState(390);
   const [noticeWidth, setNoticeWidth] = useState(390);
@@ -89,7 +89,7 @@ export function GuideReview() {
       src: detailCard ? `/detail/${detailCard.id}` : "/search",
     },
   ];
-  const style: ReviewStyle = { "--guide-preview-width": `${previewWidth}px` };
+  const style: DialogStyle = { "--guide-preview-width": `${previewWidth}px` };
   return (
     <div style={style}>
       <header className="guide-masthead">
@@ -104,9 +104,9 @@ export function GuideReview() {
           </div>
         </div>
         <div className="row wrap">
-          <ReviewLink href={homeUrl} className="button secondary">
+          <NavigationLink href={homeUrl} className="button secondary">
             홈 열기 <Icon name="next" />
-          </ReviewLink>
+          </NavigationLink>
         </div>
       </header>
       <div className="guide-layout">
@@ -697,7 +697,7 @@ export function GuideReview() {
         </p>
       )}
       {menu && (
-        <ReviewDialog
+        <Dialog
           open
           id="guideMenu"
           title="메뉴"
@@ -705,15 +705,15 @@ export function GuideReview() {
           onClose={() => setMenu(false)}
         >
           <nav aria-label="전체 메뉴">
-            <ReviewLink href={homeUrl} onClick={() => setMenu(false)}>
+            <NavigationLink href={homeUrl} onClick={() => setMenu(false)}>
               <Icon name="home" />홈
-            </ReviewLink>
-            <ReviewLink href={searchUrl} onClick={() => setMenu(false)}>
+            </NavigationLink>
+            <NavigationLink href={searchUrl} onClick={() => setMenu(false)}>
               <Icon name="search" />
               검색
-            </ReviewLink>
+            </NavigationLink>
           </nav>
-        </ReviewDialog>
+        </Dialog>
       )}
     </div>
   );

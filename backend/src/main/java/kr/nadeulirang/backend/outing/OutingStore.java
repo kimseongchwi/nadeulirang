@@ -12,11 +12,13 @@ import java.util.Map;
 import java.util.UUID;
 import kr.nadeulirang.backend.collection.CollectionPolicy;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
-@Repository
+// 요청 조건 검증의 IllegalArgumentException은 컨트롤러의 400 계약으로 전달한다.
+// SQL 접근 오류는 JdbcTemplate이 변환하므로 JPA 저장소 예외 변환을 적용하지 않는다.
+@Component
 @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 public class OutingStore {
     // 상세에서는 취소도 공개 가능하다. 검토·표출·이용허락·원문 확보 조건은 모든 조회에 적용한다.

@@ -16,8 +16,9 @@ import {
   type ReactNode,
   type ComponentProps,
 } from "react";
-import { reviewScrollTop, scrollReviewTo } from "@/components/layout/service-scroll";
+import { serviceScrollTop, scrollServiceTo } from "@/components/layout/service-scroll";
 
+// 기존 탭의 조건·이력 복귀를 유지하기 위해 저장 키와 history 속성 이름은 호환성을 보존한다.
 const storageEvent = "outing-review-settings";
 function subscribeSettings(listener: () => void) {
   window.addEventListener(storageEvent, listener);
@@ -63,7 +64,7 @@ function subscribeHash(listener: () => void) {
   };
 }
 
-function useReviewState(today: string) {
+function useNavigationState(today: string) {
   const pathname = usePathname();
   const search = useSearchParams().toString();
   const router = useRouter();
@@ -98,7 +99,7 @@ function useReviewState(today: string) {
       const previousUrl = renderedUrl.current;
       if (!previousUrl || previousUrl === `${location.pathname}${location.search}`) return;
       try {
-        sessionStorage.setItem(`outing-review-scroll:${previousUrl}`, String(reviewScrollTop()));
+        sessionStorage.setItem(`outing-review-scroll:${previousUrl}`, String(serviceScrollTop()));
       } catch {
         /* 저장 제한 환경에서도 페이지 복귀는 유지한다. */
       }
@@ -114,7 +115,7 @@ function useReviewState(today: string) {
     try {
       sessionStorage.setItem(
         `outing-review-scroll:${location.pathname}${location.search}`,
-        String(reviewScrollTop()),
+        String(serviceScrollTop()),
       );
     } catch {
       /* 저장 제한 환경에서는 복귀 위치를 기본 상단으로 처리한다. */
@@ -124,7 +125,7 @@ function useReviewState(today: string) {
   const navigate = useCallback(
     (url: string, replace = false) => {
       if (url === `${location.pathname}${location.search}`) {
-        scrollReviewTo(0);
+        scrollServiceTo(0);
         document.getElementById("main")?.focus({ preventScroll: true });
         return;
       }
@@ -152,9 +153,9 @@ function useReviewState(today: string) {
       nextNavigation.current = false;
       const saved = Number(readSetting(`outing-review-scroll:${renderedUrl.current}`, "0"));
       const scroll = restore && Number.isFinite(saved) ? Math.max(0, saved) : 0;
-      scrollReviewTo(scroll);
+      scrollServiceTo(scroll);
       frame = requestAnimationFrame(() => {
-        scrollReviewTo(scroll);
+        scrollServiceTo(scroll);
         document.getElementById("main")?.focus({ preventScroll: true });
       });
     }
@@ -169,7 +170,7 @@ function useReviewState(today: string) {
   }, [hash, pathname, search]);
   const openSheet = useCallback((value: string) => {
     history.replaceState(
-      { ...history.state, reviewSheetScroll: reviewScrollTop() },
+      { ...history.state, reviewSheetScroll: serviceScrollTop() },
       "",
     );
     history.pushState(
@@ -218,31 +219,31 @@ function useReviewState(today: string) {
     replaceSheet,
   };
 }
-type ReviewState = ReturnType<typeof useReviewState>;
-const ReviewContext = createContext<ReviewState | null>(null);
-export function ReviewProvider({
+type NavigationState = ReturnType<typeof useNavigationState>;
+const NavigationContext = createContext<NavigationState | null>(null);
+export function NavigationProvider({
   today,
   children,
 }: {
   today: string;
   children: ReactNode;
 }) {
-  const state = useReviewState(today);
+  const state = useNavigationState(today);
   return (
-    <ReviewContext.Provider value={state}>{children}</ReviewContext.Provider>
+    <NavigationContext.Provider value={state}>{children}</NavigationContext.Provider>
   );
 }
-export function useReview() {
-  const state = useContext(ReviewContext);
-  if (!state) throw new Error("검토 화면 Provider가 필요합니다.");
+export function useNavigation() {
+  const state = useContext(NavigationContext);
+  if (!state) throw new Error("화면 이동 Provider가 필요합니다.");
   return state;
 }
-export function ReviewLink({
+export function NavigationLink({
   onNavigate,
   children,
   ...props
 }: ComponentProps<typeof Link>) {
-  const { saveScroll, navigate } = useReview();
+  const { saveScroll, navigate } = useNavigation();
   return (
     <Link
       {...props}
@@ -259,7 +260,7 @@ export function ReviewLink({
 }
 function LinkPending() {
   const { pending } = useLinkStatus();
-  const { reportLinkPending } = useReview();
+  const { reportLinkPending } = useNavigation();
   const id = useId();
   useEffect(() => {
     reportLinkPending(id, pending);

@@ -1,4 +1,4 @@
-import { HomeReview } from "@/features/outings/home";
+import { HomeScreen } from "./home-screen";
 import { getHome, getOptions } from "@/features/outings/api-server";
 import { parameters, queryParameters, windowDays } from "@/features/outings/api-query";
 import { QueryFeedback } from "@/features/outings/query-feedback";
@@ -19,6 +19,6 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
   const request = new URLSearchParams(query);
   request.set("days", String(days));
   const result = await getHome(request);
-  return result.ok ? <HomeReview data={result.data} options={options.data} query={query.toString()} />
+  return result.ok ? <HomeScreen data={result.data} options={options.data} query={query.toString()} />
     : <QueryFeedback status={result.status} message={result.message} />;
 }

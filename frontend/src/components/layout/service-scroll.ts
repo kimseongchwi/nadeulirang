@@ -5,11 +5,11 @@ export function serviceScrollContainer() {
     : null;
 }
 
-export function reviewScrollTop() {
+export function serviceScrollTop() {
   return serviceScrollContainer()?.scrollTop ?? window.scrollY;
 }
 
-export function scrollReviewTo(top: number) {
+export function scrollServiceTo(top: number) {
   const container = serviceScrollContainer();
   if (container) container.scrollTo(0, top);
   else window.scrollTo(0, top);

@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { ReviewDialog } from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import { kindNames } from "@/features/outings/model";
-import { useReview } from "@/providers/review-provider";
+import { useNavigation } from "@/providers/navigation-provider";
 import type { Options } from "./api-types";
 
 export function HomeFilter({ open, options }: { open: boolean; options: Options }) {
-  const { params, closeSheet, replaceSheet } = useReview();
+  const { params, closeSheet, replaceSheet } = useNavigation();
   const region = params.get("region") || "";
   const regionCode = options?.regions.find((r) => r.code === region || r.name === region)?.code || region;
   const formRef = useRef<HTMLFormElement>(null);
@@ -15,7 +15,7 @@ export function HomeFilter({ open, options }: { open: boolean; options: Options 
     if (open) formRef.current?.reset();
   }, [open]);
   return (
-    <ReviewDialog
+    <Dialog
       id="homeFilterDialog"
       open={open}
       title="홈 필터"
@@ -98,6 +98,6 @@ export function HomeFilter({ open, options }: { open: boolean; options: Options 
           </div>
         </div>
       </form>
-    </ReviewDialog>
+    </Dialog>
   );
 }

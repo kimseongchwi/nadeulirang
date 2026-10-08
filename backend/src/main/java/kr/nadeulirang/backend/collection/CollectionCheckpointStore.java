@@ -1,20 +1,23 @@
 package kr.nadeulirang.backend.collection;
 
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
 import javax.sql.DataSource;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Component;
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
 
-@Repository
+// 저장소 예외는 Spring Data가 변환하고, 배치 잠금·수집 정책 오류는 원래 타입을 유지한다.
+@Component
 public class CollectionCheckpointStore {
-    private final JdbcTemplate jdbc;
+    private final CollectionCheckpointRepository checkpoints;
+    private final SourceCallRepository calls;
     private final DataSource dataSource;
 
-    public CollectionCheckpointStore(JdbcTemplate jdbc, DataSource dataSource) {
-        this.jdbc = jdbc;
+    public CollectionCheckpointStore(CollectionCheckpointRepository checkpoints, SourceCallRepository calls, DataSource dataSource) {
+        this.checkpoints = checkpoints;
+        this.calls = calls;
         this.dataSource = dataSource;
     }
 
@@ -32,28 +35,26 @@ public class CollectionCheckpointStore {
         } catch (java.sql.SQLException e) { throw new IllegalStateException("로컬 배치 잠금에 실패했습니다."); }
     }
 
+    @Transactional
     public Cursor cursor(String key, Source source, String operation, JsonNode query) {
-        jdbc.update("""
-                INSERT INTO collection_checkpoint(stream_key, source, operation, query, updated_at)
-                VALUES (?, ?, ?, ?::jsonb, ?) ON CONFLICT(stream_key) DO NOTHING
-                """, key, source.name(), operation, query.toString(), Timestamp.from(Instant.now()));
-        return jdbc.queryForObject("""
-                SELECT page_no,row_index,page_call,completed FROM collection_checkpoint
-                WHERE stream_key=? AND source=? AND operation=? AND query=?::jsonb
-                """, (rs, n) -> new Cursor(rs.getInt(1), rs.getInt(2), rs.getObject(3, UUID.class), rs.getBoolean(4)),
-                key, source.name(), operation, query.toString());
+        checkpoints.initialize(key, source.name(), operation, query.toString(), Instant.now());
+        return checkpoints.findByStreamKeyAndSourceAndOperationAndQuery(key, source, operation, query.toString())
+                .orElseThrow(() -> new EmptyResultDataAccessException(1)).cursor();
     }
 
+    @Transactional(readOnly = true)
     public SourceClient.Result savedPage(Source source, UUID call) {
-        return jdbc.queryForObject("SELECT payload,finished_at FROM source_call WHERE id=? AND source=? AND outcome IN ('SUCCESS','EMPTY')",
-                (rs, n) -> new SourceClient.Result(call, rs.getString(1) == null
+        var record = calls.findById(call).filter(saved -> saved.source() == source
+                && java.util.List.of("SUCCESS", "EMPTY").contains(saved.outcome()))
+                .orElseThrow(() -> new EmptyResultDataAccessException(1));
+        return new SourceClient.Result(call, record.payload() == null
                         ? new SourceResponse("EMPTY", "03", null, java.util.List.of())
-                        : SourceResponse.parse(source, 200, rs.getString(1), null), rs.getTimestamp(2).toInstant()), call, source.name());
+                        : SourceResponse.parse(source, 200, record.payload(), null), record.finishedAt());
     }
 
+    @Transactional
     public void save(String key, Cursor cursor) {
-        jdbc.update("UPDATE collection_checkpoint SET page_no=?,row_index=?,page_call=?,completed=?,updated_at=? WHERE stream_key=?",
-                cursor.page(), cursor.row(), cursor.call(), cursor.completed(), Timestamp.from(Instant.now()), key);
+        checkpoints.findById(key).ifPresent(record -> record.advance(cursor, Instant.now()));
     }
 
     public static Cursor next(Cursor cursor, int rows, int total) {

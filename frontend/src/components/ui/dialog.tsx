@@ -5,12 +5,12 @@ import { Icon } from "@/components/ui/icons";
 import { SheetHandle } from "./sheet-handle";
 import { sheetBounds, type SheetBounds } from "./sheet-drag";
 import {
-  reviewScrollTop,
-  scrollReviewTo,
+  serviceScrollTop,
+  scrollServiceTo,
   serviceScrollContainer,
 } from "@/components/layout/service-scroll";
 
-export function ReviewDialog({
+export function Dialog({
   open,
   onClose,
   title,
@@ -45,7 +45,7 @@ export function ReviewDialog({
       const service = document
         .querySelector(".service")
         ?.getBoundingClientRect();
-      const guide = !!document.querySelector(".review-root.guide-mode");
+      const guide = !!document.querySelector(".service-root.guide-mode");
       const left = guide ? 0 : Math.max(0, service?.left || 0);
       const right = guide
         ? window.innerWidth
@@ -78,16 +78,16 @@ export function ReviewDialog({
         `${top}px ${window.innerWidth - right}px ${window.innerHeight - bottom}px ${left}px`,
       );
     }
-    const scroll = reviewScrollTop();
+    const scroll = serviceScrollTop();
     const originUrl = `${location.pathname}${location.search}`;
     const container = serviceScrollContainer();
     const previousContainerOverflow = container?.style.overflowY || "";
     const previousOverflow = document.body.style.overflow;
     dialog.showModal();
-    window.dispatchEvent(new Event("review-dialog-state"));
+    window.dispatchEvent(new Event("service-dialog-state"));
     document.body.style.overflow = "hidden";
     position();
-    scrollReviewTo(scroll);
+    scrollServiceTo(scroll);
     if (container) container.style.overflowY = "hidden";
     // 로딩·오류 안내와 사진이 바뀌면 고정 높이 대신 현재 내용으로 다시 계산한다.
     const contentObserver = sheet ? new ResizeObserver(position) : null;
@@ -106,11 +106,11 @@ export function ReviewDialog({
       dialog.style.removeProperty("height");
       dialog.style.removeProperty("translate");
       boundsRef.current = null;
-      window.dispatchEvent(new Event("review-dialog-state"));
+      window.dispatchEvent(new Event("service-dialog-state"));
       document.body.style.overflow = previousOverflow;
       if (container) container.style.overflowY = previousContainerOverflow;
       if (`${location.pathname}${location.search}` === originUrl) {
-        scrollReviewTo(scroll);
+        scrollServiceTo(scroll);
         if (origin?.isConnected) origin.focus({ preventScroll: true });
       }
     };
@@ -157,7 +157,7 @@ export function ReviewDialog({
     >
       {sheet && open && <SheetHandle dialogRef={dialogRef} boundsRef={boundsRef} onClose={onClose} title={title} />}
       <div className={sheet ? "policy-sheet-head" : "dialog-head"}>
-        <h2 id={`${id}Title`} className="review-dialog-title">{title}</h2>
+        <h2 id={`${id}Title`} className="dialog-title">{title}</h2>
         <button
           type="button"
           className="icon-button"
@@ -171,6 +171,6 @@ export function ReviewDialog({
     </dialog>
   );
 }
-export type ReviewStyle = CSSProperties & {
+export type DialogStyle = CSSProperties & {
   [key: `--${string}`]: string | number;
 };

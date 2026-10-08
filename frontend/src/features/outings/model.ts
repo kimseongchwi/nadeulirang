@@ -10,9 +10,7 @@ export const kindNames: Readonly<Record<string, string>> = {
 export type Outing = {
   id: string; name: string; kind: string; region_name: string; district_name: string | null;
   event_start: string | null; event_end: string | null; lifecycle: string;
-  fee_status: string; operation_verified: boolean;
-  sources: { source: string; url: string; checked: string }[];
-  reviewed_at: string; apiPeriod?: string;
+  fee_status: string; apiPeriod?: string;
   photo?: Photo | null;
 };
 export function outingSummary(item: Summary): Outing {
@@ -20,8 +18,7 @@ export function outingSummary(item: Summary): Outing {
     id: item.id, name: item.name, kind: item.kind, region_name: item.regionName,
     district_name: item.districtName, event_start: item.eventStart, event_end: item.eventEnd,
     lifecycle: item.period, fee_status: item.feeStatus,
-    operation_verified: item.operationVerified, sources: [],
-    reviewed_at: item.sourceCheckedAt || "", apiPeriod: item.period, photo: item.photo,
+    apiPeriod: item.period, photo: item.photo,
   };
 }
 export function regionLabel(region: string, district: string | null) {

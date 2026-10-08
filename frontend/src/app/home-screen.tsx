@@ -6,12 +6,12 @@ import {
   outingSummary,
   type Outing,
 } from "@/features/outings/model";
-import type { Home, Options } from "./api-types";
+import type { Home, Options } from "@/features/outings/api-types";
 import { EmptyState } from "@/components/ui/feedback";
 import { OutingCard } from "@/features/outings/outing-card";
 import { Icon } from "@/components/ui/icons";
-import { ReviewLink, useReview } from "@/providers/review-provider";
-import { HomeFilter } from "./home-filter";
+import { NavigationLink, useNavigation } from "@/providers/navigation-provider";
+import { HomeFilter } from "@/features/outings/home-filter";
 
 function HomeSection({
   title,
@@ -37,9 +37,9 @@ function HomeSection({
     <section className="outing-section">
       <div className="section-head">
         <h2>{title}</h2>
-        <ReviewLink href={`/search?${search}`} className="more">
+        <NavigationLink href={`/search?${search}`} className="more">
           더 보기 <Icon name="next" />
-        </ReviewLink>
+        </NavigationLink>
       </div>
       <p className="section-description">{description}</p>
       {items.length ? (
@@ -48,15 +48,15 @@ function HomeSection({
           .map((item) => <OutingCard key={item.id} item={item} />)
       ) : (
         <EmptyState title="확인한 항목이 아직 없어요." description={emptyText}>
-          <ReviewLink href="/search" className="button secondary">
+          <NavigationLink href="/search" className="button secondary">
             전체 검색
-          </ReviewLink>
+          </NavigationLink>
         </EmptyState>
       )}
     </section>
   );
 }
-export function HomeReview({ data, options, query }: { data: Home; options: Options; query: string }) {
+export function HomeScreen({ data, options, query }: { data: Home; options: Options; query: string }) {
   const chipDrag = useRef<{
     pointerId: number;
     startX: number;
@@ -64,7 +64,7 @@ export function HomeReview({ data, options, query }: { data: Home; options: Opti
     dragged: boolean;
   } | null>(null);
   const { setHomeQuery, openSheet, hash } =
-    useReview();
+    useNavigation();
   const filters = new URLSearchParams(query);
   const region = filters.get("region") || "";
   const kind = filters.get("kind") || "";
@@ -91,7 +91,7 @@ export function HomeReview({ data, options, query }: { data: Home; options: Opti
         <p>
           가볍게 떠나고 싶은 날,<br />마음이 가는 곳을 발견해요
         </p>
-        <ReviewLink className="hero-link" href={query ? `/search?${query}` : "/search"}>나들이 찾아보기 <Icon name="next" /></ReviewLink>
+        <NavigationLink className="hero-link" href={query ? `/search?${query}` : "/search"}>나들이 찾아보기 <Icon name="next" /></NavigationLink>
       </div>
       <div className="home-filter-bar">
         <button
@@ -108,9 +108,9 @@ export function HomeReview({ data, options, query }: { data: Home; options: Opti
           <Icon name="down" />
         </button>
         {query && (
-          <ReviewLink href="/" className="text-button">
+          <NavigationLink href="/" className="text-button">
             초기화
-          </ReviewLink>
+          </NavigationLink>
         )}
       </div>
       <nav
@@ -166,7 +166,7 @@ export function HomeReview({ data, options, query }: { data: Home; options: Opti
         {[["", "전체"], ...Object.entries(kindNames)].map(([value, label]) => {
           const next = new URLSearchParams(filters);
           if (value) next.set("kind", value); else next.delete("kind");
-          return <ReviewLink key={value} href={`/${next.size ? `?${next}` : ""}`} draggable={false} aria-current={kind === value ? "true" : undefined}>{label}</ReviewLink>;
+          return <NavigationLink key={value} href={`/${next.size ? `?${next}` : ""}`} draggable={false} aria-current={kind === value ? "true" : undefined}>{label}</NavigationLink>;
         })}
       </nav>
       <p id="kind-scroll-help" className="sr-only">좌우로 밀거나 방향키로 종류 목록을 이동할 수 있어요.</p>

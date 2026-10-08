@@ -1,10 +1,10 @@
 "use client";
 
 import { Icon } from "@/components/ui/icons";
-import { useReview } from "@/providers/review-provider";
+import { useNavigation } from "@/providers/navigation-provider";
 
 export function BackHeading({ title, labelOnly = false }: { title: string; labelOnly?: boolean }) {
-  const { back } = useReview();
+  const { back } = useNavigation();
   return (
     <div className="page-head">
       <button

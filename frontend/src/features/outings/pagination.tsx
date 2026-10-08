@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Icon } from "@/components/ui/icons";
-import { ReviewLink } from "@/providers/review-provider";
+import { NavigationLink } from "@/providers/navigation-provider";
 
 type PaginationProps = { page: number; pages: number; label?: string } & (
   | { pageUrl: (page: number) => string; onPageChange?: never }
@@ -16,7 +16,7 @@ export function Pagination({ page, pages, label = "검색 결과 페이지", pag
   const visiblePages = Array.from({ length: Math.min(pages, 5) }, (_, index) => firstPage + index);
   function control(target: number, className: string, name: string, children: ReactNode) {
     return pageUrl
-      ? <ReviewLink className={className} href={pageUrl(target)} aria-label={name}>{children}</ReviewLink>
+      ? <NavigationLink className={className} href={pageUrl(target)} aria-label={name}>{children}</NavigationLink>
       : <button className={className} type="button" aria-label={name} onClick={() => onPageChange?.(target)}>{children}</button>;
   }
   return <div className="pagination-container">

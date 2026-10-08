@@ -1,14 +1,14 @@
 "use client";
 
-import { ReviewDialog } from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import { policyTitles, type PolicyType } from "@/features/policies/model";
 import { PolicyContent } from "@/features/policies/policy-content";
-import { useReview } from "@/providers/review-provider";
+import { useNavigation } from "@/providers/navigation-provider";
 
 export function PolicySheet({ type, open }: { type: PolicyType; open: boolean }) {
-  const { closeSheet, pathname } = useReview();
+  const { closeSheet, pathname } = useNavigation();
   return (
-    <ReviewDialog
+    <Dialog
       id={`policyDialog-${type}`}
       title={policyTitles[type]}
       open={open}
@@ -23,6 +23,6 @@ export function PolicySheet({ type, open }: { type: PolicyType; open: boolean })
       >
         <PolicyContent type={type} samplePhoto={pathname === "/ui-design"} />
       </div>
-    </ReviewDialog>
+    </Dialog>
   );
 }

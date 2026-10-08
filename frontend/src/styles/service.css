@@ -132,16 +132,16 @@ select:focus {
   min-height: 100vh;
   background: var(--surface);
 }
-.review-root:not(.guide-mode) .service-scroll {
+.service-root:not(.guide-mode) .service-scroll {
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
 }
-.review-root:not(.guide-mode) .service-scroll > main {
+.service-root:not(.guide-mode) .service-scroll > main {
   flex: 1 0 auto;
 }
-.review-root:not(.guide-mode) .service-scroll > header,
-.review-root:not(.guide-mode) .service-scroll > footer {
+.service-root:not(.guide-mode) .service-scroll > header,
+.service-root:not(.guide-mode) .service-scroll > footer {
   flex-shrink: 0;
 }
 .service-header {
@@ -822,13 +822,13 @@ dialog::backdrop {
 .comparison-card .info-list {
   grid-template-columns: 92px minmax(0, 1fr);
 }
-.review-root[data-nav="bottom"] #menuOpen {
+.service-root[data-nav="bottom"] #menuOpen {
   display: none;
 }
-.review-root[data-nav="hamburger"] #bottomNav {
+.service-root[data-nav="hamburger"] #bottomNav {
   display: none;
 }
-.review-root[data-nav="hamburger"] {
+.service-root[data-nav="hamburger"] {
   --nav-height: 0px;
 }
 .status-list {
@@ -926,11 +926,11 @@ dialog::backdrop {
   }
 }
 @media (min-width: 960px) {
-  html:has(.review-root:not(.guide-mode)) {
+  html:has(.service-root:not(.guide-mode)) {
     overflow: hidden;
     scrollbar-gutter: auto;
   }
-  .review-root:not(.guide-mode) .shell {
+  .service-root:not(.guide-mode) .shell {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: 200px;
@@ -938,14 +938,14 @@ dialog::backdrop {
     height: 100dvh;
     padding: 0 32px;
   }
-  .review-root:not(.guide-mode) .pc-intro {
+  .service-root:not(.guide-mode) .pc-intro {
     position: static;
     justify-self: end;
     align-self: start;
     margin-top: 40px;
     overflow: visible;
   }
-  .review-root:not(.guide-mode) .service {
+  .service-root:not(.guide-mode) .service {
     display: flex;
     flex-direction: column;
     justify-self: start;
@@ -954,7 +954,7 @@ dialog::backdrop {
     min-height: 0;
     margin-left: 0;
   }
-  .review-root:not(.guide-mode) .service-scroll {
+  .service-root:not(.guide-mode) .service-scroll {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -963,12 +963,12 @@ dialog::backdrop {
     scroll-padding-top: 20px;
     scroll-padding-bottom: 24px;
   }
-  .review-root:not(.guide-mode) .bottom-nav {
+  .service-root:not(.guide-mode) .bottom-nav {
     position: static;
     width: auto;
     flex-shrink: 0;
   }
-  .review-root:not(.guide-mode) .service footer {
+  .service-root:not(.guide-mode) .service footer {
     padding-bottom: 32px;
   }
   .local-guide-link {
@@ -988,7 +988,7 @@ dialog::backdrop {
   .pc-intro .steps li { margin-bottom: 16px; }
 }
 @media (min-width: 960px) and (max-height: 600px) {
-  .review-root:not(.guide-mode) .pc-intro { margin-top: 24px; }
+  .service-root:not(.guide-mode) .pc-intro { margin-top: 24px; }
   .pc-intro h2 { font-size: 28px; }
   .pc-intro .lead { display: none; }
 }
@@ -1324,7 +1324,7 @@ dialog {
 .dialog-head {
   margin-bottom: 8px;
 }
-.review-dialog-title {
+.dialog-title {
   font-size: 18px;
   font-weight: 700;
   line-height: 1.5;
@@ -1486,7 +1486,7 @@ dialog {
 html {
   scrollbar-gutter: stable;
 }
-html:has(.review-root:not(.guide-mode)) {
+html:has(.service-root:not(.guide-mode)) {
   scrollbar-gutter: auto;
 }
 body.policy-open {
@@ -1774,30 +1774,30 @@ body.filter-open {
 }
 
 /* P24 데스크톱 검토용 가이드, 요소는 모바일 기준 */
-.review-root.guide-mode {
+.service-root.guide-mode {
   --nav-height: 0px;
   --guide-preview-width: 390px;
   background: #f4f6f1;
 }
-.review-root.guide-mode .shell {
+.service-root.guide-mode .shell {
   max-width: 1640px;
   padding: 0 32px;
 }
-.review-root.guide-mode .pc-intro,
-.review-root.guide-mode .service-header,
-.review-root.guide-mode .review-banner,
-.review-root.guide-mode .service > footer,
-.review-root.guide-mode #bottomNav {
+.service-root.guide-mode .pc-intro,
+.service-root.guide-mode .service-header,
+.service-root.guide-mode .review-banner,
+.service-root.guide-mode .service > footer,
+.service-root.guide-mode #bottomNav {
   display: none;
 }
-.review-root.guide-mode .service {
+.service-root.guide-mode .service {
   width: 100%;
   margin: 0;
   border: 0;
   background: transparent;
   min-height: 100vh;
 }
-.review-root.guide-mode main {
+.service-root.guide-mode main {
   padding: 28px 0 64px;
 }
 .guide-masthead {
@@ -2075,7 +2075,7 @@ body.filter-open {
   }
 }
 @media (max-width: 900px) {
-  .review-root.guide-mode .shell {
+  .service-root.guide-mode .shell {
     padding: 0 20px;
   }
   .guide-masthead {
@@ -2100,7 +2100,7 @@ body.filter-open {
   }
 }
 @media (max-width: 640px) {
-  .review-root.guide-mode .shell {
+  .service-root.guide-mode .shell {
     padding: 0 12px;
   }
   .guide-board {
@@ -2135,7 +2135,7 @@ body.filter-open {
     font-size: 24px;
   }
 }
-.review-root.guide-mode .shell {
+.service-root.guide-mode .shell {
   padding-left: 20px;
   padding-right: 20px;
 }
@@ -2171,7 +2171,7 @@ body.filter-open {
   }
 }
 @media (max-width: 640px) {
-  .review-root.guide-mode .shell {
+  .service-root.guide-mode .shell {
     padding-left: 12px;
     padding-right: 12px;
   }
@@ -2329,7 +2329,7 @@ body.filter-open {
   }
 }
 
-.review-root {
+.service-root {
   min-height: 100dvh;
 }
 .info-row {

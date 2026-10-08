@@ -2,9 +2,9 @@
 
 import { useEffect, useState, type KeyboardEvent } from "react";
 import { addDays, dateLabel, validDate } from "@/features/outings/model";
-import { ReviewDialog } from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icons";
-import { useReview } from "@/providers/review-provider";
+import { useNavigation } from "@/providers/navigation-provider";
 
 function Calendar({
   value,
@@ -15,7 +15,7 @@ function Calendar({
   onApply: (value: string) => void;
   onClose: () => void;
 }) {
-  const { today } = useReview();
+  const { today } = useNavigation();
   const minimumYear = Number(today.slice(0, 4));
   const initial = validDate(value, today) ? value : today;
   const [pending, setPending] = useState(value);
@@ -93,7 +93,7 @@ function Calendar({
   }
   const yearEnd = Math.min(yearStart + 11, 9999);
   return (
-    <ReviewDialog
+    <Dialog
       id="calendarDialog"
       open
       title="방문 날짜 선택"
@@ -307,7 +307,7 @@ function Calendar({
           </button>
         </div>
       </div>
-    </ReviewDialog>
+    </Dialog>
   );
 }
 export function DateField() {

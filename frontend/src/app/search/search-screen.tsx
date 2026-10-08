@@ -6,14 +6,14 @@ import {
 } from "@/features/outings/model";
 import { EmptyState } from "@/components/ui/feedback";
 import { OutingCard } from "@/features/outings/outing-card";
-import { ReviewLink, useReview } from "@/providers/review-provider";
+import { NavigationLink, useNavigation } from "@/providers/navigation-provider";
 import { Icon } from "@/components/ui/icons";
-import type { Options, Page } from "./api-types";
-import { Pagination } from "./pagination";
-import { searchFormQuery } from "./api-query";
+import type { Options, Page } from "@/features/outings/api-types";
+import { Pagination } from "@/features/outings/pagination";
+import { searchFormQuery } from "@/features/outings/api-query";
 
-export function SearchReview({ data, options, query }: { data: Page; options: Options; query: string }) {
-  const { navigate } = useReview();
+export function SearchScreen({ data, options, query }: { data: Page; options: Options; query: string }) {
+  const { navigate } = useNavigation();
   const filters = new URLSearchParams(query);
   const upcomingDays = Number(filters.get("days") || 14);
   const scope = filters.get("scope") || "";
@@ -103,7 +103,7 @@ export function SearchReview({ data, options, query }: { data: Page; options: Op
       <section className="search-results">
         <div className="section-head">
           <h2>{query ? "조건에 맞는 나들이" : "둘러볼 나들이"} <span className="result-count">{data.total}</span></h2>
-          {query && <ReviewLink href="/search" className="text-button">초기화</ReviewLink>}
+          {query && <NavigationLink href="/search" className="text-button">초기화</NavigationLink>}
         </div>
         {results.length ? (
           results.map((item) => <OutingCard key={item.id} item={item} />)
@@ -112,9 +112,9 @@ export function SearchReview({ data, options, query }: { data: Page; options: Op
             title={data.total ? "이 페이지에는 결과가 없어요." : "조건에 맞는 곳이 없어요."}
             description={data.total ? "첫 페이지에서 검색 결과를 확인해 주세요." : "다른 이름·지역·종류로 찾아봐요."}
           >
-            <ReviewLink href={data.total ? pageUrl(1) : "/search"} className="button secondary">
+            <NavigationLink href={data.total ? pageUrl(1) : "/search"} className="button secondary">
               {data.total ? "첫 페이지" : "초기화"}
-            </ReviewLink>
+            </NavigationLink>
           </EmptyState>
         )}
         <Pagination page={data.page} pages={pages} pageUrl={pageUrl} />

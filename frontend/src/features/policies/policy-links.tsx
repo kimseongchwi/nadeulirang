@@ -1,7 +1,7 @@
 "use client";
 
 import { policyTitles } from "@/features/policies/model";
-import { useReview } from "@/providers/review-provider";
+import { useNavigation } from "@/providers/navigation-provider";
 import { Icon } from "@/components/ui/icons";
 
 export function PolicyLinks({
@@ -9,7 +9,7 @@ export function PolicyLinks({
 }: {
   variant?: "inline" | "buttons" | "footer";
 }) {
-  const { openSheet } = useReview();
+  const { openSheet } = useNavigation();
   return (
     <div className={variant === "buttons" ? "row wrap" : "policy-links"}>
       {Object.entries(policyTitles).map(([type, title]) => (

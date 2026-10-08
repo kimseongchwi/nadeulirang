@@ -1,17 +1,16 @@
 "use client";
 
-import { kindNames, period, permanent, outingSummary, seoulDate } from "./model";
-import { Badge } from "./outing-badge";
-import { OutingArtwork } from "./outing-artwork";
+import { kindNames, period, permanent, outingSummary, seoulDate } from "@/features/outings/model";
+import { Badge } from "@/features/outings/outing-badge";
+import { OutingArtwork } from "@/features/outings/outing-artwork";
 import { BackHeading } from "@/components/layout/back-heading";
-import { EvidenceList, HoursInformation } from "./evidence";
-import { previewLocation, safeUrl } from "./api-query";
-import { detailContent } from "./detail-content";
-import { routeFeeBlocks } from "./fee-blocks";
-import { DetailIntroduction } from "./detail-introduction";
-import { ExpandableDetailText } from "./expandable-detail-text";
+import { EvidenceList, HoursInformation } from "@/features/outings/evidence";
+import { previewLocation, safeUrl } from "@/features/outings/api-query";
+import { detailContent } from "@/features/outings/detail-content";
+import { routeFeeBlocks } from "@/features/outings/fee-blocks";
+import { ExpandableDetailText } from "@/features/outings/expandable-detail-text";
 import { InlineNotice } from "@/components/ui/feedback";
-import type { Detail } from "./api-types";
+import type { Detail } from "@/features/outings/api-types";
 
 const groups = [
   ["hours", "운영 시간"], ["closedDays", "휴관·휴무"],
@@ -23,7 +22,7 @@ const locationGroups = [
   [["addr1"], "주소"], [["addr2"], "상세 주소"],
   [["rdnmadr"], "도로명 주소"],
 ] as const;
-export function DetailReview({ data }: { data: Detail }) {
+export function DetailScreen({ data }: { data: Detail }) {
   const item = outingSummary(data.item);
   const information = routeFeeBlocks(data.information);
   const content = detailContent(information);
@@ -50,7 +49,10 @@ export function DetailReview({ data }: { data: Detail }) {
     </div>
     {!permanent(item) && <dl className="detail-facts detail-period"><div><dt>행사 일정</dt><dd>{period(item)}</dd></div></dl>}
     {refreshNeeded && <InlineNotice tone="warning" title="최신 정보 확인 필요">일부 정보는 최신 여부를 다시 확인해야 해요. 방문 전 공식 안내를 확인해 주세요.</InlineNotice>}
-    {!!content.description.length && <DetailIntroduction key={item.id} values={content.description} />}
+    {!!content.description.length && <section className="detail-section" key={item.id}>
+      <h2>소개</h2>
+      <ExpandableDetailText values={content.description} />
+    </section>}
     <section className="detail-section">
       <h2>이용 정보</h2>
       <dl className="detail-facts">

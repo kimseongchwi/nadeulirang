@@ -1,14 +1,19 @@
 # 백엔드
 
-Spring Boot·Java 21·Maven Wrapper 기반 프로젝트입니다. 버전 선택과 환경 설정·실행·검증 명령은 [루트 README](../README.md#백엔드-실행검증)를 따릅니다.
+Spring Boot·Java 21·Spring Data JPA·Hibernate·PostgreSQL을 사용합니다. 실행·검증은 [루트 README](../README.md#백엔드-실행검증)를 따릅니다.
 
-`src/main/resources/db/migration/`의 Flyway 마이그레이션으로 DB 변경을 관리합니다. 이미 적용한 파일은 수정하지 않고 다음 버전 파일을 추가합니다. 기능 테스트는 `src/test/`에 둡니다.
+## 구조
 
-로컬 전국 목록 배치는 [루트 수집 안내](../README.md#데이터-수집-p11p38)를 따릅니다. `V3__collection_checkpoint.sql`은 월별/지정 배치의 페이지·행·성공 응답 참조를 보존합니다. 수집 실행기와 원천 클라이언트·저장소는 `collection/`에 있고 `CollectionBatchTests`는 실제 격리 DB에서 부분 페이지 재개·실패 위치·신규 후보 비공개를 검사합니다.
+- collection/: 원천 HTTP 클라이언트·수동 실행기, 호출/원천/커서 JPA 모델과 Repository, 근거·충돌을 조율하는 CollectionStore.
+- outing/: 요청 조건·컨트롤러·SQL 조회·응답 record·오류 처리. 엔티티는 외부에 노출하지 않습니다.
+- resources/db/migration/: Flyway V1~V5. 기존 적용 파일은 수정하지 않습니다. Hibernate ddl-auto=validate·open-in-view=false로 자동 DDL·요청 밖 추가 조회를 막습니다.
+- src/test/: UUID 격리 PostgreSQL의 API·수집·JPA/SQL 공동 트랜잭션 회귀와 순수 정책 테스트.
+
+JPA는 원천 상태·호출 기록·커서의 단순 저장/조회를 담당합니다. 커서 최초 생성의 ON CONFLICT, 원문/근거 upsert·최신 선택·충돌과 공개 조회는 SQL을 유지합니다. FK는 ID로 연결해 연쇄 조회·삭제를 추가하지 않습니다. 역할과 어노테이션 설명은 [LEARNING](../docs/LEARNING.md#jpa-저장과-트랜잭션)을 참고합니다. 수집 원천·예산·보존/갱신 기준은 [DATA_SOURCES](../docs/DATA_SOURCES.md#p11-수집-기준)에 있습니다.
 
 ## 목록·상세 조회 API
 
-`V4__file_asset.sql`은 대표 사진의 원본/미리보기 URL·제공처·출처 링크·이용 유형·원문 근거·확인 시각을 `file_asset`에 저장합니다. 바이너리 파일은 DB나 디스크에 복제하지 않습니다. 기존 마지막 공통 응답의 제1유형 사진을 자동으로 채우며, 다음 `detailCommon2` 수집 때 같은 URL은 갱신하고 변경/제거/유형 변경은 이전 사진을 비활성화합니다. 실패한 조회는 기존 사진을 보존합니다.
+사진은 허용한 메타데이터와 원문 근거만 저장합니다. 수집·이용 조건은 [DATA_SOURCES](../docs/DATA_SOURCES.md#이용-조건)를 따릅니다.
 
 Spring 서버 실행 후 `http://localhost:8080`에서 아래 읽기 전용 API를 호출합니다. Next.js 서버 페이지와 간단 보기의 상세 중계가 이 API를 사용합니다. 요청마다 원천 API를 호출하지 않고 저장된 PostgreSQL 자료를 읽습니다.
 
