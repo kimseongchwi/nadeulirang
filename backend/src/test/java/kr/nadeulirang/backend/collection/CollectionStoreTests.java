@@ -25,6 +25,8 @@ class CollectionStoreTests {
     private final Instant now = Instant.parse("2026-10-03T09:00:00Z");
     @Autowired private CollectionStore store;
     @Autowired private JdbcTemplate jdbc;
+    @Autowired private org.springframework.transaction.PlatformTransactionManager transactionManager;
+    @Autowired private jakarta.persistence.EntityManager entityManager;
 
     @DynamicPropertySource static void schema(DynamicPropertyRegistry registry) {
         registry.add("spring.flyway.default-schema", () -> SCHEMA);
@@ -223,6 +225,21 @@ class CollectionStoreTests {
         assertThat(count("outing")).isZero();
         assertThat(count("source_observation")).isZero();
         assertThat(count("source_call")).isEqualTo(1);
+    }
+
+    @Test @DisplayName("JPA와 JDBC는 같은 연결·트랜잭션을 사용하고 SQL 실패 시 함께 롤백한다")
+    void rollsBackJpaAndJdbcTogether() {
+        var transaction = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+        assertThatThrownBy(() -> transaction.executeWithoutResult(status -> {
+            UUID call = store.reserve(Source.TOUR, "detailCommon2", json.createObjectNode(), now);
+            // ORM의 지연 쓰기를 확정해 같은 트랜잭션의 JDBC에서 즉시 보이는지 확인한다.
+            entityManager.flush();
+            assertThat(jdbc.queryForObject("SELECT outcome FROM source_call WHERE id=?", String.class, call))
+                    .isEqualTo("STARTED");
+            jdbc.update("UPDATE source_call SET outcome='INVALID' WHERE id=?", call);
+        })).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThat(count("source_call")).isZero();
+        assertThat(jdbc.queryForObject("SELECT last_started_at FROM collection_source WHERE name='TOUR'", Timestamp.class)).isNull();
     }
 
     @Test @DisplayName("나중에 받은 오래된 기준일은 최신 사실을 덮지 않고 재처리도 대상·필드를 중복 생성하지 않는다")

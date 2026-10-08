@@ -60,6 +60,37 @@ class CollectionBatchTests {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM source_call WHERE operation IN ('searchFestival2','areaBasedList2','list')", Integer.class)).isEqualTo(5);
     }
 
+    @Test @DisplayName("JPA 커서는 jsonb 동등성을 유지하고 다른 원천·조건과 미완료 호출은 재사용하지 않는다")
+    void checksCheckpointIdentityAndCalls() {
+        var query = json.readTree("{\"page\":1,\"kind\":\"문화\"}");
+        var first = checkpoints.cursor("identity", Source.TOUR, "areaBasedList2", query);
+        assertThat(first).isEqualTo(new CollectionCheckpointStore.Cursor(1, 0, null, false));
+        var reordered = json.readTree("{\"kind\":\"문화\",\"page\":1.0}");
+        assertThat(checkpoints.cursor("identity", Source.TOUR, "areaBasedList2", reordered)).isEqualTo(first);
+        assertThatThrownBy(() -> checkpoints.cursor("identity", Source.MUSEUM, "areaBasedList2", query))
+                .isInstanceOf(org.springframework.dao.EmptyResultDataAccessException.class);
+        assertThatThrownBy(() -> checkpoints.cursor("identity", Source.TOUR, "list", query))
+                .isInstanceOf(org.springframework.dao.EmptyResultDataAccessException.class);
+        assertThatThrownBy(() -> checkpoints.cursor("identity", Source.TOUR, "areaBasedList2", json.readTree("{\"page\":2}")))
+                .isInstanceOf(org.springframework.dao.EmptyResultDataAccessException.class);
+
+        Instant at = Instant.parse("2026-10-08T00:00:00Z");
+        UUID call = store.reserve(Source.TOUR, "areaBasedList2", query, at);
+        assertThat(jdbc.queryForObject("SELECT query->>'kind' FROM source_call WHERE id=?", String.class, call)).isEqualTo("문화");
+        assertThatThrownBy(() -> checkpoints.savedPage(Source.TOUR, call))
+                .isInstanceOf(org.springframework.dao.EmptyResultDataAccessException.class);
+        store.finish(call, Source.TOUR, new SourceResponse("EMPTY", "0000", null, java.util.List.of()), at);
+        assertThat(checkpoints.savedPage(Source.TOUR, call).response().outcome()).isEqualTo("EMPTY");
+        assertThatThrownBy(() -> checkpoints.savedPage(Source.MUSEUM, call))
+                .isInstanceOf(org.springframework.dao.EmptyResultDataAccessException.class);
+        var saved = new CollectionCheckpointStore.Cursor(2, 3, call, false);
+        checkpoints.save("identity", saved);
+        assertThat(checkpoints.cursor("identity", Source.TOUR, "areaBasedList2", query)).isEqualTo(saved);
+        assertThatThrownBy(() -> checkpoints.save("identity", new CollectionCheckpointStore.Cursor(0, 3, call, false)))
+                .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThat(checkpoints.cursor("identity", Source.TOUR, "areaBasedList2", query)).isEqualTo(saved);
+    }
+
     @Test @DisplayName("상세 실패는 같은 후보 위치에서 멈추고 재실행 성공 뒤 위치를 진행한다")
     void retainsFailedPosition() throws Exception {
         failIntro.set(true);
@@ -69,6 +100,17 @@ class CollectionBatchTests {
         assertThat(jdbc.queryForObject("SELECT row_index FROM collection_checkpoint WHERE stream_key='test:events'", Integer.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM source_record WHERE source='TOUR' AND source_key='15-0'", Integer.class)).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM record_operation o JOIN source_record r ON r.id=o.record_id WHERE r.source_key='15-0' AND o.last_failure_at IS NOT NULL", Integer.class)).isZero();
+    }
+
+    @Test @DisplayName("배치 정책 실패는 원래 오류를 전달하고 같은 연결의 잠금을 해제한다")
+    void releasesLockAfterPolicyFailure() {
+        var failure = new IllegalStateException("검증용 호출 상한");
+        assertThatThrownBy(() -> checkpoints.withBatchLock(() -> { throw failure; })).isSameAs(failure);
+        // 실패 후 다시 실행할 수 있고, 반환된 연결의 세션 잠금이 남지 않는지 검사한다.
+        var executed = new AtomicBoolean();
+        checkpoints.withBatchLock(() -> executed.set(true));
+        assertThat(executed).isTrue();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_locks WHERE locktype='advisory' AND objid=38000", Integer.class)).isZero();
     }
 
     @Test @DisplayName("마지막 행과 정상 빈 목록의 완료 경계를 구분하고 후보 상한 밖 입력을 거부한다")

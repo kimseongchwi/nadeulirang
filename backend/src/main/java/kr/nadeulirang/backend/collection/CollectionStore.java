@@ -4,46 +4,49 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.JsonNode;
 
-@Repository
+// JPA 저장과 JDBC 근거 갱신을 한 트랜잭션으로 조율한다. 정책 예외는 저장소 예외로 변환하지 않는다.
+@Component
 public class CollectionStore {
     private final JdbcTemplate jdbc;
     private final TransactionTemplate transactions;
+    private final CollectionSourceRepository sources;
+    private final SourceCallRepository calls;
 
-    public CollectionStore(JdbcTemplate jdbc, PlatformTransactionManager manager) {
+    public CollectionStore(JdbcTemplate jdbc, PlatformTransactionManager manager,
+                           CollectionSourceRepository sources, SourceCallRepository calls) {
         this.jdbc = jdbc;
         this.transactions = new TransactionTemplate(manager);
+        this.sources = sources;
+        this.calls = calls;
     }
 
     public UUID reserve(Source source, String operation, JsonNode query, Instant now) {
         return transactions.execute(status -> {
-            var state = jdbc.queryForMap("SELECT blocked_reason, last_started_at FROM collection_source WHERE name = ? FOR UPDATE", source.name());
-            if (state.get("blocked_reason") != null) throw new IllegalStateException("원천 중단 상태: " + source.name());
-            Timestamp last = (Timestamp) state.get("last_started_at");
-            if (last != null && last.toInstant().isAfter(now.minusSeconds(1))) {
+            var state = sources.lock(source);
+            if (state.blocked()) throw new IllegalStateException("원천 중단 상태: " + source.name());
+            Instant last = state.lastStartedAt();
+            if (last != null && last.isAfter(now.minusSeconds(1))) {
                 throw new IllegalStateException("원천 요청 시작 간격 1초를 확보하세요.");
             }
-            Integer count = jdbc.queryForObject("SELECT count(*) FROM source_call WHERE source = ? AND started_at > ?",
-                    Integer.class, source.name(), Timestamp.from(now.minusSeconds(86400)));
+            long count = calls.countBySourceAndStartedAtAfter(source, now.minusSeconds(86400));
             if (count >= source.dailyBudget) throw new IllegalStateException("24시간 원천 호출 예산을 소진했습니다.");
             UUID id = UUID.randomUUID();
-            jdbc.update("INSERT INTO source_call(id, source, operation, query, started_at, outcome) VALUES (?, ?, ?, ?::jsonb, ?, 'STARTED')",
-                    id, source.name(), operation, query.toString(), Timestamp.from(now));
-            jdbc.update("UPDATE collection_source SET last_started_at = ? WHERE name = ?", Timestamp.from(now), source.name());
+            calls.save(new SourceCallEntity(id, source, operation, query.toString(), now));
+            state.started(now);
             return id;
         });
     }
 
     public void finish(UUID call, Source source, SourceResponse reply, Instant now) {
         transactions.executeWithoutResult(status -> {
-            jdbc.update("UPDATE source_call SET finished_at = ?, outcome = ?, result_code = ?, payload = ?::jsonb WHERE id = ?",
-                    Timestamp.from(now), reply.outcome(), reply.code(), reply.payload() == null ? null : reply.payload().toString(), call);
+            calls.findById(call).ifPresent(record -> record.finish(reply, now));
             String block = CollectionPolicy.blockingCode(reply.code());
-            if (block != null) jdbc.update("UPDATE collection_source SET blocked_reason = ? WHERE name = ?", block, source.name());
+            if (block != null) sources.lock(source).block(block);
         });
     }
 
@@ -217,7 +220,7 @@ public class CollectionStore {
     }
 
     public boolean blocked(Source source) {
-        return jdbc.queryForObject("SELECT blocked_reason IS NOT NULL FROM collection_source WHERE name = ?", Boolean.class, source.name());
+        return transactions.execute(status -> sources.findById(source).orElseThrow().blocked());
     }
 
     public boolean hasSource(Source source, String key) {
