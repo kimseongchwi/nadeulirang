@@ -376,6 +376,8 @@ P71의 [V5](../backend/src/main/resources/db/migration/V5__effective_field_evide
 
 [OutingStore.java](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingStore.java)의 `detail`은 V5 유효 근거→그룹 표시 우선→동일 값 정리로 `information`을 만든다. 반복 안내 제목은 선택한 본문의 `observation_id`로 원래 `field_evidence`와 연결한다. 제목과 본문을 다른 응답에서 조합하지 않는다. 마지막 응답의 빈 값은 `evidence`, 과거 원문은 DB에 유지한다. [CollectionStore.java](../backend/src/main/java/kr/nadeulirang/backend/collection/CollectionStore.java)의 `recalculateFee`도 같은 뷰를 사용한다. 오래된 기준일을 나중에 받거나 빈 보완 응답을 받아도 유효 금액을 지우지 않으며 교차 원천·같은 기준일의 서로 다른 요금은 충돌이다. `recalculateDates`는 같은 관측의 시작/종료를 `DateRange` record로 읽고 `LocalDate`로 검사한다. 유효한 날짜 쌍이 하나이면 일정 요약을 갱신하고 서로 다른 쌍이면 요약은 미확인, 원문은 각각 보존한다. 누락·잘못된 날짜로 유효 쌍이 없으면 기존 일정을 유지한다. 빈 응답은 기존 성공 호출을 유지하고 `EMPTY_DETAIL` 사유를 남긴다. DB/API 회귀는 유효 기준일·누락·실패·0원·재처리 중복과 근거 보존을 확인한다.
 
+[CollectionRunner](../backend/src/main/java/kr/nadeulirang/backend/collection/CollectionRunner.java)의 supplement 모드는 기존 TourAPI 검토 ID의 지정한 상세 오퍼레이션만 요청한다. 표준은 이름 필터 응답에서 기존 sourceKey와 일치하는 행만 저장한다. `supplementOperations`는 허용 목록 밖 호출/중복을, `supplementSources`는 빈 대상/잘못된 원천을 거부하고 필요한 원천만 선택한다. 생성자로 받은 `SourceClient`·`CollectionStore`로 기존 예산·간격·원문 저장 경로를 재사용한다. 실행 형식은 [README](../README.md#데이터-수집-p11p38), 지속 기준은 [DATA_SOURCES](DATA_SOURCES.md#상세-품질과-보완-수집-규칙-p71)를 따른다.
+
 `SourceEvidence`는 `Omit<Evidence, "value">`로 기존 근거의 값 타입만 제외한 뒤 `value: string | null`을 붙인 타입이다. 화면용 `Evidence`의 값은 문자열만 허용하고 출처별 근거는 원천의 `null`도 보존한다. `isSourceEvidence`는 값이 `null`인 경우에도 나머지 출처·시각·행 ID의 타입을 검사한다. 누락 요금을 0원으로 만들거나 정상 원천의 `null` 때문에 전체 상세를 조회 오류로 바꾸지 않도록 API/프론트 회귀에서 두 형식을 구분한다.
 
 ### 팝업·필터의 적용과 취소

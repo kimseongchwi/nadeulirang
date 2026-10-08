@@ -194,6 +194,15 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/save-local-setti
 
 ## 데이터 수집 (P11·P38)
 
+상세 보완 수집(P71)은 [현재 수집 규칙](docs/DATA_SOURCES.md#상세-품질과-보완-수집-규칙-p71)을 따릅니다. 저장 원문으로 복원할 수 있으면 재호출하지 않습니다. 기존 TourAPI 검토 대상은 Git에서 제외한 대상 파일과 필요한 오퍼레이션을 지정합니다.
+
+```powershell
+# .local/detail-targets.json: {"tour":[{"id":"590415"}],"standard":[]}
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/collect-data.ps1 -Mode supplement -SeedFile .local/detail-targets.json -Operations detailIntro2
+```
+
+보완 모드는 대상에 없는 원천·TourAPI 목록/지역 코드/공통 응답/비표출 동기화를 호출하지 않습니다. 필드 조회를 지원하지 않으므로 해당 상세 응답 전체를 보존하고 유효 필드만 반영합니다. 전체 초기화를 하지 않고 실패·0건·공란/null·누락은 기존 값을 지우지 않습니다. 기존 값이 있는 빈 응답의 `EMPTY_DETAIL`은 재확인 사유이며 실제 미제공과 일시 누락을 단정하지 않습니다. 표준데이터는 같은 supplement 파일의 standard 배열에 source(MUSEUM/FESTIVAL)·name·기존 sourceKey를 지정합니다. 해당 이름 목록 응답에서 기존 sourceKey와 일치하는 행만 보완하고 주소/기관/회차가 달라진 행을 자동으로 새 대상에 연결하지 않습니다. tour 배열은 비울 수 있고 대상 원천 키만 필요합니다.
+
 수집 코드·모델과 세 원천의 실제 수집·저장·재실행 검증을 마쳤습니다. 공개 후보의 지역·종류·건수와 종료/검토 대기 범위는 [PLAN](PLAN.md#기능과-공개-준비)에서 관리합니다. 테스트의 가상 데이터를 공개 확보 건수로 세지 않습니다.
 
 원천 키 3개와 DB 접속 설정은 아래 공통 로컬 설정으로 작업 폴더 사이에서 유지할 수 있습니다. 기존 `.env`를 `.env.example`로 덮어쓰지 않습니다. `.env`는 Git에서 제외되며 수집기는 파일을 코드로 실행하지 않고 원천 키만 읽습니다. 실행 파일·DB 데이터는 별도로 준비하며 공통 설정 보관이 이를 복사하거나 DB를 시작하지는 않습니다.

@@ -1,8 +1,9 @@
 ﻿param(
-    [ValidateSet('batch', 'seed')][string]$Mode = 'batch',
+    [ValidateSet('batch', 'seed', 'supplement')][string]$Mode = 'batch',
     [ValidateRange(5, 100)][int]$MaxItems = 100,
     [ValidatePattern('^[A-Za-z0-9_-]{1,40}$')][string]$Campaign,
-    [string]$SeedFile
+    [string]$SeedFile,
+    [ValidateSet('detailIntro2', 'detailInfo2')][string[]]$Operations = @('detailIntro2', 'detailInfo2')
 )
 # 루트 .env를 보존한 채 수집용 Spring 실행을 시작한다. 원천 키를 인수로 전달하지 않는다.
 $ErrorActionPreference = 'Stop'
@@ -12,6 +13,10 @@ try {
     . ./scripts/use-local-env.ps1
     $env:MAVEN_USER_HOME = Join-Path $projectRoot '.local/maven'
     $collectionArguments = "--collection.run=true --collection.mode=$Mode --collection.max-items=$MaxItems --collection.env-file=../.env --spring.main.web-application-type=none"
+    if ($Mode -eq 'supplement') {
+        if (-not $SeedFile) { throw '보완 수집에는 기존 대상 목록 SeedFile이 필요합니다.' }
+        $collectionArguments += " --collection.operations=$($Operations -join ',')"
+    }
     if ($Campaign) { $collectionArguments += " --collection.campaign=$Campaign" }
     if ($SeedFile) {
         $seedPath = (Resolve-Path -LiteralPath $SeedFile).Path

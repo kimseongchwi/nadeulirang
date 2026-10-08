@@ -37,25 +37,26 @@ public class CollectionRunner implements ApplicationRunner {
     @Override public void run(ApplicationArguments arguments) throws Exception {
         try {
             String mode = option(arguments, "collection.mode", "seed");
-            if (!mode.equals("seed") && !mode.equals("batch")) throw new IllegalArgumentException("수집 방식은 seed 또는 batch입니다.");
+            if (!java.util.Set.of("seed", "batch", "supplement").contains(mode)) throw new IllegalArgumentException("수집 방식은 seed, batch 또는 supplement입니다.");
             int maximum = batchMaximum(option(arguments, "collection.max-items", "100"));
             String campaign = option(arguments, "collection.campaign", java.time.LocalDate.now(CollectionPolicy.SEOUL).toString().substring(0, 7));
             if (!campaign.matches("[A-Za-z0-9_-]{1,40}")) throw new IllegalArgumentException("배치 이름은 영문·숫자·밑줄·하이픈 1~40자입니다.");
             // 파일을 코드로 실행하지 않고 허용된 키만 읽는다. 환경 변수나 로그로 키를 전달하지 않는다.
             var envOptions = arguments.getOptionValues("collection.env-file");
             Map<String, String> keys = readKeys(Path.of(envOptions == null ? ".env" : envOptions.getFirst()));
-            for (Source source : Source.values()) {
-                if (keys.getOrDefault(source.keyName, "").isBlank()) throw new IllegalStateException("로컬 원천 키를 모두 설정하세요.");
-                if (store.blocked(source)) { stopped.add(source); failures++; }
-            }
             JsonNode seed;
             var seedFile = arguments.getOptionValues("collection.seed-file");
             if (seedFile == null) {
                 try (var stream = getClass().getResourceAsStream("/collection-seed.json")) { seed = json.readTree(stream); }
             } else seed = json.readTree(Files.readString(Path.of(seedFile.getFirst())));
             if (!seed.isObject() || !seed.path("tour").isArray() || !seed.path("standard").isArray()) throw new IllegalArgumentException("검토 목록에는 tour·standard 배열이 필요합니다.");
+            var needed = mode.equals("supplement") ? supplementSources(seed) : java.util.EnumSet.allOf(Source.class);
+            for (Source source : needed) {
+                if (keys.getOrDefault(source.keyName, "").isBlank()) throw new IllegalStateException("대상 원천의 로컬 키를 설정하세요.");
+                if (store.blocked(source)) { stopped.add(source); failures++; }
+            }
             Map<String, String> regions = new HashMap<>();
-            java.util.List<JsonNode> codeRows = stopped.contains(Source.TOUR) ? java.util.List.of()
+            java.util.List<JsonNode> codeRows = stopped.contains(Source.TOUR) || mode.equals("supplement") ? java.util.List.of()
                     : fetch(Source.TOUR, "ldongCode2", json.createObjectNode(), keys).response().rows();
             for (JsonNode row : codeRows) {
                 String code = CollectionStore.text(row, "lDongRegnCd");
@@ -65,7 +66,12 @@ public class CollectionRunner implements ApplicationRunner {
                 if (!code.isEmpty() && !name.isEmpty()) regions.put(code, name);
             }
             // 코드 응답은 원천 호출 원문에 보존한다. 이름만으로 옛 광주·전남 코드를 합치지 않는다.
-            if (mode.equals("batch")) {
+            if (mode.equals("supplement")) {
+                if (seedFile == null) throw new IllegalArgumentException("보완 수집에는 대상 목록 파일이 필요합니다.");
+                var operations = supplementOperations(option(arguments, "collection.operations", "detailIntro2,detailInfo2"));
+                for (JsonNode item : seed.path("tour")) collectSupplement(item, operations, keys);
+                for (JsonNode item : seed.path("standard")) collectStandardSupplement(item, keys);
+            } else if (mode.equals("batch")) {
                 callLimit = 400;
                 JsonNode reviewed = seed;
                 checkpoints.withBatchLock(() -> collectBatch(campaign, maximum, reviewed, regions, keys));
@@ -122,6 +128,65 @@ public class CollectionRunner implements ApplicationRunner {
             for (JsonNode data : detail.response().rows()) {
                 if (!CollectionStore.text(data, "contentid").equals(id)) throw new IllegalStateException("요청과 다른 상세 식별자입니다.");
                 store.ingest(Source.TOUR, detail.call(), data, operation, "TOUR:" + id, null, null, null, null, detail.checkedAt());
+            }
+        }
+    }
+
+    static java.util.List<String> supplementOperations(String value) {
+        var operations = java.util.Arrays.asList(value.split(",", -1));
+        if (operations.isEmpty() || operations.stream().distinct().count() != operations.size()
+                || operations.stream().anyMatch(op -> !java.util.Set.of("detailIntro2", "detailInfo2").contains(op)))
+            throw new IllegalArgumentException("보완 오퍼레이션은 detailIntro2,detailInfo2 중 중복 없이 지정하세요.");
+        return operations;
+    }
+
+    static java.util.Set<Source> supplementSources(JsonNode seed) {
+        var sources = java.util.EnumSet.noneOf(Source.class);
+        if (!seed.path("tour").isEmpty()) sources.add(Source.TOUR);
+        for (JsonNode item : seed.path("standard")) {
+            String name = item.path("source").asText();
+            if (!java.util.Set.of("MUSEUM", "FESTIVAL").contains(name))
+                throw new IllegalArgumentException("표준 보완 원천은 MUSEUM 또는 FESTIVAL입니다.");
+            sources.add(Source.valueOf(name));
+        }
+        if (sources.isEmpty()) throw new IllegalArgumentException("보완할 기존 대상이 필요합니다.");
+        return sources;
+    }
+
+    private void collectStandardSupplement(JsonNode item, Map<String, String> keys) {
+        Source source = Source.valueOf(item.path("source").asText());
+        String key = item.path("sourceKey").asText();
+        if (!store.hasSource(source, key)) throw new IllegalArgumentException("표준 보완에는 기존 sourceKey가 필요합니다.");
+        if (stopped.contains(source)) return;
+        String name = item.path("name").asText();
+        String filter = source == Source.MUSEUM ? "fcltyNm" : "fstvlNm";
+        if (name.isBlank()) throw new IllegalArgumentException("표준 보완에는 대상 이름이 필요합니다.");
+        var reply = fetch(source, "list", json.createObjectNode().put(filter, name), keys);
+        if (reply.response().outcome().equals("FAILED")) store.failedRecord(source, key, "list", reply.response().code(), reply.checkedAt());
+        boolean matched = false;
+        for (JsonNode row : reply.response().rows()) {
+            if (!CollectionPolicy.hash(CollectionStore.identity(source, row)).equals(key)) continue;
+            store.ingest(source, reply.call(), row, "list", null, null, null, null, null, reply.checkedAt());
+            matched = true;
+            candidates++;
+        }
+        if (!matched && !reply.response().outcome().equals("FAILED")) store.emptyOperation(source, key, "list", reply.checkedAt());
+    }
+
+    private void collectSupplement(JsonNode item, java.util.List<String> operations, Map<String, String> keys) {
+        String id = item.path("id").asText();
+        var reviewed = store.reviewedTour(id);
+        if (reviewed == null) throw new IllegalArgumentException("보완 대상은 이미 저장·검토된 TourAPI ID여야 합니다.");
+        String type = reviewed.kind().equals("MUSEUM") ? "14" : reviewed.kind().equals("CULTURAL_SITE") ? "12" : "15";
+        for (String operation : operations) {
+            if (stopped.contains(Source.TOUR)) break;
+            var reply = fetch(Source.TOUR, operation, json.createObjectNode().put("contentId", id).put("contentTypeId", type), keys);
+            if (reply.response().outcome().equals("FAILED")) store.failedRecord(Source.TOUR, id, operation, reply.response().code(), reply.checkedAt());
+            if (reply.response().outcome().equals("EMPTY")) store.emptyOperation(Source.TOUR, id, operation, reply.checkedAt());
+            for (JsonNode row : reply.response().rows()) {
+                if (!id.equals(CollectionStore.text(row, "contentid"))) throw new IllegalStateException("요청과 다른 보완 식별자입니다.");
+                store.ingest(Source.TOUR, reply.call(), row, operation, null, null, null, null, null, reply.checkedAt());
+                candidates++;
             }
         }
     }

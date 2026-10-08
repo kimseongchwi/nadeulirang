@@ -10,6 +10,24 @@ import static org.assertj.core.api.Assertions.*;
 class CollectionPolicyTests {
     private final JsonMapper json = JsonMapper.builder().build();
 
+    @Test @DisplayName("보완 수집은 명시한 상세 오퍼레이션만 허용하고 중복·목록 호출을 거부한다")
+    void validatesSupplementOperations() {
+        assertThat(CollectionRunner.supplementOperations("detailInfo2")).containsExactly("detailInfo2");
+        assertThat(CollectionRunner.supplementOperations("detailIntro2,detailInfo2")).containsExactly("detailIntro2", "detailInfo2");
+        for (String value : java.util.List.of("", "list", "detailInfo2,detailInfo2", "detailCommon2", "detailIntro2,"))
+            assertThatThrownBy(() -> CollectionRunner.supplementOperations(value)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test @DisplayName("표준 보완은 대상 원천만 선택하고 빈 대상·잘못된 원천을 거부한다")
+    void selectsOnlySupplementSources() {
+        assertThat(CollectionRunner.supplementSources(json.readTree("{\"tour\":[],\"standard\":[{\"source\":\"MUSEUM\"}]}")))
+                .containsExactly(Source.MUSEUM);
+        assertThat(CollectionRunner.supplementSources(json.readTree("{\"tour\":[{\"id\":\"1\"}],\"standard\":[]}")))
+                .containsExactly(Source.TOUR);
+        for (String value : java.util.List.of("{\"tour\":[],\"standard\":[]}", "{\"tour\":[],\"standard\":[{\"source\":\"TOUR\"}]}"))
+            assertThatThrownBy(() -> CollectionRunner.supplementSources(json.readTree(value))).isInstanceOf(IllegalArgumentException.class);
+    }
+
     @Test @DisplayName("누락·조건 문장·교통비를 무료나 일반 입장료로 변환하지 않는다")
     void distinguishesMissingFees() {
         assertThat(CollectionPolicy.numericFee("")).isNull();
