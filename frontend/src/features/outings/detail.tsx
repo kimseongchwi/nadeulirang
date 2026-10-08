@@ -9,6 +9,7 @@ import { previewLocation, safeUrl } from "./api-query";
 import { detailContent } from "./detail-content";
 import { routeFeeBlocks } from "./fee-blocks";
 import { DetailIntroduction } from "./detail-introduction";
+import { ExpandableDetailText } from "./expandable-detail-text";
 import { InlineNotice } from "@/components/ui/feedback";
 import type { Detail } from "./api-types";
 
@@ -59,9 +60,10 @@ export function DetailReview({ data }: { data: Detail }) {
       </dl>
     </section>
     {!!content.programs.length && <section className="detail-section">
-      <details className="detail-programs"><summary>주요 프로그램</summary>
-        {content.programs.map((note) => <EvidenceList key={note.id} values={note.values} showLabels={false} />)}
-      </details>
+      <h2>주요 프로그램</h2>
+      <dl className="detail-facts detail-programs"><div><dt>행사 내용</dt><dd>
+        <ExpandableDetailText key={item.id} values={content.programs.flatMap((note) => note.values)} emphasizeHeadings />
+      </dd></div></dl>
     </section>}
     {!!content.notes.length && <section className="detail-section"><h2>추가 안내</h2>
       <dl className="detail-facts">{content.notes.map((note) => <div key={note.id}>

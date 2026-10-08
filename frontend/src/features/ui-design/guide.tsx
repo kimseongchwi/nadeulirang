@@ -459,6 +459,11 @@ export function GuideReview() {
                 <dd>요금 미확인 · 0원으로 바꾸지 않음</dd>
               </dl>
             </div>
+            <div className="sample">
+              <h3>상세 본문·조건 안내</h3>
+              <p className="small muted">프로그램 본문·소제목은 15px, 본문 400·소제목 600입니다. 콜론 뒤 설명과 날짜는 본문 굵기로 표시하고 긴 내용은 처음 5줄/더 보기·접기를 유지합니다.</p>
+              <p className="hint">개인·단체·주민·무료 조건은 요금 행에서 함께 읽고, 전화 문의 같은 주석은 다음 줄의 보통 굵기로 표시합니다. 요금 괄호·요일·기간을 보존하며 체험·주차·셔틀은 추가 요금으로 구분합니다.</p>
+            </div>
           </section>
           <section id="states">
             <h2>07 · 힌트·확인 안내·상태</h2>
