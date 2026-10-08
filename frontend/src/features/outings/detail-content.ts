@@ -34,9 +34,15 @@ export function detailContent(information: Detail["information"]) {
     return true;
   });
   for (const [id, row] of rows) {
+    for (const entry of row.filter((entry) => entry.field === "program" || entry.field === "subevent")) {
+      const values = addUnique([entry], "programs");
+      if (values.length) programs.push({ id: id + ":" + entry.field, title: "주요 프로그램", values });
+    }
+  }
+  for (const [id, row] of rows) {
     const title = row.find((entry) => entry.field === "infoname")?.value.trim() || "";
     const group = noteGroups[comparable(title)] || `note:${comparable(title)}`;
-    const values = addUnique(row.filter((entry) => entry.field !== "infoname"), group);
+    const values = addUnique(row.filter((entry) => !["infoname", "program", "subevent"].includes(entry.field)), group);
     if (!values.length) continue;
     if (comparable(title) === "행사소개") description.push(...values);
     else if (comparable(title) === "행사내용") programs.push({ id, title: "주요 프로그램", values });

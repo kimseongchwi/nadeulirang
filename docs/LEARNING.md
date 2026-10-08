@@ -306,6 +306,8 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 관련 작업: P65. 상세 경로의 [loading.tsx](../frontend/src/app/detail/[id]/loading.tsx)는 Next.js가 `page.tsx` 아래에 만드는 Suspense 경계의 대기 화면이다. `getDetail`의 서버 조회가 끝나기 전 공통 `LoadingState`를 표시하고 완료·오류·없는 항목 화면으로 자동 교체한다. 기존 Provider의 `pending`은 브라우저 안의 이동 상태이므로 새로고침 대기를 자체적으로 감지하지 못한다. 로딩 컴포넌트는 `useReview().pending`이 참이면 기존 이동 표시를 사용해 중복을 피한다. 인위적인 지연은 추가하지 않는다.
 
+[seasonal-hours.ts](../frontend/src/features/outings/seasonal-hours.ts)의 `formatSeasonalHours`는 시각 앞의 하절기/동절기와 괄호 기간이 확인된 경우에만 목록 대시를 줄바꿈으로 정리한다. [detail-information.ts](../frontend/src/features/outings/detail-information.ts)의 `hoursInformation`이 표시용 문자열에 적용하며 API 근거 배열은 수정하지 않는다. 시각 범위의 하이픈은 같은 형태로 남긴다. [테스트](../frontend/tests/seasonal-hours.test.mjs)는 제보 원문·공백/대시 종류·중복 적용·시각 보존과 입력 불변을 확인한다.
+
 [api-server.ts](../frontend/src/features/outings/api-server.ts)는 Next.js 서버에서만 사용하는 호출 코드다. `BACKEND_URL`은 Spring 주소이고 인증키·DB 설정을 브라우저로 전달하지 않는다. 페이지 → API 호출 → Spring 컨트롤러 → JDBC → 응답 → 화면 props 순으로 흐른다. 첫 HTML에도 실제 이름·이용 정보와 `href=/detail/...` 링크가 있으므로 브라우저가 나중에 목록을 채울 때까지 빈 본문을 제공하지 않는다.
 
 `ApiResult<T>`는 `ok: true`의 `data`와 `ok: false`의 `status`·`message`를 나눈 유니온 타입이다. `T`는 응답 모양을 지정하는 타입 매개변수다. 외부 JSON을 TypeScript 타입으로 단정하면 잘못된 응답도 통과하므로 [api-contract.ts](../frontend/src/features/outings/api-contract.ts)의 타입 가드가 `unknown` 값의 배열·필드·null·숫자를 실제로 검사한다. 정상 0건은 빈 배열이고 접속 실패·8초 초과·비정상 JSON은 오류 결과다. 이전 검토 표본으로 대체하지 않는다. `React.cache`는 같은 렌더링 요청의 선택지/상세 중복 호출을 줄이며 날짜를 영구 캐시하지 않는다.
@@ -326,9 +328,9 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 ### 공통 힌트와 확인 필요 안내
 
-관련 작업: P61. [feedback.tsx](../frontend/src/components/ui/feedback.tsx)의 `InlineNotice`는 `tone?: "info" | "warning"` 유니언으로 두 종류만 허용한다. `title`은 제목 문자열, `children: ReactNode`는 본문이며 기본 `tone`은 `info`다. 삼항 연산자로 원형 정보/삼각형 주의 아이콘을 선택하고 CSS 클래스에 같은 값을 연결한다. 가이드도 같은 컴포넌트를 사용하며 아이콘·제목·배경으로 두 종류를 구분한다.
+관련 작업: P61. [feedback.tsx](../frontend/src/components/ui/feedback.tsx)의 `InlineNotice`는 `tone?: "info" | "warning"` 유니언으로 두 종류만 허용한다. `title`은 제목 문자열, `children: ReactNode`는 본문이며 기본 `tone`은 `info`다. 삼항 연산자로 원형 정보/삼각형 주의 아이콘을 선택하고 CSS 클래스에 같은 값을 연결한다. [detail.tsx](../frontend/src/features/outings/detail.tsx)는 기존 `refreshNeeded` 조건이 참일 때만 `warning`을 표시하고, 가이드도 같은 컴포넌트를 사용하므로 예시와 실제 화면의 모양이 함께 바뀐다. 조건은 오래된 원천·최근 실패·필드 근거를 검사하며 경고 색상이 데이터의 사실 여부를 새로 판정하지 않는다.
 
-`role="note"`는 보조 안내의 의미를 제공하고 정적인 주의 문구를 긴급 `alert`로 읽게 하지 않는다. 아이콘은 기존 `Icon`의 `aria-hidden`으로 장식 처리하며 제목과 본문이 의미를 전달한다. CSS의 `min-width: 0`과 `overflow-wrap: anywhere`는 좁은 flex 영역에서 긴 문장을 줄바꿈한다. 가이드의 `noticeWidth` 상태는 예시 너비만 바꾸며 기존 모바일 미리보기 너비나 서비스 검색 조건은 바꾸지 않는다. 확인은 가이드 너비 선택·좁은 화면·색상/아이콘/제목 구분으로 한다.
+`role="note"`는 보조 안내의 의미를 제공하고 정적인 주의 문구를 긴급 `alert`로 읽게 하지 않는다. 아이콘은 기존 `Icon`의 `aria-hidden`으로 장식 처리하며 제목과 본문이 의미를 전달한다. CSS의 `min-width: 0`과 `overflow-wrap: anywhere`는 좁은 flex 영역에서 긴 문장을 줄바꿈한다. 가이드의 `noticeWidth` 상태는 예시 너비만 바꾸며 기존 모바일 미리보기 너비나 서비스 검색 조건은 바꾸지 않는다. 확인은 상세의 실제 표시/비표시와 가이드 너비 선택·좁은 화면·색상/아이콘/제목 구분으로 한다.
 
 ### 상세 소개의 펼침과 화면 중복 정리
 
@@ -340,7 +342,7 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 
 ### 상세 위치 정보의 구분
 
-상세의 `locationGroups`는 `eventplace`/`opar`를 행사 장소로 먼저 묶고 주소 필드를 각각 구분한다. 원문 배열을 `filter`로 나누어 독립된 `dt`/`dd` 행에 표시하며 원문 값은 바꾸지 않는다. `EvidenceList`의 `showLabels={false}`는 이미 제목이 있는 위치·소개·프로그램·추가 안내에서 내부 이름의 반복을 생략한다. 값이 서로 다르면 둘 다 보존하고 실제로 같은 위치인지는 추정하지 않는다.
+상세의 `locationGroups`는 `eventplace`/`opar`를 행사 장소로 먼저 묶고 주소 필드를 각각 구분한다. `hasRoadAddress`가 도로명 필드 존재 여부를 확인하고 도로명이 있으면 `addr1` 행을 생략한다(P64). 지번 주소 `lnmadr`는 표시 그룹에서 제외하지만 API/DB에는 남는다. 도로명이 없을 때 `addr1`은 ‘주소’로 표시하며 도로명이라고 추정하지 않는다. 원문 배열을 `filter`로 나누어 독립된 `dt`/`dd` 행에 표시하며 원문 값은 바꾸지 않는다. `EvidenceList`의 `showLabels={false}`는 이미 제목이 있는 위치·소개·프로그램·추가 안내에서 내부 이름의 반복을 생략한다.
 
 관련 작업: P53. [OutingStore](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingStore.java)의 공통 조회는 `record_operation.last_success_call = source_observation.call_id`로 각 오퍼레이션의 마지막 성공 주소 근거만 선택한다. SQL의 `array_agg`로 `addr1`·`rdnmadr`·`lnmadr`를 모으고 JDBC `ResultSet.getArray`의 배열을 `String[]`로 읽는다. 상세 주소와 과거 원문을 수정하지 않고 조회 응답의 `districtName`만 계산하며 카드마다 상세 API를 추가 호출하지 않는다.
 
@@ -375,6 +377,12 @@ Next.js App Router의 페이지·레이아웃은 기본적으로 서버 컴포�
 P71의 [V5](../backend/src/main/resources/db/migration/V5__effective_field_evidence.sql)는 원문을 합성하지 않는 SQL 조회 뷰다. `dense_rank() OVER (PARTITION BY ...)`는 원천 대상·오퍼레이션·필드·반복 안내 슬롯마다 유효 기준일 순위를 매기고 같은 기준일은 같은 순위로 보존한다. `pg_input_is_valid`로 실제 날짜를 검사한다. 공란/null은 후보에서 제외하므로 새 응답에 빠진 필드도 이전 유효 값의 관측 ID·기준일·확인 시각으로 조회된다. 기준일 없는 상세의 수집 순서는 응답 선택 기준이며 사실의 최신성 보장이 아니다. `preferStandard`는 그룹 표시 우선순위이며 교차 원천의 최신 사실 판정이 아니다.
 
 [OutingStore.java](../backend/src/main/java/kr/nadeulirang/backend/outing/OutingStore.java)의 `detail`은 V5 유효 근거→그룹 표시 우선→동일 값 정리로 `information`을 만든다. 반복 안내 제목은 선택한 본문의 `observation_id`로 원래 `field_evidence`와 연결한다. 제목과 본문을 다른 응답에서 조합하지 않는다. 마지막 응답의 빈 값은 `evidence`, 과거 원문은 DB에 유지한다. [CollectionStore.java](../backend/src/main/java/kr/nadeulirang/backend/collection/CollectionStore.java)의 `recalculateFee`도 같은 뷰를 사용한다. 오래된 기준일을 나중에 받거나 빈 보완 응답을 받아도 유효 금액을 지우지 않으며 교차 원천·같은 기준일의 서로 다른 요금은 충돌이다. `recalculateDates`는 같은 관측의 시작/종료를 `DateRange` record로 읽고 `LocalDate`로 검사한다. 유효한 날짜 쌍이 하나이면 일정 요약을 갱신하고 서로 다른 쌍이면 요약은 미확인, 원문은 각각 보존한다. 누락·잘못된 날짜로 유효 쌍이 없으면 기존 일정을 유지한다. 빈 응답은 기존 성공 호출을 유지하고 `EMPTY_DETAIL` 사유를 남긴다. DB/API 회귀는 유효 기준일·누락·실패·0원·재처리 중복과 근거 보존을 확인한다.
+
+[evidence.tsx](../frontend/src/features/outings/evidence.tsx)는 대상 이름을 한 번 표시하고 선택 후 남은 여러 값은 네이티브 `details`/`summary`로 접어 둔다. `summary`는 키보드 Enter/Space로 펼칠 수 있고 별도 상태 관리 없이 브라우저가 열림 상태를 관리한다. 펼치면 원천별 값과 제공처·확인된 표준 기준일을 비교할 수 있다. [api-contract.ts](../frontend/src/features/outings/api-contract.ts)는 새 `evidence`가 있으면 필드 타입을 검사하고 이전 응답 형식도 받는다. 상세의 갱신 필요 판정은 선택 전 근거도 확인해 대표 값만 남기면서 오래된 원천 근거를 놓치지 않는다.
+
+[detail-information.ts](../frontend/src/features/outings/detail-information.ts)의 `hoursInformation`은 같은 관측의 평일/휴일 시작·종료를 연결하며 다른 관측의 시각을 합치지 않는다. `evidenceLines`는 안전한 구조화 금액만 원 단위로 바꾸고 0은 해당 대상의 무료로 표시한다. [text-boundaries.ts](../frontend/src/features/outings/text-boundaries.ts)는 괄호의 닫는 문자를 스택에 쌓아 바깥의 확실한 목록 경계만 나눈다. 날짜·전화·분수·괄호 조건은 유지한다. 불완전한 괄호는 닫는 기호를 만들지 않는다. 반환 행은 `p`, 부가 주석은 `evidence-note` 400 보조색으로 표시한다.
+
+[fee-blocks.ts](../frontend/src/features/outings/fee-blocks.ts)의 `routeFeeBlocks`는 입력 배열을 복사하고 명확한 요금 블록을 조건과 함께 이용 정보로 연결한다. `matchAll`의 원문 위치와 `slice`로 해당 구간만 옮겨 나머지 프로그램 순서·줄바꿈을 보존한다. 개인/단체/무료 조건의 대괄호 소항목은 블록에 포함한다. 셔틀/체험/주차는 추가 요금으로 분리하며 입장과 다른 용도가 모호하게 섞이면 원문 안내에 남긴다. 금액만으로 일반 입장을 추정하지 않는다. 같은 원천의 단순 유료 안내가 상세 블록으로 보완되면 요약 반복만 생략한다. 명확한 할인/예약 제목도 해당 항목으로 연결한다. `program`/`subevent`는 반복 행사내용이 없어도 표시하고 같은 본문은 한 번만 남긴다. 화면 처리는 원문/DB/API 근거 변경과 구분한다.
 
 [CollectionRunner](../backend/src/main/java/kr/nadeulirang/backend/collection/CollectionRunner.java)의 supplement 모드는 기존 TourAPI 검토 ID의 지정한 상세 오퍼레이션만 요청한다. 표준은 이름 필터 응답에서 기존 sourceKey와 일치하는 행만 저장한다. `supplementOperations`는 허용 목록 밖 호출/중복을, `supplementSources`는 빈 대상/잘못된 원천을 거부하고 필요한 원천만 선택한다. 생성자로 받은 `SourceClient`·`CollectionStore`로 기존 예산·간격·원문 저장 경로를 재사용한다. 실행 형식은 [README](../README.md#데이터-수집-p11p38), 지속 기준은 [DATA_SOURCES](DATA_SOURCES.md#상세-품질과-보완-수집-규칙-p71)를 따른다.
 
