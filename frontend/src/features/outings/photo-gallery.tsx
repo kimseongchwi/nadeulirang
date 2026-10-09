@@ -26,7 +26,9 @@ export function PhotoGallery({ item, photos }: { item: Outing; photos: Photo[] }
   }, [index, photos]);
   if (!photos.length) return <OutingArtwork item={item} large />;
   const activeIndex = index < photos.length ? index : 0;
+  const first = photos[0];
   const selected = photos[activeIndex];
+  const referenceHidden = activeIndex !== 0 || failed.has(first.url);
   const multiple = photos.length > 1;
   const fallbackIcon = item.kind === "MUSEUM" || item.kind === "CULTURAL_SITE" ? "landmark" : item.kind === "EXHIBITION" ? "spark" : "ticket";
   function select(position: number) { setIndex(position); }
@@ -50,8 +52,13 @@ export function PhotoGallery({ item, photos }: { item: Outing; photos: Photo[] }
         const direction = photoSwipe(start, { x: end.clientX, y: end.clientY });
         if (direction) move(direction);
       }}>
+      {/* 첫 사진은 문서 흐름에 남겨 실제 비율과 높이를 유지한다. 다른 사진을 선택하면 표시만 숨긴다. */}
+      <Image key={first.url} className="gallery-reference" src={first.url}
+        alt={referenceHidden ? "" : `${item.name} 사진 1`} aria-hidden={referenceHidden}
+        width={720} height={480} unoptimized loading="eager"
+        onError={() => fail(first.url)} referrerPolicy="no-referrer" draggable={false} />
       {failed.has(selected.url) ? <div className="gallery-failed"><Icon name={fallbackIcon} /><p>이 사진을 불러오지 못했어요.</p>{multiple && <p>다른 사진을 선택해 주세요.</p>}</div>
-        : <Image key={selected.url} src={selected.url} alt={`${item.name} 사진 ${activeIndex + 1}`} width={720} height={480} unoptimized
+        : activeIndex !== 0 && <Image key={selected.url} src={selected.url} alt={`${item.name} 사진 ${activeIndex + 1}`} width={720} height={480} unoptimized
           onError={() => fail(selected.url)} referrerPolicy="no-referrer" draggable={false} />}
     </div>
     {multiple && <div className="gallery-controls">

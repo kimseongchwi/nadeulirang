@@ -127,7 +127,7 @@ file_asset은 사진 URL·출처·유형·관측/시각만 보존한다. PhotoPo
 
 `OutingStore.detail`은 먼저 공개 경계를 확인한 뒤 저장 사진 배열을 읽는다. 요약 `photo`와 상세 `photos[0]`은 같은 순서를 사용하므로 기존 목록 계약을 유지한다. Java의 `record`는 응답 값 묶음이며 사진 조회는 SQL/JdbcTemplate 기능이다. HTTP 조회에 원천 수집을 섞지 않아 새로고침이 TourAPI 예산을 소비하지 않는다.
 
-`PhotoGallery`는 서버가 검증한 저장 사진 배열을 받고 React의 `useState`로 선택 번호·실패 URL을 관리한다. `useRef`는 한 번의 터치 시작 위치만 유지하고, `photoSwipe`는 세로 스크롤과 짧은 접촉을 제외한다. 이 브라우저 상태는 DB 대표 선택을 바꾸지 않는다. 고정 비율 영역 안에 이미지의 자연 비율과 max-width/max-height로 전체 사진을 맞춰 가로/세로 전환의 높이를 유지한다. 둥근 모서리를 이미지 자체에 적용하므로 contain 여백과 실제 사진 모서리가 구분된다. 상세만 갤러리를 사용하고 공통 `OutingArtwork`는 목록·간단 보기에 남는다.
+`PhotoGallery`는 서버가 검증한 저장 사진 배열을 받고 React의 `useState`로 선택 번호·실패 URL을 관리한다. `useRef`는 한 번의 터치 시작 위치만 유지하고, `photoSwipe`는 세로 스크롤과 짧은 접촉을 제외한다. 이 브라우저 상태는 DB 대표 선택을 바꾸지 않는다. 첫 사진을 `gallery-reference`로 문서 흐름에 두고 CSS의 width 100%·height auto로 실제 비율과 영역 높이를 정한다. 다른 사진을 선택하면 첫 사진은 visibility hidden·빈 alt·aria-hidden으로 표시와 낭독만 숨겨 높이를 유지한다. 선택한 이후 사진과 실패 안내는 그 위에 절대 위치로 배치하며 max-width/max-height로 전체 사진을 맞춘다. 첫 사진의 비율을 아직 알 수 없거나 실패하면 Image의 720×480 크기 정보가 3:2 기본 공간을 제공한다. 둥근 모서리는 이미지 자체에 적용한다. 상세와 가이드의 실제 미리보기는 같은 갤러리를 사용하고 공통 `OutingArtwork`는 목록·간단 보기에 남는다.
 
 ### 요금 표시와 출처 확인의 연결
 
