@@ -366,6 +366,15 @@ class OutingApiTests {
         var mismatch = (tools.jackson.databind.node.ObjectNode) images.get(1).deepCopy();
         mismatch.put("contentid", "2");
         assertThatThrownBy(() -> collection.ingest(Source.TOUR, call, mismatch, "detailImage2", null, null, null, null, null, NOW)).isInstanceOf(IllegalArgumentException.class);
+        ((tools.jackson.databind.node.ObjectNode) images.get(1)).put("cpyrhtDivCd", "Type3");
+        UUID changedCall = UUID.randomUUID();
+        jdbc.update("INSERT INTO source_call(id,source,operation,query,started_at,outcome) VALUES (?,'TOUR','detailImage2','{\"contentId\":\"1\"}'::jsonb,?,'STARTED')", changedCall, java.sql.Timestamp.from(NOW.plusSeconds(3)));
+        collection.finish(changedCall, Source.TOUR, SourceResponse.parse(Source.TOUR, 200, payload.toString(), null), NOW.plusSeconds(3));
+        // 새로 검토할 목록에 없는 기존 URL도 명시적인 유형 변경은 차단한다.
+        collection.replayPhotos("1", changedCall, java.util.Set.of(first));
+        assertThat(outings.detail(id, NOW).photos()).extracting(OutingResponse.Photo::url).containsExactly(first);
+        collection.replayPhotos("1", call, java.util.Set.of(first, second));
+        assertThat(outings.detail(id, NOW).photos()).extracting(OutingResponse.Photo::url).containsExactly(first);
         jdbc.update("UPDATE outing SET visibility='HIDDEN' WHERE id=?", id);
         assertThat(get("/" + id).statusCode()).isEqualTo(404);
         jdbc.update("UPDATE outing SET visibility='VISIBLE',review_status='PENDING' WHERE id=?", id);

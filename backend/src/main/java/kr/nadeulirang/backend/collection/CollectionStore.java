@@ -162,7 +162,8 @@ public class CollectionStore {
         if (url == null) return;
         if (!license.equals("Type1")) {
             // 명시적인 이용 유형 변경만 해당 URL을 차단한다. 공란·누락·0건은 보존한다.
-            if (!license.isBlank()) jdbc.update("UPDATE file_asset SET active=false, representative=false WHERE record_id=? AND original_url=?", record, url);
+            if (!license.isBlank()) jdbc.update("UPDATE file_asset SET active=false, representative=false, observation_id=?, checked_at=? WHERE record_id=? AND original_url=? AND checked_at<=?",
+                observation, Timestamp.from(now), record, url, Timestamp.from(now));
             return;
         }
         // 최초 대표를 보존하며, 대표가 없으면 확인된 첫 사진을 사용한다.
@@ -193,7 +194,12 @@ public class CollectionStore {
             throw new IllegalArgumentException("저장 응답에 다른 대상의 사진이 있습니다.");
         for (var row : reply.response().rows()) {
             String url = PhotoPolicy.url(text(row, "originimgurl"));
-            if (url != null && reviewedUrls.contains(url) && text(row, "cpyrhtDivCd").equals("Type1"))
+            String license = text(row, "cpyrhtDivCd");
+            boolean existing = url != null && jdbc.queryForObject("""
+                SELECT count(*) FROM file_asset a JOIN source_record r ON r.id=a.record_id
+                WHERE r.source='TOUR' AND r.source_key=? AND a.original_url=?
+                """, Integer.class, contentId, url) > 0;
+            if (url != null && (reviewedUrls.contains(url) && license.equals("Type1") || existing && !license.isBlank()))
                 ingest(Source.TOUR, call, row, "detailImage2", null, null, null, null, null, reply.checkedAt());
         }
     }
