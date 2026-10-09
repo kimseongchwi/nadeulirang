@@ -2,7 +2,6 @@ import type { Evidence } from "./api-types";
 import { evidenceLines, hoursInformation, type EvidencePresentation } from "./detail-information";
 import { isSupplementary } from "./text-boundaries";
 import { compoundFeeText, feeParts } from "./fee-presentation";
-import { seoulDate } from "./model";
 const fieldNames: Readonly<Record<string, string>> = {
   addr1: "기본 주소", addr2: "상세 주소", rdnmadr: "도로명 주소", lnmadr: "지번 주소", eventplace: "행사 장소", opar: "개최 장소",
   weekdayOperOpenHhmm: "평일 시작", weekdayOperColseHhmm: "평일 종료", holidayOperOpenHhmm: "휴일 시작", holidayCloseOpenHhmm: "휴일 종료",
@@ -10,18 +9,15 @@ const fieldNames: Readonly<Record<string, string>> = {
   phoneNumber: "시설 연락처", operPhoneNumber: "운영기관 연락처",
   parkingfee: "주차 요금", fcltyType: "시설 종류", infoname: "안내 제목", infotext: "안내 내용",
 };
-export function UnknownValue({ mark = "—" }: { mark?: "—" | "–" }) {
+export function UnknownValue({ mark = "–" }: { mark?: "—" | "–" }) {
   return <span className="detail-empty"><span className="detail-empty-mark" aria-hidden="true">{mark}</span><span className="sr-only">미확인</span></span>;
 }
-export function EvidenceSources({ groups }: { groups: { label: string; values: Evidence[] }[] }) {
-  const populated = groups.filter(({ values }) => values.length);
-  if (!populated.length) return null;
-  return <details className="evidence-alternatives source-evidence"><summary>자료 근거</summary>{populated.map(({ label, values }) => <section key={label}>
-    <h3>{label}</h3>{values.map((entry, index) => <div className="source-evidence-entry" key={`${entry.observationId}-${entry.field}-${index}`}>
-    <p>{({ TOUR: "TourAPI", MUSEUM: "박물관 표준데이터", FESTIVAL: "축제 표준데이터" } as Record<string, string>)[entry.source] || entry.source}
-      {entry.sourceReference && ` · 기준 ${entry.sourceReference}`} · 확인 <time dateTime={entry.checkedAt}>{seoulDate(new Date(entry.checkedAt))}</time></p>
-    <p>필드 {entry.field} · 관측 {entry.observationId}</p>
-  </div>)}</section>)}</details>;
+export function EvidenceSources({ values }: { values: Evidence[] }) {
+  const sources = [...new Set(values.map(({ source }) => source))];
+  if (!sources.length) return null;
+  return <details className="evidence-alternatives source-evidence"><summary>자료 근거</summary>
+    <p>{sources.map((source) => ({ TOUR: "TourAPI", MUSEUM: "박물관 표준데이터", FESTIVAL: "축제 표준데이터" } as Readonly<Record<string, string>>)[source] || source).join(" · ")}</p>
+  </details>;
 }
 function CompoundFeeText({ label, text }: { label: string; text: string }) {
   const formatted = compoundFeeText(label, text);

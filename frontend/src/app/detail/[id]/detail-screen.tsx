@@ -35,13 +35,13 @@ export function DetailScreen({ data }: { data: Detail }) {
   })).filter(({ values }) => values.length > 0);
   const checkedAt = data.item.sourceCheckedAt ? new Date(data.item.sourceCheckedAt) : null;
   const checkedDate = checkedAt && Number.isFinite(checkedAt.getTime()) ? seoulDate(checkedAt).replaceAll("-", ".") : null;
-  const evidenceGroups = [
-    { label: "소개", values: content.description },
-    { label: "주소·장소", values: data.information.address || [] },
-    ...groups.map(([key, label]) => ({ label, values: key === "generalFee" && alternativeFees.length > 1 ? alternativeFees.flat() : information[key] || [] })),
-    { label: "주요 프로그램", values: content.programs.flatMap((note) => note.values) },
-    { label: "추가 안내", values: content.notes.flatMap((note) => note.values) },
-    { label: "공식 안내·예약", values: links.map((link) => link.evidence) },
+  const evidenceValues = [
+    ...content.description,
+    ...(data.information.address || []),
+    ...groups.flatMap(([key]) => key === "generalFee" && alternativeFees.length > 1 ? alternativeFees.flat() : information[key] || []),
+    ...content.programs.flatMap((note) => note.values),
+    ...content.notes.flatMap((note) => note.values),
+    ...links.map((link) => link.evidence),
   ];
   return <div className="outing-detail">
     <BackHeading title="상세 정보" labelOnly />
@@ -89,6 +89,6 @@ export function DetailScreen({ data }: { data: Detail }) {
       {!links.some((link) => link.purpose === "officialWebsite") && <p className="detail-unknown">공식 기관 안내 주소 미확인</p>}
     </section>
     {checkedDate && <div className="detail-checked"><p>최근 자료 확인 <time dateTime={seoulDate(checkedAt!)}>{checkedDate}</time></p></div>}
-    <EvidenceSources groups={evidenceGroups} />
+    <EvidenceSources values={evidenceValues} />
   </div>;
 }
