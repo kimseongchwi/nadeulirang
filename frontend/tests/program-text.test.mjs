@@ -43,3 +43,26 @@ test("줄바꿈·빈 줄·HTML처럼 보이는 원문도 삭제하거나 바꾸�
     assert.equal(programTextLines(text).map((line) => line.text).join(""), text);
   }
 });
+
+test("연속 번호 제목의 첫 항목도 강조하고 ※ 변경 조건은 보조 안내로 보존한다", () => {
+  const raw = "1. 도슭수라상 체험\n2. 경복궁 야간탐방\n- 탐방로: 계조당→외소주방→자경전→집옥재&팔우정→건청궁→향원정\n※ 상황에 따라 동선은 변경될 수 있습니다.";
+  const lines = programTextLines(raw);
+  assert.deepEqual(lines.filter(line => line.heading).map(line => line.headingText), ["1. 도슭수라상 체험", "2. 경복궁 야간탐방"]);
+  assert.equal(lines.at(-1).note, true);
+  assert.equal(lines.at(-1).heading, false);
+  assert.equal(lines.map(line => line.text).join(""), raw);
+  const numbered = "1. 공연\r\n\r\n2. 체험\r\n";
+  assert.equal(programTextLines(numbered).filter(line => line.heading).length, 2);
+  assert.equal(programTextLines(numbered).map(line => line.text).join(""), numbered);
+});
+
+test("전시 날짜·매주 공연 시간은 그대로 두고 번호와 항목 이름만 강조한다", () => {
+  const raw = "1. 상설전시 2026.06.04.~2026.12.31\n2. 기획전시 2026.07.15.~2026.12.31.\n3. 공연 매주 수요일 12:10";
+  const lines = programTextLines(raw);
+  assert.deepEqual(lines.map(line => line.headingText), ["1. 상설전시", "2. 기획전시", "3. 공연"]);
+  assert.equal(lines.map(line => line.headingText + line.text.slice(line.headingText.length)).join(""), raw);
+  for (const raw of ["1. 공연 매주 수요일 문의", "※ 변경 안내\n1. 3,000원\n2. 5,000원"])
+    assert.equal(programTextLines(raw).some(line => line.heading), false);
+  const incomplete = "3. 공연 매주 수요일 12:10 (조건 미완결";
+  assert.equal(programTextLines(incomplete).map(line => line.text).join(""), incomplete);
+});

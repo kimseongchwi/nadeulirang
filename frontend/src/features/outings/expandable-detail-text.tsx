@@ -26,7 +26,8 @@ export function ExpandableDetailText({ values, emphasizeHeadings = false }: { va
       {emphasizeHeadings && values.length ? <div className="evidence-list">{values.map((entry, index) =>
         <div className="evidence-entry" key={`${entry.observationId}-${entry.field}-${index}`}>
           <p className="evidence-value">{programTextLines(entry.value).map((line, lineIndex) => line.heading
-            ? <span key={lineIndex}><strong className="program-subheading">{line.headingText}</strong>{line.text.slice(line.headingText!.length)}</span> : line.text)}</p>
+            ? <span key={lineIndex}><strong className="program-subheading">{line.headingText}</strong>{line.text.slice(line.headingText!.length)}</span>
+            : line.note ? <span className="evidence-note" key={lineIndex}>{line.text}</span> : line.text)}</p>
         </div>)}
       </div> : <EvidenceList values={values} showLabels={false} />}
     </div>

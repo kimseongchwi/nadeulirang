@@ -5,9 +5,10 @@ import { balancedText } from "./information-parts.ts";
 export type FeePart =
   | { kind: "heading" | "text"; text: string }
   | { kind: "pair"; label: string; price: string; note?: string }
+  | { kind: "group"; label: string; items: { label: string; price: string }[] }
   | { kind: "item"; label: string; text: string };
 const target = /^(?:일반|개인|단체|성인|어른|대인|청소년|중고등학생|초등학생|학생|어린이|소인|유아|경로|노인|군인|지역주민|달성군민|주민|도민|장애인|국가유공자)/;
-const namedFeeItem = /^[가-힣A-Za-z][^+\[\]:：\r\n]{0,30}(?:하우스|전시관|체험관|입장권|관람권|체험)$/;
+const namedFeeItem = /^[가-힣A-Za-z][^+\[\]:：\r\n]{0,30}(?:하우스|전시관|체험관|입장권|관람권|관람료|체험)$/;
 const amount = /^(?:\d+|\d{1,3}(?:,\d{3})+)$/;
 function price(value: string) {
   const number = Number(value.replaceAll(",", ""));
@@ -60,21 +61,37 @@ export function feeParts(entry: Pick<Evidence, "field" | "value">): FeePart[] {
     if (/^\[[^\]\r\n]+\]$/.test(text)) return [{ kind: "heading", text }];
     const scopedPrices = targetPrices(text);
     if (scopedPrices) return scopedPrices;
+    const freeTarget = text.match(/^\+?무료\s*[(（]((?:유치원생|초등학생|중학생|고등학생|어린이|청소년|유아|성인|경로)(?:\s*[~～·/,]\s*(?:유치원생|초등학생|중학생|고등학생|어린이|청소년|유아|성인|경로))*)[)）]$/);
+    if (freeTarget && balancedText(text)) return [{ kind: "pair", label: freeTarget[1], price: "무료" }];
     const pair = text.match(/^(.+?)\s*[:：]?\s+(무료|\d[\d,]*\s*원)(\s*[(（][^()（）]*[)）])?$/);
     const formatted = pair && (pair[2] === "무료" ? "무료" : price(pair[2].replace(/\s*원$/, "")));
     const label = pair?.[1].replace(/\s*[:：]$/, "").trim() || "";
     if (pair && formatted && (target.test(label) || namedFeeItem.test(label)) && !/[+\[\]:：]|\d[\d,]*\s*원/.test(label) && balancedText(label))
       return [{ kind: "pair", label, price: formatted, ...(pair[3] ? { note: pair[3].trim() } : {}) }];
     const item = text.match(/^(\+?\s*(?:단체\s*관람료|교육체험|체험요금))(?=[\s\d(（])([\s\S]*)$/);
-    if (item && balancedText(text)) return [{ kind: "item", label: item[1], text: item[2].replace(/\d[\d,]*\s*원/g, (value) => price(value.replace(/\s*원$/, "")) || value) }];
+    if (item && balancedText(text)) {
+      const items = compoundFeeItems(item[1], item[2]);
+      if (items) return [{ kind: "group", label: item[1].replace(/^\+\s*/, ""), items }];
+      return [{ kind: "item", label: item[1], text: item[2].replace(/\d[\d,]*\s*원/g, (value) => price(value.replace(/\s*원$/, "")) || value) }];
+    }
     return [{ kind: "text", text }];
   });
 }
 
-export function compoundFeeText(label: string, text: string) {
-  // 교육체험 괄호 전체가 명확한 이름/가격 목록일 때만 안쪽 줄바꿈을 허용한다.
-  const inner = label.replace(/^\+\s*/, "") === "교육체험" && text.match(/^\((.+)\)$/);
-  const items = inner ? inner[1].split("+") : [];
-  return items.length > 1 && items.every((item) => /^[^()+]+\s\d[\d,]*원$/.test(item.trim()))
-    ? `(${items.join("\n+")})` : text;
+export function compoundFeeItems(label: string, text: string) {
+  // 완결된 괄호 전체가 명확한 항목/금액 목록일 때만 괄호 범위를 하위 묶음으로 표시한다.
+  const inner = label.replace(/^\+\s*/, "") === "교육체험" && text.trim().match(/^(?:\((.+)\)|（(.+)）)$/);
+  const items = inner ? (inner[1] || inner[2]).split("+") : [];
+  const pairs = items.map((item) => item.trim().match(/^([^()（）+]+?)\s+(\d[\d,]*)\s*원$/));
+  if (pairs.length < 2 || pairs.some((pair) => !pair || !price(pair[2]))) return null;
+  return pairs.map((pair) => ({ label: pair![1], price: price(pair![2])! }));
+}
+
+export function displayFeeParts(entry: Pick<Evidence, "field" | "value">, facilityName?: string) {
+  const parts = feeParts(entry);
+  const heading = parts[0];
+  const title = heading?.kind === "heading" && heading.text.match(/^\[([^\]]+)\]$/)?.[1];
+  const comparable = (value: string) => value.replace(/\s+/g, "");
+  // 상세 제목과 같은 첫 시설명만 생략한다. 대상·기간·다른 시설 제목은 유지한다.
+  return title && facilityName && comparable(facilityName).endsWith(comparable(title)) ? parts.slice(1) : parts;
 }

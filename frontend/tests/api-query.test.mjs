@@ -44,6 +44,14 @@ test("화면 중복만 정리하고 다른 소개·프로그램·주차 안내�
   assert.deepEqual(detailContent({}), { description: [], programs: [], notes: [] });
   assert.deepEqual(detailContent({ description: information.description, notes: information.notes.slice(0, 1).concat(information.notes[2]) }).notes, []);
 });
+test("소개의 별도 공립 분류만 표시에서 생략하고 본문·다른 분류·원본은 보존한다", () => {
+  const entry = (field, value) => ({ observationId: field, field, value });
+  const original = { description: [entry("fcltyType", "공립"), entry("overview", "공립 미술관으로 전시·체험을 운영합니다."), entry("fcltyType", "사립")] };
+  const before = structuredClone(original);
+  assert.deepEqual(detailContent(original).description, original.description.slice(1));
+  assert.deepEqual(original, before);
+  assert.equal(detailContent({ description: [entry("overview", "공립")] }).description.length, 1);
+});
 test("허용 사진의 제공처·이용 유형·주소를 검사하고 외부 호스트와 인증 쿼리를 거부한다", () => {
   const photo = { id: "사진", url: "https://tong.visitkorea.or.kr/cms/resource/01/123_image2_1.jpg", thumbnailUrl: null,
     provider: "한국관광공사 TourAPI", attributionUrl: "https://www.data.go.kr/data/15101578/openapi.do", license: "KOGL1", checkedAt: "2026-10-05T00:00:00Z" };

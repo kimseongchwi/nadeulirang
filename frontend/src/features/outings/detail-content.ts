@@ -46,5 +46,5 @@ export function detailContent(information: Detail["information"]) {
     else if (comparable(title) === "행사내용") programs.push({ id, title: "주요 프로그램", values });
     else notes.push({ id, title, values });
   }
-  return { description, programs, notes };
+  return { description: description.filter((entry) => entry.field !== "fcltyType" || comparable(entry.value) !== "공립"), programs, notes };
 }
