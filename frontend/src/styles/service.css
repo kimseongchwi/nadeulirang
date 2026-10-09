@@ -2479,7 +2479,6 @@ dialog[data-sheet][data-dragging] { transition: none; }
 .detail-facts > div:last-child { border-bottom: 0; }
 .detail-facts dt { color: var(--muted); font-size: 12px; font-weight: 400; }
 .detail-facts dd { min-width: 0; margin: 0; color: var(--text); font-size: 15px; font-weight: 600; line-height: 1.7; overflow-wrap: anywhere; }
-.detail-field-warning { color: var(--warning); font-size: 13px; font-weight: 400; margin-top: 8px; }
 .detail-programs .detail-text { font-size: 15px; font-weight: 400; }
 .detail-programs .program-subheading { font-weight: 600; }
 .detail-period > div { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; border-bottom: 0; padding: 0; }
@@ -2568,10 +2567,12 @@ dialog[open]::backdrop { opacity: 1; }
 .policy-photo-credits > summary { display: flex; align-items: center; min-height: 44px; }
 .policy-photo-credits > summary::before { content: "▸"; margin-right: 8px; }
 .policy-photo-credits[open] > summary::before { content: "▾"; }
-.detail-empty { color: inherit; font: inherit; }
-.detail-empty-mark { display: inline-block; font-size: .9em; font-weight: 400; line-height: inherit; }
+.detail-empty { color: var(--muted); font-size: 15px; font-weight: 400; }
+.detail-empty-mark { display: inline-block; line-height: inherit; }
 .detail-checked p { margin: 4px 0; }
 .source-evidence { color: var(--muted); font-size: 12px; font-weight: 400; }
+.outing-detail > .source-evidence { margin-top: 24px; }
+.source-evidence h3 { margin: 16px 0 0; font-size: 14px; font-weight: 600; }
 .evidence-options > .evidence-entry + .evidence-entry { margin-top: 20px; }
 .bottom-nav a[aria-current="page"], .future-nav > button[aria-pressed="true"] { color: #13543d; font-weight: 700; }
 .fee-content { font-weight: 400; }

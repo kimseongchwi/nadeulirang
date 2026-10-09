@@ -213,13 +213,22 @@ export function GuideReview() {
           </section>
           <section id="detail-examples" className="guide-detail-examples">
             <h2>상세 요금·빈 자료 예시</h2>
-              <p className="section-description">표시 검토용 표본입니다. 공통 사진 출처는 푸터에서, 실제 자료 근거는 해당 자료 아래에서 확인합니다. 서로 다른 요금은 안내 1·2를 바로 보여줍니다. 실제 상세 갤러리는 위 미리보기를 사용해요.</p>
+              <p className="section-description">표시 검토용 표본입니다. 공통 출처·이용 조건은 푸터에서, 항목별 자료 근거는 실제 상세 본문 끝에서 확인합니다. 서로 다른 요금은 안내 1·2를 바로 보여줍니다. 실제 상세 갤러리는 위 미리보기를 사용해요.</p>
             <div className="sample"><dl className="detail-facts">
-              <div><dt>입장료 안내 · 그룹 표본</dt><dd><EvidenceList showSources={false} presentation="fee" values={[feeSample("usefee", "[개인]- 일반 1,500원- 청소년 1,000원- 어린이 800원[단체(10인 이상)]- 일반 1,000원- 청소년 700원- 어린이 500원 [개인/단체 도민]- 일반 750원- 청소년 500원- 어린이 400원")]} /></dd></div>
-              <div><dt>체험·추가 요금 · 복합 표본</dt><dd><EvidenceList showSources={false} presentation="fee" values={[feeSample("etcChrgeInfo", "단체 관람료 1000원+교육체험(보호자 입장권 2000원+아트키친 타일액자 10000원+소품 15000원+컬러링세라믹 10000원)+무료(유치원생~초등학생)")]} /></dd></div>
-              <div><dt>주차 요금</dt><dd><EvidenceList showSources={false} presentation="fee" showLabels={false} values={[feeSample("parkingfee", "무료")]} /></dd></div>
+              <div><dt>입장료 안내 · 그룹 표본</dt><dd><EvidenceList presentation="fee" values={[feeSample("usefee", "[개인]- 일반 1,500원- 청소년 1,000원- 어린이 800원[단체(10인 이상)]- 일반 1,000원- 청소년 700원- 어린이 500원 [개인/단체 도민]- 일반 750원- 청소년 500원- 어린이 400원")]} /></dd></div>
+              <div><dt>체험·추가 요금 · 복합 표본</dt><dd><EvidenceList presentation="fee" values={[feeSample("etcChrgeInfo", "단체 관람료 1000원+교육체험(보호자 입장권 2000원+아트키친 타일액자 10000원+소품 15000원+컬러링세라믹 10000원)+무료(유치원생~초등학생)")]} /></dd></div>
+              <div><dt>체험·추가 요금 · 무료 조건</dt><dd><EvidenceList presentation="fee" values={[feeSample("etcChrgeInfo", "무료(김치체험학교 유료)")]} /></dd></div>
+              <div><dt>입장료 안내 · 항목 구분</dt><dd><EvidenceList presentation="fee" values={[feeSample("usefee", "돔하우스 5,000원(공사에 따른 휴관)- 큐빅하우스 3,000원")]} /></dd></div>
+              <div><dt>주차 요금</dt><dd><EvidenceList presentation="fee" showLabels={false} values={[feeSample("parkingfee", "무료")]} /></dd></div>
               <div><dt>연락처 · 빈 자료</dt><dd><UnknownValue /></dd></div>
             </dl></div>
+            <div className="sample"><h3>빈 자료 대시 비교 · 미정</h3>
+              <dl className="detail-facts">
+                <div><dt>긴 대시 — · 현재 표시</dt><dd><UnknownValue /></dd></div>
+                <div><dt>짧은 대시 – · 비교안</dt><dd><UnknownValue mark="–" /></dd></div>
+              </dl>
+              <p className="hint">둘 다 15px·400·보조색입니다. 짧은 대시는 글자 높이와 자연스럽게 어울리는 후보로 제안하며 선택은 미정입니다. 화면 낭독은 모두 미확인으로 읽고, 실제 상세는 현재 긴 대시를 유지합니다.</p>
+            </div>
           </section>
           <section id="navigation">
             <h2>02 · 상단·하단 내비게이션</h2>

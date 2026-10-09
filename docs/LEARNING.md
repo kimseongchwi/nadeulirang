@@ -107,7 +107,7 @@ Dialog는 service-scroll의 실제 본문 스크롤 영역을 사용한다. 포�
 
 detail-content·detail-information·fee-blocks는 표시용 배열만 만든다. 관측 ID로 반복 안내의 제목/본문을 묶고 의미가 같은 범위의 동일 문장만 정리한다. 입장 무료와 주차 무료는 분리한다. 주소/시간/전화/연령/기간/괄호 예외를 보존하며 모호한 요금 블록은 임의로 분류하지 않는다.
 
-ExpandableDetailText는 소개·프로그램의 긴 본문만 펼친다. program-text는 확실한 소제목 접두부만 반환해 strong으로 감싸고 본문을 보존한다. 상세 최신 확인 안내의 refreshNeeded는 원천/필드/링크의 stale와 최근 실패를 합친 조건이며 로딩이나 실제 갱신 실행을 뜻하지 않는다. 공유 InlineNotice는 정적 note이고 급한 alert로 읽히지 않는다.
+ExpandableDetailText는 소개·프로그램의 긴 본문만 펼친다. program-text는 확실한 소제목 접두부만 반환해 strong으로 감싸고 본문을 보존한다. 상세는 최근 자료 확인 날짜를 한 번 표시하며 API의 stale·실패·확인 시각 계약과 조회 오류 처리를 유지한다. 공유 InlineNotice는 정적 note이고 급한 alert로 읽히지 않는다.
 
 file_asset은 사진 URL·출처·유형·관측/시각만 보존한다. PhotoPolicy와 API 검사는 허용 호스트/유형을 제한한다. OutingArtwork는 누락·실패 때 아이콘을 사용한다. 브랜드 팔레트는 SiteShell CSS 변수와 icon.ts가 공유한다. 가이드 카드·달력·개발 표시는 features/ui-design에 있으며 실제 서비스와 공유 UI를 사용한다.
 
@@ -125,10 +125,10 @@ file_asset은 사진 URL·출처·유형·관측/시각만 보존한다. PhotoPo
 
 `OutingStore.detail`은 먼저 공개 경계를 확인한 뒤 저장 사진 배열을 읽는다. 요약 `photo`와 상세 `photos[0]`은 같은 순서를 사용하므로 기존 목록 계약을 유지한다. Java의 `record`는 응답 값 묶음이며 사진 조회는 SQL/JdbcTemplate 기능이다. HTTP 조회에 원천 수집을 섞지 않아 새로고침이 TourAPI 예산을 소비하지 않는다.
 
-`PhotoGallery`는 서버가 검증한 저장 사진 배열을 받고 React의 `useState`로 선택 번호·실패 URL을 관리한다. `useRef`는 한 번의 터치 시작 위치만 유지하고, `photoSwipe`는 세로 스크롤과 짧은 접촉을 제외한다. 이 브라우저 상태는 DB 대표 선택을 바꾸지 않는다. 고정 비율 영역의 CSS contain은 사진 전체를 보존하며 가로/세로 전환의 레이아웃 이동을 줄인다. 상세만 갤러리를 사용하고 공통 `OutingArtwork`는 목록·간단 보기에 남는다.
+`PhotoGallery`는 서버가 검증한 저장 사진 배열을 받고 React의 `useState`로 선택 번호·실패 URL을 관리한다. `useRef`는 한 번의 터치 시작 위치만 유지하고, `photoSwipe`는 세로 스크롤과 짧은 접촉을 제외한다. 이 브라우저 상태는 DB 대표 선택을 바꾸지 않는다. 고정 비율 영역 안에 이미지의 자연 비율과 max-width/max-height로 전체 사진을 맞춰 가로/세로 전환의 높이를 유지한다. 둥근 모서리를 이미지 자체에 적용하므로 contain 여백과 실제 사진 모서리가 구분된다. 상세만 갤러리를 사용하고 공통 `OutingArtwork`는 목록·간단 보기에 남는다.
 
 ### 요금 표시와 출처 확인의 연결
 
-[fee-presentation.ts](../frontend/src/features/outings/fee-presentation.ts)는 원문을 변경하지 않고 제목·명확한 대상/가격·설명으로 이루어진 표시 배열을 반환한다. 괄호 밖의 명시된 복합 항목과 교육체험 안의 완전한 이름/가격 목록만 줄을 나누므로 +나 무료 조건이 계산식으로 바뀌지 않는다. [fee-blocks.ts](../frontend/src/features/outings/fee-blocks.ts)는 parkingfee/명확한 블록을 프론트 전용 parkingFee 행으로 옮긴다. DB/API에 새 필드를 추가하는 동작은 아니다.
+[fee-presentation.ts](../frontend/src/features/outings/fee-presentation.ts)는 원문을 변경하지 않고 제목·명확한 대상/가격·설명으로 이루어진 표시 배열을 반환한다. 괄호 밖의 명시된 복합 항목과 교육체험 안의 완전한 이름/가격 목록만 줄을 나누므로 +나 무료 조건이 계산식으로 바뀌지 않는다. 조건부 무료는 제목으로 쪼개지 않는 text 값이며 이름/금액이 이어지는 요금 구분 대시만 표시 공백을 보정한다. [fee-blocks.ts](../frontend/src/features/outings/fee-blocks.ts)는 parkingfee/명확한 블록을 프론트 전용 parkingFee 행으로 옮긴다. DB/API에 새 필드를 추가하는 동작은 아니다.
 
-[fee-alternatives.ts](../frontend/src/features/outings/fee-alternatives.ts)는 충돌이 있는 경우 information의 유효 선택과 evidence의 다른 출처 현재 요금을 묶는다. 같은 원천/필드의 빈 응답이나 비선택 값을 유효 선택 대신 쓰지 않는다. [evidence.tsx](../frontend/src/features/outings/evidence.tsx)의 EvidenceSources는 자료 바로 아래에서 근거를 펼치고 푸터는 공통 조건만 제공한다. 별도 Context나 출처 페이지의 상세 재조회가 필요하지 않다. 새 원천 호출이나 사진 대표 선택 변경은 없다. 갤러리의 effect는 선택 썸네일의 좌우 경계를 비교해 줄의 scrollLeft만 바꾸며 본문 스크롤을 움직이지 않는다. Pointer Events는 가로 드래그가 확인된 뒤 포인터를 캡처해 썸네일 줄만 이동하고 드래그 뒤 클릭 선택은 억제한다. 세로 스크롤·핀치는 브라우저에 맡긴다.
+[fee-alternatives.ts](../frontend/src/features/outings/fee-alternatives.ts)는 충돌이 있는 경우 information의 유효 선택과 evidence의 다른 출처 현재 요금을 묶는다. 같은 원천/필드의 빈 응답이나 비선택 값을 유효 선택 대신 쓰지 않는다. [evidence.tsx](../frontend/src/features/outings/evidence.tsx)의 EvidenceSources는 DetailScreen이 모은 항목별 근거를 본문 끝의 한 토글 안에서 펼치고 푸터는 공통 출처·필수 귀속·이용 조건을 제공한다. 별도 Context나 출처 페이지의 상세 재조회가 필요하지 않다. 새 원천 호출이나 사진 대표 선택 변경은 없다. 갤러리의 effect는 선택 썸네일의 좌우 경계를 비교해 줄의 scrollLeft만 바꾸며 본문 스크롤을 움직이지 않는다. Pointer Events는 가로 드래그가 확인된 뒤 포인터를 캡처해 썸네일 줄만 이동하고 드래그 뒤 클릭 선택은 억제한다. 세로 스크롤·핀치는 브라우저에 맡긴다.
