@@ -103,6 +103,8 @@ searchFormQuery는 URLSearchParams를 복사해 제출 조건을 만들고 scope
 
 Dialog는 service-scroll의 실제 본문 스크롤 영역을 사용한다. 포인터 핸들 드래그와 내부 본문 스크롤을 분리하고 ResizeObserver로 내용/사진 변화 뒤 기본 높이를 다시 계산한다. 확장 높이·고정 버튼·짧은 화면 경계는 sheet-drag의 계산과 테스트로 확인한다.
 
+[OutingPreview](../frontend/src/features/outings/outing-preview.tsx)의 조회 로딩은 본문 위에 `position: absolute`로 겹쳐 표시한다. 로딩 자체를 자연 높이 계산에서 빼므로 대기 중 시트가 크게 열렸다가 줄어들지 않는다. 실제 소개·사진·실패 안내가 바뀌면 기존 ResizeObserver가 내용에 맞는 높이를 계산하고 제목·닫기·하단 상세 버튼은 유지한다.
+
 ### 근거·텍스트·공유 UI
 
 detail-content·detail-information·fee-blocks는 표시용 배열만 만든다. 관측 ID로 반복 안내의 제목/본문을 묶고 의미가 같은 범위의 동일 문장만 정리한다. 입장 무료와 주차 무료는 분리한다. 주소/시간/전화/연령/기간/괄호 예외를 보존하며 모호한 요금 블록은 임의로 분류하지 않는다.

@@ -2,6 +2,12 @@
 
 import type { ReactNode } from "react";
 
+type StatePlacement = "page" | "area";
+
+function StateRegion({ placement, children }: { placement: StatePlacement; children: ReactNode }) {
+  return <div className={`state-region state-region-${placement}`}>{children}</div>;
+}
+
 function StateArt({ type }: { type: "loading" | "empty" | "error" }) {
   if (type === "loading")
     return (
@@ -38,55 +44,65 @@ function StateArt({ type }: { type: "loading" | "empty" | "error" }) {
     </span>
   );
 }
-export function LoadingState() {
+export function LoadingState({ placement = "area" }: { placement?: StatePlacement }) {
   return (
-    <div
-      className="loading state-feedback"
-      role="status"
-      aria-live="polite"
-      aria-atomic="true"
-    >
-      <StateArt type="loading" />
-      <span className="sr-only">나들이를 불러오고 있어요.</span>
-    </div>
+    <StateRegion placement={placement}>
+      <div
+        className="loading state-feedback"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <StateArt type="loading" />
+        <span className="sr-only">나들이를 불러오고 있어요.</span>
+      </div>
+    </StateRegion>
   );
 }
 export function EmptyState({
   title,
   description,
   children,
+  placement = "area",
 }: {
   title: string;
   description: string;
   children?: ReactNode;
+  placement?: StatePlacement;
 }) {
   return (
-    <div className="empty state-feedback">
-      <StateArt type="empty" />
-      <strong className="state-title">{title}</strong>
-      <p>{description}</p>
-      {children}
-    </div>
+    <StateRegion placement={placement}>
+      <div className="empty state-feedback">
+        <StateArt type="empty" />
+        <strong className="state-title">{title}</strong>
+        <p>{description}</p>
+        {children}
+      </div>
+    </StateRegion>
   );
 }
 export function ErrorState({
   onRetry,
   sample = false,
+  placement = "area",
 }: {
   onRetry: () => void;
   sample?: boolean;
+  placement?: StatePlacement;
 }) {
   return (
-    <div
-      className="feedback-error state-feedback"
-      role={sample ? "group" : "alert"}
-    >
-      <StateArt type="error" />
-      <strong className="state-title">나들이를 불러오지 못했어요.</strong>
-      <p>잠시 후 다시 시도해 주세요.</p>
-      <button className="button secondary" onClick={onRetry}>
-        다시 시도
-      </button>
-    </div>
+    <StateRegion placement={placement}>
+      <div
+        className="feedback-error state-feedback"
+        role={sample ? "group" : "alert"}
+      >
+        <StateArt type="error" />
+        <strong className="state-title">나들이를 불러오지 못했어요.</strong>
+        <p>잠시 후 다시 시도해 주세요.</p>
+        <button className="button secondary" onClick={onRetry}>
+          다시 시도
+        </button>
+      </div>
+    </StateRegion>
   );
 }

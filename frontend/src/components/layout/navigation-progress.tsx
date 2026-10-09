@@ -20,15 +20,22 @@ export function NavigationProgress() {
       const element = progress.current;
       if (!element || !container) return;
       const rect = container.getBoundingClientRect();
+      const main = document.getElementById("main")?.getBoundingClientRect();
+      const headerBottom = document.querySelector(".service-header")?.getBoundingClientRect().bottom || 0;
       const navHeight = document.getElementById("bottomNav")?.getBoundingClientRect().height || 0;
-      element.style.left = `${Math.max(0, rect.left)}px`;
-      element.style.width = `${Math.min(rect.right, window.innerWidth) - Math.max(0, rect.left)}px`;
-      element.style.top = `${Math.max(0, rect.top)}px`;
+      const left = Math.max(0, main?.left ?? rect.left);
+      element.style.left = `${left}px`;
+      element.style.width = `${Math.max(0, Math.min(main?.right ?? rect.right, window.innerWidth) - left)}px`;
+      element.style.top = `${Math.max(0, rect.top, headerBottom)}px`;
       element.style.bottom = `${Math.max(navHeight, window.innerHeight - rect.bottom)}px`;
     }
     position();
     window.addEventListener("resize", position);
-    return () => window.removeEventListener("resize", position);
+    window.addEventListener("scroll", position, true);
+    return () => {
+      window.removeEventListener("resize", position);
+      window.removeEventListener("scroll", position, true);
+    };
   }, [container]);
-  return container ? createPortal(<div className="navigation-progress" ref={progress}><LoadingState /></div>, container) : null;
+  return container ? createPortal(<div className="navigation-progress" ref={progress}><LoadingState placement={container.tagName === "DIALOG" ? "area" : "page"} /></div>, container) : null;
 }
