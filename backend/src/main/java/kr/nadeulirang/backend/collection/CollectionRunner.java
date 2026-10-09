@@ -37,7 +37,7 @@ public class CollectionRunner implements ApplicationRunner {
     @Override public void run(ApplicationArguments arguments) throws Exception {
         try {
             String mode = option(arguments, "collection.mode", "seed");
-            if (!java.util.Set.of("seed", "batch", "supplement").contains(mode)) throw new IllegalArgumentException("수집 방식은 seed, batch 또는 supplement입니다.");
+            if (!java.util.Set.of("seed", "batch", "supplement", "photos-replay").contains(mode)) throw new IllegalArgumentException("수집 방식은 seed, batch, supplement 또는 photos-replay입니다.");
             int maximum = batchMaximum(option(arguments, "collection.max-items", "100"));
             String campaign = option(arguments, "collection.campaign", java.time.LocalDate.now(CollectionPolicy.SEOUL).toString().substring(0, 7));
             if (!campaign.matches("[A-Za-z0-9_-]{1,40}")) throw new IllegalArgumentException("배치 이름은 영문·숫자·밑줄·하이픈 1~40자입니다.");
@@ -50,6 +50,18 @@ public class CollectionRunner implements ApplicationRunner {
                 try (var stream = getClass().getResourceAsStream("/collection-seed.json")) { seed = json.readTree(stream); }
             } else seed = json.readTree(Files.readString(Path.of(seedFile.getFirst())));
             if (!seed.isObject() || !seed.path("tour").isArray() || !seed.path("standard").isArray()) throw new IllegalArgumentException("검토 목록에는 tour·standard 배열이 필요합니다.");
+            if (mode.equals("photos-replay")) {
+                if (seedFile == null || !seed.path("standard").isEmpty()) throw new IllegalArgumentException("사진 재처리는 기존 TourAPI 대상 파일이 필요합니다.");
+                checkpoints.withBatchLock(() -> {
+                    for (var item : seed.path("tour")) {
+                        var urls = reviewedPhotoUrls(item);
+                        if (!item.path("photoCalls").isArray() || item.path("photoCalls").isEmpty()) throw new IllegalArgumentException("저장 호출 ID가 필요합니다.");
+                        for (var call : item.path("photoCalls")) store.replayPhotos(item.path("id").asText(), java.util.UUID.fromString(call.asText()), urls);
+                    }
+                });
+                System.out.println("저장 사진 원문 재처리 완료: 추가 원천 호출 0회");
+                return;
+            }
             var needed = mode.equals("supplement") ? supplementSources(seed) : java.util.EnumSet.allOf(Source.class);
             for (Source source : needed) {
                 if (keys.getOrDefault(source.keyName, "").isBlank()) throw new IllegalStateException("대상 원천의 로컬 키를 설정하세요.");
@@ -69,6 +81,18 @@ public class CollectionRunner implements ApplicationRunner {
             if (mode.equals("supplement")) {
                 if (seedFile == null) throw new IllegalArgumentException("보완 수집에는 대상 목록 파일이 필요합니다.");
                 var operations = supplementOperations(option(arguments, "collection.operations", "detailIntro2,detailInfo2"));
+                if (operations.contains("detailImage2")) {
+                    // 계정 화면의 당일 잔량 확인을 생략한 실제 호출은 허용하지 않는다.
+                    var checked = java.time.Instant.parse(option(arguments, "collection.quota-checked-at", ""));
+                    if (checked.isAfter(java.time.Instant.now()) || checked.isBefore(java.time.Instant.now().minusSeconds(3600)))
+                        throw new IllegalArgumentException("1시간 이내 계정 한도·잔량 확인이 필요합니다.");
+                    int remaining = Integer.parseInt(option(arguments, "collection.quota-remaining", "0"));
+                    int accountLimit = Integer.parseInt(option(arguments, "collection.account-limit", "0"));
+                    int sharedBudget = Integer.parseInt(option(arguments, "collection.photo-call-budget", "0"));
+                    if (remaining <= 0 || accountLimit <= 0 || remaining > accountLimit || sharedBudget < 1 || sharedBudget > 100)
+                        throw new IllegalArgumentException("현재 계정 한도·잔량과 1~100회 공유 실행 예산이 필요합니다.");
+                    callLimit = Math.min(remaining, sharedBudget);
+                }
                 for (JsonNode item : seed.path("tour")) collectSupplement(item, operations, keys);
                 for (JsonNode item : seed.path("standard")) collectStandardSupplement(item, keys);
             } else if (mode.equals("batch")) {
@@ -135,8 +159,8 @@ public class CollectionRunner implements ApplicationRunner {
     static java.util.List<String> supplementOperations(String value) {
         var operations = java.util.Arrays.asList(value.split(",", -1));
         if (operations.isEmpty() || operations.stream().distinct().count() != operations.size()
-                || operations.stream().anyMatch(op -> !java.util.Set.of("detailIntro2", "detailInfo2").contains(op)))
-            throw new IllegalArgumentException("보완 오퍼레이션은 detailIntro2,detailInfo2 중 중복 없이 지정하세요.");
+                || operations.stream().anyMatch(op -> !java.util.Set.of("detailIntro2", "detailInfo2", "detailImage2").contains(op)))
+            throw new IllegalArgumentException("보완 오퍼레이션은 detailIntro2,detailInfo2,detailImage2 중 중복 없이 지정하세요.");
         return operations;
     }
 
@@ -180,6 +204,10 @@ public class CollectionRunner implements ApplicationRunner {
         String type = reviewed.kind().equals("MUSEUM") ? "14" : reviewed.kind().equals("CULTURAL_SITE") ? "12" : "15";
         for (String operation : operations) {
             if (stopped.contains(Source.TOUR)) break;
+            if (operation.equals("detailImage2")) {
+                checkpoints.withBatchLock(() -> collectPhotoPages(item, keys));
+                continue;
+            }
             var reply = fetch(Source.TOUR, operation, json.createObjectNode().put("contentId", id).put("contentTypeId", type), keys);
             if (reply.response().outcome().equals("FAILED")) store.failedRecord(Source.TOUR, id, operation, reply.response().code(), reply.checkedAt());
             if (reply.response().outcome().equals("EMPTY")) store.emptyOperation(Source.TOUR, id, operation, reply.checkedAt());
@@ -188,6 +216,46 @@ public class CollectionRunner implements ApplicationRunner {
                 store.ingest(Source.TOUR, reply.call(), row, operation, null, null, null, null, null, reply.checkedAt());
                 candidates++;
             }
+        }
+    }
+
+    private static java.util.Set<String> reviewedPhotoUrls(JsonNode item) {
+        if (!item.path("photoUrls").isArray() || item.path("photoUrls").isEmpty()) throw new IllegalArgumentException("개별 검토한 사진 URL 목록이 필요합니다.");
+        var urls = new java.util.HashSet<String>();
+        for (var value : item.path("photoUrls")) {
+            String url = PhotoPolicy.url(value.asText());
+            if (url == null) throw new IllegalArgumentException("검토 사진 URL이 허용 조건에 맞지 않습니다.");
+            urls.add(url);
+        }
+        return java.util.Set.copyOf(urls);
+    }
+
+    private void collectPhotoPages(JsonNode item, Map<String, String> keys) {
+        String id = item.path("id").asText();
+        var urls = reviewedPhotoUrls(item);
+        var query = json.createObjectNode().put("contentId", id).put("imageYN", "Y").put("subImageYN", "Y");
+        String campaign = item.path("photoCampaign").asText();
+        if (!campaign.matches("[A-Za-z0-9_-]{1,40}")) throw new IllegalArgumentException("사진 보완에는 명시적인 photoCampaign이 필요합니다.");
+        String key = campaign + ":photos:" + id;
+        var cursor = checkpoints.cursor(key, Source.TOUR, "detailImage2", query);
+        while (!cursor.completed() && !stopped.contains(Source.TOUR)) {
+            SourceClient.Result reply;
+            if (cursor.call() == null) {
+                if (attempts >= callLimit) { System.out.println("사진 호출 예산 도달: 저장 페이지부터 다음 실행에 이어갑니다."); return; }
+                reply = fetch(Source.TOUR, "detailImage2", query.deepCopy().put("pageNo", cursor.page()), keys);
+                if (reply.response().outcome().equals("FAILED")) {
+                    store.failedRecord(Source.TOUR, id, "detailImage2", reply.response().code(), reply.checkedAt());
+                    return;
+                }
+                cursor = new CollectionCheckpointStore.Cursor(cursor.page(), 0, reply.call(), false);
+                checkpoints.save(key, cursor);
+            } else reply = checkpoints.savedPage(Source.TOUR, cursor.call());
+            if (!reply.response().rows().isEmpty()) store.replayPhotos(id, reply.call(), urls);
+            else store.emptyOperation(Source.TOUR, id, "detailImage2", reply.checkedAt());
+            int count = reply.response().rows().size();
+            // 한 페이지의 원문 저장·검토 완료 뒤 다음 페이지로 이동한다.
+            cursor = CollectionCheckpointStore.next(new CollectionCheckpointStore.Cursor(cursor.page(), Math.max(0, count - 1), cursor.call(), false), count, reply.response().totalCount());
+            checkpoints.save(key, cursor);
         }
     }
 

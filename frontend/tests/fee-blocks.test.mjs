@@ -52,7 +52,7 @@ test("요금 안의 개인·단체·무료 조건 대괄호는 블록에 함께 
   const fee = "[이용요금]\n[개인] 성인 3,000원\n[단체(10인 이상)] 2,000원\n[무료 대상] 주민(신분증 지참)\n";
   const routed = routeFeeBlocks({ notes: [entry("infotext", fee + "[주차요금]\n1,000원\n[준비물]\n모자")] });
   assert.equal(routed.generalFee[0].value, fee);
-  assert.equal(routed.extraFee[0].value, "[주차요금]\n1,000원\n");
+  assert.equal(routed.parkingFee[0].value, "[주차요금]\n1,000원\n");
   assert.equal(routed.notes[0].value, "[준비물]\n모자");
   assert.deepEqual(routeFeeBlocks(routed), routed);
 });
@@ -63,4 +63,23 @@ test("입장·셔틀 용도가 섞인 모호한 요금 블록은 입장료나 �
   assert.equal(routed.generalFee.length, 0);
   assert.equal((routed.extraFee || []).length, 0);
   assert.equal(routed.notes[0].value, fee);
+});
+
+test("주차 필드와 반복 주차 안내만 독립 행으로 모으고 대상별 같은 가격과 혼합 문장은 보존한다", () => {
+  const mixed = "주차 및 교육체험 5,000원(통합권)";
+  const original = { generalFee: [entry("adultChrge", "1000"), entry("yngbgsChrge", "1000")],
+    extraFee: [entry("parkingfee", "무료"), entry("etcChrgeInfo", mixed)], notes: [entry("infoname", "주차요금"), entry("infotext", "무료")] };
+  const before = structuredClone(original);
+  const routed = routeFeeBlocks(original);
+  assert.equal(routed.parkingFee.length, 1);
+  assert.equal(routed.parkingFee[0].value, "무료");
+  assert.deepEqual(routed.extraFee.map(value => value.value), [mixed]);
+  assert.equal(routed.generalFee.length, 2);
+  assert.deepEqual(original, before);
+  assert.deepEqual(routeFeeBlocks(routed), routed);
+  assert.equal(routeFeeBlocks({}).parkingFee, undefined);
+  assert.equal(routeFeeBlocks({ extraFee: [entry("parkingfee", "")] }).parkingFee[0].value, "");
+  const ambiguous = routeFeeBlocks({ notes: [entry("infoname", "주차요금"), entry("infotext", mixed)] });
+  assert.equal(ambiguous.parkingFee, undefined);
+  assert.equal(ambiguous.notes[1].value, mixed);
 });

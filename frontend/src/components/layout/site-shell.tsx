@@ -72,14 +72,15 @@ export function SiteShell({ children }: { children: ReactNode }) {
               ))}
             </ol>
             {process.env.NODE_ENV === "development" && (
-              <NavigationLink href="/ui-design" className="local-guide-link">
+              <a href="/ui-design" className="local-guide-link" target="_blank" rel="noopener noreferrer" aria-label="UI 가이드 보기, 새 탭">
                 UI 가이드 보기 <Icon name="next" />
-              </NavigationLink>
+              </a>
             )}
           </aside>
         )}
         <div className="service">
           <div className="service-scroll">
+            <div className="service-content">
             {!guide && (
               <>
                 <header className="service-header">
@@ -120,6 +121,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
             <main id="main" tabIndex={-1} aria-busy={pending}>
               {children}
             </main>
+            </div>
             {!guide && (
               <footer className="service-footer">
                 <div className="footer-intro">
@@ -156,7 +158,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 aria-current={pathname === "/" ? "page" : undefined}
               >
                 <span className="nav-icon">
-                  <Icon name="home" />
+                  <Icon name="home" filled={pathname === "/"} />
                 </span>
                 홈
               </NavigationLink>

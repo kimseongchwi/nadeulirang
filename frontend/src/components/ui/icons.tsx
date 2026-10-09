@@ -42,13 +42,13 @@ const shapes = {
   warning: <><path d="m12 3 10 18H2L12 3Z" /><path d="M12 9v5m0 3v.1" /></>,
 } satisfies Record<string, ReactNode>;
 export type IconName = keyof typeof shapes;
-export function Icon({ name }: { name: IconName }) {
+export function Icon({ name, filled = false }: { name: IconName; filled?: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
       width="24"
       height="24"
-      fill="none"
+      fill={filled ? "currentColor" : "none"}
       stroke="currentColor"
       strokeWidth="1.5"
       strokeLinecap="round"

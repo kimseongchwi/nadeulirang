@@ -156,3 +156,13 @@ node scripts/verify-standard-data.mjs festival '{"numOfRows":1}' xml
 | [AGENTS](AGENTS.md)·[프론트 추가 지침](frontend/AGENTS.md) | 공통·영역 개발 규칙 |
 
 로컬 docs/WORKLOG.md는 실제 결과, docs/ERRORS.md는 오류 요약이며 Git 추적에서 제외합니다.
+
+### 저장 사진 재처리·제한 보완
+
+개별 검토 목록 형식·보존·예산 기준은 [DATA_SOURCES](docs/DATA_SOURCES.md#사진-조사와-제한-보완--p76)를 따릅니다. 저장 원문 재처리는 추가 호출 없이 실행합니다.
+
+~~~powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/collect-data.ps1 -Mode photos-replay -SeedFile .local/photo-replay.json
+# 실제 추가 호출은 현재 계정 확인 후에만 실행. photoCampaign·검토 photoUrls가 있는 기존 대상 파일 필요
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/collect-data.ps1 -Mode supplement -SeedFile .local/photo-targets.json -Operations detailImage2 -AccountLimit <현재한도> -QuotaRemaining <현재잔량> -QuotaCheckedAt <UTC확인시각> -PhotoCallBudget 2
+~~~

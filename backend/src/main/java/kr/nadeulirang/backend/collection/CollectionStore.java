@@ -65,6 +65,16 @@ public class CollectionStore {
     public void ingest(Source source, UUID call, JsonNode row, String operation, String reviewKey,
                        String reviewedKind, String regionCode, String regionName, String reviewReason, Instant now) {
         transactions.executeWithoutResult(status -> {
+            if (operation.equals("detailImage2")) {
+                if (source != Source.TOUR || reviewKey != null || reviewedKind != null || reviewReason != null)
+                    throw new IllegalArgumentException("사진 보완은 기존 동일 대상에만 연결합니다.");
+                var queries = jdbc.query("SELECT query->>'contentId' FROM source_call WHERE id=? AND source='TOUR' AND operation='detailImage2' AND outcome='SUCCESS'", (rs, n) -> rs.getString(1), call);
+                if (queries.size() != 1 || !text(row, "contentid").equals(queries.getFirst()) || !hasSource(source, queries.getFirst()))
+                    throw new IllegalArgumentException("사진 호출과 저장 대상이 일치하지 않습니다.");
+                var payload = jdbc.queryForObject("SELECT payload::text FROM source_call WHERE id=?", String.class, call);
+                if (!SourceResponse.parse(source, 200, payload, null).rows().contains(row))
+                    throw new IllegalArgumentException("사진 원문이 저장 응답과 일치하지 않습니다.");
+            }
             String name = text(row, source == Source.TOUR ? "title" : source == Source.FESTIVAL ? "fstvlNm" : "fcltyNm");
             String identity = identity(source, row);
             String key = source == Source.TOUR ? text(row, "contentid") : CollectionPolicy.hash(identity);
@@ -87,13 +97,16 @@ public class CollectionStore {
             jdbc.update("""
                     INSERT INTO source_record(id, source, source_key, identity_candidate, outing_id, source_url, license, last_success_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(source, source_key) DO UPDATE
-                    SET last_success_at = EXCLUDED.last_success_at, last_failure_at = NULL, last_failure_code = NULL
-                    """, record, source.name(), key, identity, outing, source.datasetUrl, source.license, Timestamp.from(now));
-            record = jdbc.queryForObject("SELECT id FROM source_record WHERE source = ? AND source_key = ?", UUID.class, source.name(), key);
+                    SET last_success_at = CASE WHEN ? THEN greatest(source_record.last_success_at, EXCLUDED.last_success_at) ELSE EXCLUDED.last_success_at END
+                    """, record, source.name(), key, identity, outing, source.datasetUrl, source.license, Timestamp.from(now), operation.equals("detailImage2"));
+            record = jdbc.queryForObject("SELECT id FROM source_record WHERE source = ? AND source_key = ? FOR UPDATE", UUID.class, source.name(), key);
             jdbc.update("""
                     INSERT INTO record_operation(record_id, operation, last_success_at, last_success_call) VALUES (?, ?, ?, ?)
                     ON CONFLICT(record_id, operation) DO UPDATE SET last_success_at = EXCLUDED.last_success_at,
-                    last_success_call = EXCLUDED.last_success_call, last_failure_at = NULL, failure_code = NULL
+                    last_success_call = EXCLUDED.last_success_call,
+                    last_failure_at = CASE WHEN record_operation.last_failure_at > EXCLUDED.last_success_at THEN record_operation.last_failure_at END,
+                    failure_code = CASE WHEN record_operation.last_failure_at > EXCLUDED.last_success_at THEN record_operation.failure_code END
+                    WHERE EXCLUDED.operation <> 'detailImage2' OR record_operation.last_success_at IS NULL OR record_operation.last_success_at <= EXCLUDED.last_success_at
                     """, record, operation, Timestamp.from(now), call);
             // 다른 상세 항목의 실패는 한 항목의 성공만으로 지우지 않는다.
             jdbc.update("""
@@ -121,21 +134,8 @@ public class CollectionStore {
                             """, UUID.randomUUID(), observation, property.getKey(), property.getValue().toString(), source.datasetUrl, reference, Timestamp.from(now));
                 }
             }
-            if (source == Source.TOUR && operation.equals("detailCommon2")) {
-                // 성공한 공통 응답의 대표 사진만 활성화한다. 실패한 조회는 기존 사진을 지우지 않는다.
-                jdbc.update("UPDATE file_asset SET active = false WHERE record_id = ? AND active", record);
-                String photo = PhotoPolicy.url(text(row, "firstimage"));
-                if (text(row, "cpyrhtDivCd").equals("Type1") && photo != null) {
-                    jdbc.update("""
-                        INSERT INTO file_asset(id, record_id, observation_id, original_url, thumbnail_url,
-                            provider, attribution_url, license_code, checked_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, 'KOGL1', ?)
-                        ON CONFLICT(record_id, original_url) DO UPDATE SET observation_id=EXCLUDED.observation_id,
-                            thumbnail_url=EXCLUDED.thumbnail_url, checked_at=EXCLUDED.checked_at, active=true
-                        """, UUID.randomUUID(), record, observation, photo, PhotoPolicy.url(text(row, "firstimage2")),
-                        "한국관광공사 TourAPI", source.datasetUrl, Timestamp.from(now));
-                }
-            }
+            if (source == Source.TOUR && java.util.Set.of("detailCommon2", "detailImage2").contains(operation))
+                savePhoto(record, observation, row, operation, now);
             if (reviewedKind != null && regionCode != null && regionName != null && reviewReason != null) {
                 jdbc.update("""
                         UPDATE outing SET kind = ?, region_code = ?, region_name = ?, review_status = 'APPROVED',
@@ -153,6 +153,55 @@ public class CollectionStore {
                     """, now.atZone(CollectionPolicy.SEOUL).toLocalDate(), outing);
             recalculateFee(outing);
         });
+    }
+
+    private void savePhoto(UUID record, UUID observation, JsonNode row, String operation, Instant now) {
+        boolean common = operation.equals("detailCommon2");
+        String url = PhotoPolicy.url(text(row, common ? "firstimage" : "originimgurl"));
+        String license = text(row, "cpyrhtDivCd");
+        if (url == null) return;
+        if (!license.equals("Type1")) {
+            // 명시적인 이용 유형 변경만 해당 URL을 차단한다. 공란·누락·0건은 보존한다.
+            if (!license.isBlank()) jdbc.update("UPDATE file_asset SET active=false, representative=false, observation_id=?, checked_at=? WHERE record_id=? AND original_url=? AND checked_at<=?",
+                observation, Timestamp.from(now), record, url, Timestamp.from(now));
+            return;
+        }
+        // 최초 대표를 보존하며, 대표가 없으면 확인된 첫 사진을 사용한다.
+        boolean representative = jdbc.queryForObject("SELECT count(*) FROM file_asset WHERE record_id=? AND active AND representative", Integer.class, record) == 0;
+        int order = jdbc.queryForObject("SELECT coalesce(max(sort_order), -1)+1 FROM file_asset WHERE record_id=?", Integer.class, record);
+        jdbc.update("""
+            INSERT INTO file_asset(id, record_id, observation_id, original_url, thumbnail_url,
+                provider, attribution_url, license_code, checked_at, representative, sort_order, image_name)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'KOGL1', ?, ?, ?, ?)
+            ON CONFLICT(record_id, original_url) DO UPDATE SET observation_id=EXCLUDED.observation_id,
+                thumbnail_url=EXCLUDED.thumbnail_url, checked_at=EXCLUDED.checked_at, active=true,
+                representative=file_asset.representative OR EXCLUDED.representative, image_name=EXCLUDED.image_name
+            WHERE file_asset.checked_at <= EXCLUDED.checked_at
+            """, UUID.randomUUID(), record, observation, url, PhotoPolicy.url(text(row, common ? "firstimage2" : "smallimageurl")),
+            "한국관광공사 TourAPI", Source.TOUR.datasetUrl, Timestamp.from(now), representative, order,
+            text(row, common ? "title" : "imgname"));
+    }
+
+    public void replayPhotos(String contentId, UUID call, java.util.Set<String> reviewedUrls) {
+        var rows = jdbc.query("""
+            SELECT payload::text, finished_at FROM source_call
+            WHERE id=? AND source='TOUR' AND operation='detailImage2' AND query->>'contentId'=? AND outcome='SUCCESS'
+            """, (rs, n) -> new SourceClient.Result(call, SourceResponse.parse(Source.TOUR, 200, rs.getString(1), null), rs.getTimestamp(2).toInstant()), call, contentId);
+        if (rows.size() != 1 || !hasSource(Source.TOUR, contentId)) throw new IllegalArgumentException("동일 기존 대상의 저장 사진 응답이 필요합니다.");
+        var reply = rows.getFirst();
+        // 페이지 전체 식별자를 먼저 확인해 일부만 저장되는 잘못된 연결을 막는다.
+        if (reply.response().rows().stream().anyMatch(row -> !contentId.equals(text(row, "contentid"))))
+            throw new IllegalArgumentException("저장 응답에 다른 대상의 사진이 있습니다.");
+        for (var row : reply.response().rows()) {
+            String url = PhotoPolicy.url(text(row, "originimgurl"));
+            String license = text(row, "cpyrhtDivCd");
+            boolean existing = url != null && jdbc.queryForObject("""
+                SELECT count(*) FROM file_asset a JOIN source_record r ON r.id=a.record_id
+                WHERE r.source='TOUR' AND r.source_key=? AND a.original_url=?
+                """, Integer.class, contentId, url) > 0;
+            if (url != null && (reviewedUrls.contains(url) && license.equals("Type1") || existing && !license.isBlank()))
+                ingest(Source.TOUR, call, row, "detailImage2", null, null, null, null, null, reply.checkedAt());
+        }
     }
 
     private void recalculateDates(UUID outing, Instant now) {

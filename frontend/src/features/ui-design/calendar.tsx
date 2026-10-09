@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { addDays, dateLabel, validDate } from "@/features/outings/model";
 import { Dialog } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icons";
@@ -313,6 +313,7 @@ function Calendar({
 export function DateField() {
   const [value, setValue] = useState("");
   const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
   return (
     <>
       <div>
@@ -323,24 +324,26 @@ export function DateField() {
           <button
             type="button"
             className="date-trigger"
-            aria-labelledby="guideDateLabel guideDateValue"
+            ref={trigger}
+            aria-label={`방문 날짜 ${dateLabel(value)}, 달력 열기`}
             aria-haspopup="dialog"
             aria-expanded={open}
             onClick={() => setOpen(true)}
           >
             <span id="guideDateValue">{dateLabel(value)}</span>
-            <Icon name="calendar" />
           </button>
           {value && (
             <button
               type="button"
               className="icon-button date-clear"
               aria-label="날짜 지우기"
-              onClick={() => setValue("")}
+              onClick={() => { setValue(""); trigger.current?.focus(); }}
             >
               <Icon name="close" />
             </button>
           )}
+          <button type="button" className="icon-button date-calendar" aria-label="방문 날짜 달력 열기"
+            aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}><Icon name="calendar" /></button>
         </div>
       </div>
       {open && (

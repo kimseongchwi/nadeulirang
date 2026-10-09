@@ -45,11 +45,11 @@ public class OutingStore {
                     AND r.license IN ('KOGL1_DATA', 'TOUR_DATA')) AS source_checked_at
             FROM outing o LEFT JOIN LATERAL (
                 SELECT a.* FROM file_asset a JOIN source_record r ON r.id=a.record_id
-                JOIN record_operation op ON op.record_id=r.id AND op.operation='detailCommon2'
-                JOIN source_observation b ON b.id=a.observation_id AND b.call_id=op.last_success_call
+                JOIN source_observation b ON b.id=a.observation_id AND b.record_id=r.id
+                JOIN source_call c ON c.id=b.call_id AND c.source='TOUR' AND c.operation IN ('detailCommon2', 'detailImage2')
                 WHERE r.outing_id=o.id AND r.source='TOUR' AND r.license='TOUR_DATA'
                     AND a.active AND a.license_code='KOGL1' AND b.raw_row->>'cpyrhtDivCd'='Type1'
-                ORDER BY a.checked_at DESC, a.id LIMIT 1
+                ORDER BY a.representative DESC, a.sort_order, a.original_url, a.id LIMIT 1
             ) a ON true
             WHERE review_status = 'APPROVED' AND visibility = 'VISIBLE'
                 AND name <> '' AND kind IS NOT NULL AND region_code IS NOT NULL AND region_name IS NOT NULL
@@ -197,7 +197,17 @@ public class OutingStore {
         // 수집된 예약 문장은 예약 기간/잔여석의 확인을 뜻하지 않는다.
         unconfirmed.add("reservationPeriod");
         var retainedEvidence = evidence.stream().filter(e -> FIELDS.values().stream().anyMatch(fields -> fields.contains(e.field()))).toList();
-        return new OutingResponse.Detail(item, sources, information, List.copyOf(links), List.copyOf(unconfirmed), today, retainedEvidence);
+        var photos = jdbc.query("""
+            SELECT a.* FROM file_asset a JOIN source_record r ON r.id=a.record_id
+            JOIN source_observation b ON b.id=a.observation_id AND b.record_id=r.id
+            JOIN source_call c ON c.id=b.call_id AND c.source='TOUR' AND c.operation IN ('detailCommon2', 'detailImage2')
+            WHERE r.outing_id=? AND r.source='TOUR' AND r.license='TOUR_DATA'
+                AND a.active AND a.license_code='KOGL1' AND b.raw_row->>'cpyrhtDivCd'='Type1'
+            ORDER BY a.representative DESC, a.sort_order, a.original_url, a.id
+            """, (rs, n) -> new OutingResponse.Photo(rs.getObject("id", UUID.class), rs.getString("original_url"),
+                rs.getString("thumbnail_url"), rs.getString("provider"), rs.getString("attribution_url"),
+                rs.getString("license_code"), instant(rs, "checked_at")), id);
+        return new OutingResponse.Detail(item, sources, information, List.copyOf(links), List.copyOf(unconfirmed), today, retainedEvidence, photos);
     }
 
     private static OutingResponse.Summary summary(ResultSet rs) throws SQLException {

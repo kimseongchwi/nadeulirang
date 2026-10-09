@@ -13,10 +13,15 @@ import { EmptyState, ErrorState, InlineNotice, LoadingState } from "@/components
 import { OutingCard } from "@/features/outings/outing-card";
 import { PolicyLinks } from "@/features/policies/policy-links";
 import { Pagination } from "@/features/outings/pagination";
+import { EvidenceList, UnknownValue } from "@/features/outings/evidence";
+import type { Evidence } from "@/features/outings/api-types";
+
+const feeSample = (field: string, value: string): Evidence => ({ field, value, source: "TOUR", sourceKey: "가이드", url: "https://www.data.go.kr/data/15101578/openapi.do", sourceReference: null, collectedAt: "2026-10-09T00:00:00Z", checkedAt: "2026-10-09T00:00:00Z", stale: false, observationId: "가이드" });
 
 const sections = [
   ["brand-colors", "브랜드 색상"],
   ["screens", "화면"],
+  ["detail-examples", "상세 요금·빈 자료"],
   ["navigation", "내비게이션"],
   ["inputs", "입력·선택"],
   ["dates", "달력"],
@@ -73,6 +78,7 @@ export function GuideReview() {
   const [noticeWidth, setNoticeWidth] = useState(390);
   const [message, setMessage] = useState("");
   const [menu, setMenu] = useState(false);
+  const [futureSelection, setFutureSelection] = useState("home");
   useEffect(() => {
     if (!message) return;
     const timer = setTimeout(() => setMessage(""), 4500);
@@ -157,6 +163,22 @@ export function GuideReview() {
                   <option value="390">390px · 기본</option>
                   <option value="430">430px · 넓은 화면</option>
                 </select>
+              <label htmlFor="upcomingDays">다가오는 기간 비교</label>
+              <select
+                id="upcomingDays"
+                value={upcomingDays}
+                onChange={(event) => {
+                  const days = Number(event.target.value);
+                  setUpcomingDays(days);
+                  setMessage(`홈의 다가오는 기간을 ${days}일로 바꿨어요.`);
+                }}
+              >
+                {[7, 14, 30].map((days) => (
+                  <option key={days} value={days}>
+                    내일부터 {days}일 · {days === 14 ? "채택 기준" : "가이드 비교"}
+                  </option>
+                ))}
+              </select>
               </div>
             </div>
             <div className="guide-screen-grid">
@@ -175,34 +197,29 @@ export function GuideReview() {
                 </figure>
               ))}
             </div>
-            <details className="guide-home-notes">
-              <summary>채택한 홈 구성·기간 비교</summary>
+            <div className="guide-home-notes">
+              <h3>채택한 홈 구성·기간 비교</h3>
               <p className="small">
                 진행 중 → 곧 시작 → 상설 시설 순서. 각 섹션 최대 3곳, 더 보기는
                 조건을 유지한 검색으로 이동합니다. 진행 중은 종료일 순, 다가오는
                 것은 시작일 순, 상설은 이름순입니다.
               </p>
-              <label htmlFor="upcomingDays">다가오는 기간 비교</label>
-              <select
-                id="upcomingDays"
-                value={upcomingDays}
-                onChange={(event) => {
-                  const days = Number(event.target.value);
-                  setUpcomingDays(days);
-                  setMessage(`홈의 다가오는 기간을 ${days}일로 바꿨어요.`);
-                }}
-              >
-                {[7, 14, 30].map((days) => (
-                  <option key={days} value={days}>
-                    내일부터 {days}일
-                  </option>
-                ))}
-              </select>
+
               <p className="hint">
                 채택한 기본 구간은 내일부터 14일입니다. 7일·30일은 가이드의
                 비교 옵션이며 기본 기준을 바꾸지 않습니다.
               </p>
-            </details>
+            </div>
+          </section>
+          <section id="detail-examples" className="guide-detail-examples">
+            <h2>상세 요금·빈 자료 예시</h2>
+              <p className="section-description">표시 검토용 표본입니다. 공통 사진 출처는 푸터에서, 실제 자료 근거는 해당 자료 아래에서 확인합니다. 서로 다른 요금은 안내 1·2를 바로 보여줍니다. 실제 상세 갤러리는 위 미리보기를 사용해요.</p>
+            <div className="sample"><dl className="detail-facts">
+              <div><dt>입장료 안내 · 그룹 표본</dt><dd><EvidenceList showSources={false} presentation="fee" values={[feeSample("usefee", "[개인]- 일반 1,500원- 청소년 1,000원- 어린이 800원[단체(10인 이상)]- 일반 1,000원- 청소년 700원- 어린이 500원 [개인/단체 도민]- 일반 750원- 청소년 500원- 어린이 400원")]} /></dd></div>
+              <div><dt>체험·추가 요금 · 복합 표본</dt><dd><EvidenceList showSources={false} presentation="fee" values={[feeSample("etcChrgeInfo", "단체 관람료 1000원+교육체험(보호자 입장권 2000원+아트키친 타일액자 10000원+소품 15000원+컬러링세라믹 10000원)+무료(유치원생~초등학생)")]} /></dd></div>
+              <div><dt>주차 요금</dt><dd><EvidenceList showSources={false} presentation="fee" showLabels={false} values={[feeSample("parkingfee", "무료")]} /></dd></div>
+              <div><dt>연락처 · 빈 자료</dt><dd><UnknownValue /></dd></div>
+            </dl></div>
           </section>
           <section id="navigation">
             <h2>02 · 상단·하단 내비게이션</h2>
@@ -246,16 +263,16 @@ export function GuideReview() {
                     ["spark", "AI 추천"],
                   ] satisfies [IconName, string][]
                 ).map(([name, label]) => (
-                  <div key={name}>
-                    <Icon name={name} />
+                  <button key={name} type="button" aria-pressed={futureSelection === name} aria-label={`${label} 선택 상태 예시`} onClick={() => setFutureSelection(name)}>
+                    <Icon name={name} filled={futureSelection === name} />
                     <span>{label}</span>
-                  </div>
+                  </button>
                 ))}
               </div>
               <p className="hint">
                 로그인·북마크·상황별 AI 추천의 자리만 보는 가이드 예시입니다.
-                로그인은 상단에 버튼만, 북마크는 하단에 미연결 자리만
-                표시합니다. AI 추천은 후속 배치 예시예요.
+                버튼은 채워진 아이콘과 라벨의 선택 색상·굵기를 비교합니다.
+                북마크 저장이나 AI 추천을 실행하지 않아요.
               </p>
             </div>
             <div className="sample menu-comparison">
@@ -462,7 +479,7 @@ export function GuideReview() {
             <div className="sample">
               <h3>상세 본문·조건 안내</h3>
               <p className="small muted">프로그램 본문·소제목은 15px, 본문 400·소제목 600입니다. 콜론 뒤 설명과 날짜는 본문 굵기로 표시하고 긴 내용은 처음 5줄/더 보기·접기를 유지합니다.</p>
-              <p className="hint">개인·단체·주민·무료 조건은 요금 행에서 함께 읽고, 전화 문의 같은 주석은 다음 줄의 보통 굵기로 표시합니다. 요금 괄호·요일·기간을 보존하며 체험·주차·셔틀은 추가 요금으로 구분합니다.</p>
+              <p className="hint">개인·단체·주민·무료 조건은 요금 행에서 함께 읽고, 전화 문의 같은 주석은 다음 줄의 보통 굵기로 표시합니다. 요금 괄호·요일·기간을 보존하며 체험·셔틀은 추가 요금, 주차는 독립 행으로 구분합니다.</p>
             </div>
           </section>
           <section id="states">
@@ -619,16 +636,6 @@ export function GuideReview() {
                   </figure>
                 ))}
                 <figure>
-                  <span className="symbol-preview">
-                    <span
-                      className="people-mask"
-                      role="img"
-                      aria-label="심볼 원형 미리보기"
-                    />
-                  </span>
-                  <figcaption>원형 미리보기</figcaption>
-                </figure>
-                <figure>
                   <Image
                     src="/icon"
                     width={32}
@@ -662,12 +669,20 @@ export function GuideReview() {
             <GuideTable
               rows={[
                 [
-                  "첫 웹 공개 확정 · P28",
-                  "실제 데이터의 발견 홈 · 이름/지역/종류 검색 · 상세/공식 출처 · 정책 · 검색 유입",
+                  "실제 제공 · P12·P13·P44",
+                  "현재 DB 자료의 홈 · 이름/지역/종류 검색 · 상세/공식 출처 · 정책 · 대표 사진",
                 ],
                 [
-                  "첫 공개 제외 · 후속 검토",
-                  "방문일/요금 필터는 운영·요금 확인 자료 확보 뒤 P32에서 검토. 정보와 미확인 표시는 상세에 유지",
+                  "이번 개선 · P76·P77·P78",
+                  "저장 원문 기반 추가 사진 · 상세 수동 갤러리 · 푸터/상세 안내 · 가이드·토스트 개선. 화면 검증과 디자인 확정은 구분",
+                ],
+                [
+                  "공개 전 작업 · P14·P15·P25",
+                  "SEO · 운영 환경/정책/원천 한도 · 유사 상표 확인은 미완료",
+                ],
+                [
+                  "검토 중 · P27",
+                  "날짜 입력·달력의 가이드 검토. 첫 공개 날짜 필터는 활성화하지 않음",
                 ],
                 [
                   "후속 보류",
