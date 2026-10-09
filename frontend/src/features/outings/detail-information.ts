@@ -2,7 +2,7 @@ import type { Evidence } from "./api-types";
 import { formatSeasonalHours } from "./seasonal-hours.ts";
 import { informationLines } from "./text-boundaries.ts";
 
-export type EvidencePresentation = "fee" | "closedDays";
+export type EvidencePresentation = "fee" | "closedDays" | "service";
 const feeFields = new Set(["adultChrge", "yngbgsChrge", "childChrge", "admissionAdult"]);
 function money(value: string) {
   if (!/^(?:\d+|\d{1,3}(?:,\d{3})+)(?:원)?$/.test(value)) return value;
@@ -21,7 +21,14 @@ export function evidenceLines(entry: Pick<Evidence, "field" | "value">, presenta
       }).filter(Boolean);
   }
   if (presentation === "closedDays") {
-    return informationLines(value, "closedDays").map((text) => text.replace(/(\d+)월\s*(\d+)일/g, "$1월 $2일"));
+    let followingException = false;
+    return informationLines(value, "closedDays").flatMap((line) => {
+      if (/^※\s*단\s*$/.test(line)) { followingException = true; return []; }
+      const text = line.replace(/(\d+)월\s*(\d+)일/g, "$1월 $2일").replace(/^※\s*단\s*[,，]\s*/, "※ ");
+      const result = followingException && !/^※/.test(text) ? `※ ${text}` : text;
+      followingException = false;
+      return [result];
+    });
   }
   return informationLines(value, "plain");
 }

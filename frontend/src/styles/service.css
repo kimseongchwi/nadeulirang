@@ -2439,7 +2439,7 @@ dialog[data-sheet][data-dragging] { transition: none; }
 .preview-facts dt { display: flex; align-items: center; gap: 8px; color: var(--muted); white-space: nowrap; }
 .preview-facts svg { width: 16px; height: 16px; color: var(--action); flex: none; }
 .preview-facts dd { margin: 0; text-align: right; }
-.preview-note { font-size: 12px; color: var(--muted); line-height: 1.7; }
+.preview-description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; white-space: pre-wrap; margin: 16px 0 0; font-size: 15px; font-weight: 400; line-height: 1.7; overflow-wrap: anywhere; }
 .outing-preview-actions { padding: 16px 20px calc(20px + env(safe-area-inset-bottom)); border-top: 1px solid #e9ede6; background: white; }
 .outing-preview-actions .button { width: 100%; min-height: 50px; border-radius: 12px; }
 .outing-preview-actions svg { width: 18px; height: 18px; }
@@ -2454,7 +2454,7 @@ dialog[data-sheet][data-dragging] { transition: none; }
 .detail-checked { margin: 24px 0 0; color: var(--muted); font-size: 12px; font-weight: 400; }
 .detail-section { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e9ede6; }
 .detail-section > h2 { font-size: 20px; letter-spacing: -.025em; margin-bottom: 18px; }
-.detail-text { line-height: 1.6; max-height: 8em; overflow: hidden; }
+.detail-text { font-size: 15px; font-weight: 400; line-height: 1.6; max-height: 8em; overflow: hidden; }
 .detail-text.is-expanded { max-height: none; }
 .detail-text .evidence-value { margin: 0; }
 .detail-text-toggle { appearance: none; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; margin-top: 4px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: var(--action); font-size: 13px; font-weight: 500; line-height: 1.4; }
@@ -2465,9 +2465,9 @@ dialog[data-sheet][data-dragging] { transition: none; }
 .detail-facts > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 16px 0; border-bottom: 1px solid #f0f2ed; }
 .detail-facts > div:last-child { border-bottom: 0; }
 .detail-facts dt { color: var(--muted); font-size: 12px; font-weight: 400; }
-.detail-facts dd { min-width: 0; margin: 0; color: var(--text); font-size: 15px; font-weight: 600; line-height: 1.7; overflow-wrap: anywhere; }
+.detail-facts dd { min-width: 0; margin: 0; color: var(--text); font-size: 15px; font-weight: 400; line-height: 1.7; overflow-wrap: anywhere; }
 .detail-programs .detail-text { font-size: 15px; font-weight: 400; }
-.detail-programs .program-subheading { font-weight: 600; }
+.detail-programs .program-subheading { font-size: 14px; font-weight: 600; }
 .detail-period > div { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; border-bottom: 0; padding: 0; }
 .detail-period dd { color: var(--text); }
 .detail-unknown { color: var(--muted); font-size: 13px; font-weight: 400; }
@@ -2538,12 +2538,9 @@ dialog[open]::backdrop { opacity: 1; }
 }
 .evidence-entry + .evidence-entry { margin-top: 14px; }
 .evidence-value { white-space: pre-wrap; overflow-wrap: anywhere; margin: 4px 0; }
-.evidence-note { font-weight: 400; color: var(--muted); }
-.hours-line { display: block; }
+.evidence-note { font-size: 13px; font-weight: 400; color: var(--muted); white-space: pre-wrap; margin: 4px 0 10px; }
 .evidence-lines { margin: 4px 0; padding-left: 20px; overflow-wrap: anywhere; }
 .evidence-lines li + li { margin-top: 6px; }
-.detail-hours-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
-.detail-hours-row .evidence-label { min-width: 28px; }
 .evidence-label { display: block; color: var(--muted); font-size: 12px; font-weight: 400; }
 .evidence-alternatives > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 400; }
 .evidence-alternatives > summary::before { content: "▸"; margin-right: 8px; }
@@ -2557,25 +2554,27 @@ dialog[open]::backdrop { opacity: 1; }
 .detail-empty { color: var(--muted); font-size: 15px; font-weight: 600; }
 .detail-empty-mark { display: inline-block; line-height: inherit; }
 .detail-checked p { margin: 4px 0; }
-.source-evidence { color: var(--muted); font-size: 12px; font-weight: 400; }
-.outing-detail > .source-evidence { margin-top: 24px; }
 .evidence-options > .evidence-entry + .evidence-entry { margin-top: 20px; }
 .bottom-nav a[aria-current="page"], .future-nav > button[aria-pressed="true"] { color: #13543d; font-weight: 700; }
+.bottom-nav a[aria-current="page"] svg, .future-nav > button[aria-pressed="true"] svg { stroke-width: 2.2; }
 .fee-content { font-weight: 400; }
-.fee-heading { margin: 18px 0 8px; font-size: 14px; font-weight: 600; }
-.fee-heading:first-child { margin-top: 0; }
-.fee-pair { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 6px 16px; margin: 4px 0; align-items: baseline; }
-.fee-pair > span { min-width: 0; overflow-wrap: anywhere; }
-.fee-pair strong { font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fee-heading, .information-heading { margin: 18px 0 8px; font-size: 14px; font-weight: 600; }
+.fee-heading:first-child, .information-heading:first-child { margin-top: 0; }
+.information-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 6px 16px; margin: 4px 0; align-items: baseline; font-size: 15px; font-weight: 400; }
+.information-pair > :last-child { text-align: right; font-variant-numeric: tabular-nums; }
+.information-item { margin: 6px 0; }
+.information-pair > * { min-width: 0; overflow-wrap: anywhere; }
+.fee-pair strong { font-weight: 500; }
+.fee-text.fee-price { font-weight: 500; }
 .fee-text { white-space: pre-wrap; font-weight: 400; margin: 6px 0; }
 .fee-item { margin: 12px 0; white-space: pre-wrap; font-weight: 400; }
 .fee-item > strong { display: block; font-weight: 600; font-size: 14px; }
 .fee-inline-price { font-weight: 500; }
 .fee-item > span { display: block; }
 .fee-details > .fee-content { margin-top: 8px; }
-.fee-labeled { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 16px; align-items: baseline; }
+.fee-labeled { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px; align-items: baseline; }
 .fee-labeled > .evidence-label { color: var(--text); font-size: inherit; }
-.fee-labeled .fee-text { font-weight: 500; text-align: right; white-space: nowrap; }
+.fee-labeled .fee-text { font-weight: 500; text-align: right; }
 .guide-width-control select + label { margin-top: 12px; }
 .guide-detail-examples { grid-column: 1 / -1; }
 .outing-detail .page-head > p { font-size: 16px; margin: 0; }
