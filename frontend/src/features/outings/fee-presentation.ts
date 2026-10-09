@@ -31,13 +31,14 @@ function compoundLines(text: string) {
 }
 export function feeParts(entry: Pick<Evidence, "field" | "value">): FeePart[] {
   return evidenceLines(entry, "fee").flatMap(compoundLines).flatMap((line): FeePart[] => {
-    const text = line.trim();
+    // 금액/조건 뒤에 다음 이름·금액이 오는 항목 구분만 띄운다.
+    const text = line.trim().replace(/(원(?:\s*[(（][^()（）]*[)）])?)\s*-\s*(?=[가-힣A-Za-z][^()\r\n-]*?\d[\d,]*\s*원)/g, "$1 - ");
     if (/^\[[^\]\r\n]+\]$/.test(text)) return [{ kind: "heading", text }];
     const pair = text.match(/^(.+?)\s+(\d[\d,]*)\s*원$/);
     const formatted = pair && price(pair[2]);
     if (pair && formatted && target.test(pair[1]) && !/[+\[\]:：]|\d[\d,]*\s*원/.test(pair[1]) && balanced(pair[1]))
       return [{ kind: "pair", label: pair[1], price: formatted }];
-    const item = text.match(/^(\+?\s*(?:단체\s*관람료|교육체험|체험요금|무료))(?=[\s\d(（])([\s\S]*)$/);
+    const item = text.match(/^(\+?\s*(?:단체\s*관람료|교육체험|체험요금))(?=[\s\d(（])([\s\S]*)$/);
     if (item && balanced(text)) return [{ kind: "item", label: item[1], text: item[2].replace(/\d[\d,]*\s*원/g, (value) => price(value.replace(/\s*원$/, "")) || value) }];
     return [{ kind: "text", text }];
   });

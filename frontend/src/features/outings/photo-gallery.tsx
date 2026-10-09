@@ -86,6 +86,5 @@ export function PhotoGallery({ item, photos }: { item: Outing; photos: Photo[] }
           : <Image src={photo.thumbnailUrl || photo.url} alt="" width={64} height={48} unoptimized draggable={false} referrerPolicy="no-referrer" onError={() => fail(photo.thumbnailUrl || photo.url)} />}
       </button>)}
     </div>}
-    <details className="evidence-alternatives gallery-original"><summary>사진 원본</summary><a href={selected.url} target="_blank" rel="noopener noreferrer">현재 사진 {activeIndex + 1} 원본 보기</a></details>
   </div>;
 }

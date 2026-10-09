@@ -158,7 +158,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 aria-current={pathname === "/" ? "page" : undefined}
               >
                 <span className="nav-icon">
-                  <Icon name="home" filled={pathname === "/"} />
+                  <Icon name="home" />
                 </span>
                 홈
               </NavigationLink>

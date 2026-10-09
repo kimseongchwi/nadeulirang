@@ -38,17 +38,15 @@ const shapes = {
   pin: <><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></>,
   landmark: <><path d="m3 8 9-5 9 5H3ZM5 10v8m5-8v8m4-8v8m5-8v8M3 21h18" /></>,
   ticket: <><path d="M3 6h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4V6Z" /><path d="M15 6v3m0 3v2m0 3v1" /></>,
-  info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v6m0-10v.1" /></>,
-  warning: <><path d="m12 3 10 18H2L12 3Z" /><path d="M12 9v5m0 3v.1" /></>,
 } satisfies Record<string, ReactNode>;
 export type IconName = keyof typeof shapes;
-export function Icon({ name, filled = false }: { name: IconName; filled?: boolean }) {
+export function Icon({ name }: { name: IconName }) {
   return (
     <svg
       viewBox="0 0 24 24"
       width="24"
       height="24"
-      fill={filled ? "currentColor" : "none"}
+      fill="none"
       stroke="currentColor"
       strokeWidth="1.5"
       strokeLinecap="round"

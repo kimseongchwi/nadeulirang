@@ -9,7 +9,7 @@ import { Icon, type IconName } from "@/components/ui/icons";
 import { ongoing, photoId } from "@/features/outings/model";
 import { publicItems } from "./review-model";
 import { NavigationLink, useNavigation } from "@/providers/navigation-provider";
-import { EmptyState, ErrorState, InlineNotice, LoadingState } from "@/components/ui/feedback";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/feedback";
 import { OutingCard } from "@/features/outings/outing-card";
 import { PolicyLinks } from "@/features/policies/policy-links";
 import { Pagination } from "@/features/outings/pagination";
@@ -28,7 +28,7 @@ const sections = [
   ["buttons", "버튼·뒤로가기"],
   ["pagination", "페이지네이션"],
   ["cards", "카드"],
-  ["states", "힌트·확인 안내·상태"],
+  ["states", "로딩·빈 결과·오류"],
   ["tokens", "스타일 값"],
   ["brand", "로고"],
   ["policies", "정책·안내"],
@@ -75,7 +75,6 @@ export function GuideReview() {
   } = useNavigation();
   const items = publicItems(today);
   const [previewWidth, setPreviewWidth] = useState(390);
-  const [noticeWidth, setNoticeWidth] = useState(390);
   const [message, setMessage] = useState("");
   const [menu, setMenu] = useState(false);
   const [futureSelection, setFutureSelection] = useState("home");
@@ -213,13 +212,22 @@ export function GuideReview() {
           </section>
           <section id="detail-examples" className="guide-detail-examples">
             <h2>상세 요금·빈 자료 예시</h2>
-              <p className="section-description">표시 검토용 표본입니다. 공통 사진 출처는 푸터에서, 실제 자료 근거는 해당 자료 아래에서 확인합니다. 서로 다른 요금은 안내 1·2를 바로 보여줍니다. 실제 상세 갤러리는 위 미리보기를 사용해요.</p>
+              <p className="section-description">표시 검토용 표본입니다. 공통 출처·이용 조건은 푸터에서, 자료 근거의 원천 이름은 실제 상세 본문 끝에서 확인합니다. 서로 다른 요금은 안내 1·2를 바로 보여줍니다. 실제 상세 갤러리는 위 미리보기를 사용해요.</p>
             <div className="sample"><dl className="detail-facts">
-              <div><dt>입장료 안내 · 그룹 표본</dt><dd><EvidenceList showSources={false} presentation="fee" values={[feeSample("usefee", "[개인]- 일반 1,500원- 청소년 1,000원- 어린이 800원[단체(10인 이상)]- 일반 1,000원- 청소년 700원- 어린이 500원 [개인/단체 도민]- 일반 750원- 청소년 500원- 어린이 400원")]} /></dd></div>
-              <div><dt>체험·추가 요금 · 복합 표본</dt><dd><EvidenceList showSources={false} presentation="fee" values={[feeSample("etcChrgeInfo", "단체 관람료 1000원+교육체험(보호자 입장권 2000원+아트키친 타일액자 10000원+소품 15000원+컬러링세라믹 10000원)+무료(유치원생~초등학생)")]} /></dd></div>
-              <div><dt>주차 요금</dt><dd><EvidenceList showSources={false} presentation="fee" showLabels={false} values={[feeSample("parkingfee", "무료")]} /></dd></div>
+              <div><dt>입장료 안내 · 그룹 표본</dt><dd><EvidenceList presentation="fee" values={[feeSample("usefee", "[개인]- 일반 1,500원- 청소년 1,000원- 어린이 800원[단체(10인 이상)]- 일반 1,000원- 청소년 700원- 어린이 500원 [개인/단체 도민]- 일반 750원- 청소년 500원- 어린이 400원")]} /></dd></div>
+              <div><dt>체험·추가 요금 · 복합 표본</dt><dd><EvidenceList presentation="fee" values={[feeSample("etcChrgeInfo", "단체 관람료 1000원+교육체험(보호자 입장권 2000원+아트키친 타일액자 10000원+소품 15000원+컬러링세라믹 10000원)+무료(유치원생~초등학생)")]} /></dd></div>
+              <div><dt>체험·추가 요금 · 무료 조건</dt><dd><EvidenceList presentation="fee" values={[feeSample("etcChrgeInfo", "무료(김치체험학교 유료)")]} /></dd></div>
+              <div><dt>입장료 안내 · 항목 구분</dt><dd><EvidenceList presentation="fee" values={[feeSample("usefee", "돔하우스 5,000원(공사에 따른 휴관)- 큐빅하우스 3,000원")]} /></dd></div>
+              <div><dt>주차 요금</dt><dd><EvidenceList presentation="fee" showLabels={false} values={[feeSample("parkingfee", "무료")]} /></dd></div>
               <div><dt>연락처 · 빈 자료</dt><dd><UnknownValue /></dd></div>
             </dl></div>
+            <div className="sample"><h3>빈 자료 대시 길이 비교</h3>
+              <dl className="detail-facts">
+                <div><dt>긴 대시 — · 비교</dt><dd><UnknownValue mark="—" /></dd></div>
+                <div><dt>짧은 대시 – · 현재 표시</dt><dd><UnknownValue /></dd></div>
+              </dl>
+              <p className="hint">빈 자료는 짧은 대시를 15px·600·보조색으로 표시합니다. 긴 대시는 길이 비교용이며, 화면 낭독은 모두 미확인으로 읽습니다.</p>
+            </div>
           </section>
           <section id="navigation">
             <h2>02 · 상단·하단 내비게이션</h2>
@@ -264,14 +272,14 @@ export function GuideReview() {
                   ] satisfies [IconName, string][]
                 ).map(([name, label]) => (
                   <button key={name} type="button" aria-pressed={futureSelection === name} aria-label={`${label} 선택 상태 예시`} onClick={() => setFutureSelection(name)}>
-                    <Icon name={name} filled={futureSelection === name} />
+                    <Icon name={name} />
                     <span>{label}</span>
                   </button>
                 ))}
               </div>
               <p className="hint">
                 로그인·북마크·상황별 AI 추천의 자리만 보는 가이드 예시입니다.
-                버튼은 채워진 아이콘과 라벨의 선택 색상·굵기를 비교합니다.
+                버튼은 선 아이콘을 유지하고 라벨의 진한 색상·굵기로 선택을 구분합니다.
                 북마크 저장이나 AI 추천을 실행하지 않아요.
               </p>
             </div>
@@ -483,25 +491,7 @@ export function GuideReview() {
             </div>
           </section>
           <section id="states">
-            <h2>07 · 힌트·확인 안내·상태</h2>
-            <p className="section-description">
-              일반 힌트는 추가 설명, 확인 필요는 정보가 오래됐거나 서로 다를 때 사용합니다.
-              아이콘·제목·배경으로 구분하고 방문에 필요한 안내는 본문에 계속 표시합니다.
-            </p>
-            <div className="guide-notice-controls">
-              <label htmlFor="noticeWidth">안내 예시 너비</label>
-              <select id="noticeWidth" value={noticeWidth} onChange={(event) => setNoticeWidth(Number(event.target.value))}>
-                <option value="320">320px · 작은 화면</option>
-                <option value="390">390px · 기본</option>
-                <option value="430">430px · 넓은 화면</option>
-              </select>
-            </div>
-            <div className="guide-notice-examples" style={{ width: noticeWidth }}>
-              <InlineNotice title="힌트">공식 안내에서 자세한 방문 정보를 살펴볼 수 있어요.</InlineNotice>
-              <InlineNotice tone="warning" title="최신 정보 확인 필요">일부 정보는 최신 여부를 다시 확인해야 해요. 방문 전 공식 안내를 확인해 주세요.</InlineNotice>
-            </div>
-            <p className="hint">위 안내는 스타일 예시입니다. 조회 자체가 실패한 경우에는 아래 오류 안내와 다시 시도를 제공합니다.</p>
-            <h3>로딩·빈 결과·오류</h3>
+            <h2>07 · 로딩·빈 결과·오류</h2>
             <p className="section-description">
               같은 숲 초록 톤으로 상황을 구분합니다. 로딩에는 두 사람 심볼을
               사용하고, 빈 결과와 실패에는 차분한 안내와 다음 동작을 둡니다.

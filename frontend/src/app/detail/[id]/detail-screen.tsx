@@ -5,7 +5,6 @@ import { Badge } from "@/features/outings/outing-badge";
 import { PhotoGallery } from "@/features/outings/photo-gallery";
 import { BackHeading } from "@/components/layout/back-heading";
 import { EvidenceList, EvidenceSources, HoursInformation, UnknownValue } from "@/features/outings/evidence";
-import { detailRefreshNeeded } from "@/features/outings/detail-freshness";
 import { feeAlternatives } from "@/features/outings/fee-alternatives";
 import { previewLocation, safeUrl } from "@/features/outings/api-query";
 import { detailContent } from "@/features/outings/detail-content";
@@ -36,6 +35,14 @@ export function DetailScreen({ data }: { data: Detail }) {
   })).filter(({ values }) => values.length > 0);
   const checkedAt = data.item.sourceCheckedAt ? new Date(data.item.sourceCheckedAt) : null;
   const checkedDate = checkedAt && Number.isFinite(checkedAt.getTime()) ? seoulDate(checkedAt).replaceAll("-", ".") : null;
+  const evidenceValues = [
+    ...content.description,
+    ...(data.information.address || []),
+    ...groups.flatMap(([key]) => key === "generalFee" && alternativeFees.length > 1 ? alternativeFees.flat() : information[key] || []),
+    ...content.programs.flatMap((note) => note.values),
+    ...content.notes.flatMap((note) => note.values),
+    ...links.map((link) => link.evidence),
+  ];
   return <div className="outing-detail">
     <BackHeading title="상세 정보" labelOnly />
     <div className="detail-cover"><PhotoGallery key={item.id} item={item} photos={data.photos} /></div>
@@ -59,7 +66,6 @@ export function DetailScreen({ data }: { data: Detail }) {
           .map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{key === "generalFee" && alternativeFees.length > 1
             ? <div className="evidence-options">{alternativeFees.map((values, index) => <div className="evidence-entry" key={index}><span className="evidence-label">안내 {index + 1}</span><EvidenceList values={routeFeeBlocks({ generalFee: values }).generalFee || []} presentation="fee" /></div>)}</div>
             : key === "hours" ? <HoursInformation values={information[key] || []} /> : <EvidenceList values={information[key] || []} showLabels={key !== "parkingFee"} presentation={["generalFee", "extraFee", "parkingFee"].includes(key) ? "fee" : key === "closedDays" ? "closedDays" : undefined} />}
-            {detailRefreshNeeded(data, key === "generalFee" && alternativeFees.length > 1 ? alternativeFees.flat() : information[key] || []) && <p className="detail-field-warning">갱신 확인이 필요한 자료예요. 방문 전 {label}을 공식 안내에서 확인해 주세요.</p>}
           </dd></div>)}
       </dl>
     </section>
@@ -79,11 +85,10 @@ export function DetailScreen({ data }: { data: Detail }) {
       <h2>{links.some((link) => link.purpose === "reservation") ? "공식 안내·예약" : "공식 안내"}</h2>
       {links.map((link, index) => <div key={`${link.purpose}-${index}`}>
         <a className="source-link detail-official-link" href={safeUrl(link.url)!} target="_blank" rel="noopener noreferrer"><span><small>{link.purpose === "reservation" ? "예약 안내" : "공식 안내"}</small><strong>{link.purpose === "reservation" ? "예약 페이지 보기" : "공식 홈페이지 보기"}</strong></span><span aria-hidden="true">↗</span></a>
-        <EvidenceSources values={[link.evidence]} />
-        {detailRefreshNeeded(data, [link.evidence]) && <p className="detail-field-warning">갱신 확인이 필요한 안내예요.</p>}
       </div>)}
       {!links.some((link) => link.purpose === "officialWebsite") && <p className="detail-unknown">공식 기관 안내 주소 미확인</p>}
     </section>
-    {checkedDate && <div className="detail-checked"><p>최근 자료 확인 <time dateTime={seoulDate(checkedAt!)}>{checkedDate}</time></p><p>원천 응답의 확인일이며, 방문일 정보는 공식 안내에서 확인해 주세요.</p></div>}
+    {checkedDate && <div className="detail-checked"><p>최근 자료 확인 <time dateTime={seoulDate(checkedAt!)}>{checkedDate}</time></p></div>}
+    <EvidenceSources values={evidenceValues} />
   </div>;
 }
