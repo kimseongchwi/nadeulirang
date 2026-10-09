@@ -16,6 +16,8 @@ export function routeFeeBlocks(original: Detail["information"]) {
   const information = Object.fromEntries(Object.entries(original).map(([key, values]) => [key, [...values]]));
   const titles = new Map((original.notes || []).filter((entry) => entry.field === "infoname")
     .map((entry) => [entry.observationId, comparable(entry.value).replace(/^\[|\]$/g, "")]));
+  // 사용자 선택에 따라 화장실 항목 전체를 표시에서만 생략한다.
+  information.notes = (information.notes || []).filter((entry) => titles.get(entry.observationId) !== "화장실");
   const add = (entry: Evidence, value: string, group: string) => {
     const values = (information[group] || []).filter((existing) => !(group === "generalFee"
       && comparable(existing.value) === "유료" && /\d[\d,]*원/.test(value)
@@ -34,11 +36,24 @@ export function routeFeeBlocks(original: Detail["information"]) {
       return false;
     });
   }
+  information.extraFee = (information.extraFee || []).filter((entry) => {
+    if (entry.field !== "etcChrgeInfo" || !/할인|(?:미취학|장애인|국가유공자|만\s*\d|주민).*무료\s*입장/.test(entry.value)
+      || /체험|주차|셔틀|특별전|\d[\d,]*\s*원/.test(entry.value)) return true;
+    add(entry, entry.value, "discount");
+    return false;
+  });
   // 금액 유무가 아니라 명시된 용도로 분류한다. 조건·예외는 블록 전체와 함께 이동한다.
   for (const group of ["generalFee", "notes"]) {
     information[group] = (information[group] || []).flatMap((entry) => {
       if (entry.field === "infoname") return [entry];
       const title = titles.get(entry.observationId) || "";
+      if (group === "notes" && title === "내국인예약안내") {
+        const value = entry.value.trim() === "가능" ? "내국인 예약 안내" : `내국인 ${entry.value}`;
+        const values = information.reservation || [];
+        if (!values.some((existing) => comparable(existing.value) === comparable(value))) values.push({ ...entry, value });
+        information.reservation = values;
+        return [];
+      }
       if (group === "notes" && /^(?:할인안내|할인정보|예약안내|예약정보)$/.test(title)) {
         const target = title.startsWith("할인") ? "discount" : "reservation";
         const values = information[target] || [];

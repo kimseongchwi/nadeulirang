@@ -41,7 +41,7 @@ export function OutingPreview({ item, open, sample = false }: { item: Outing; op
             <div><dt><Icon name="pin" />위치</dt><dd>{result?.data ? previewLocation(result.data) : regionLabel(item.region_name, item.district_name)}</dd></div>
             {!permanent(item) && <div><dt><Icon name="calendar" />행사 일정</dt><dd>{period(item)}</dd></div>}
           </dl>
-          {!sample && !pending && (!result ? <LoadingState /> : result.status ? result.status === 404 ? <EmptyState title="공개된 정보를 찾을 수 없어요." description="삭제되거나 공개 대상에서 제외된 자료일 수 있어요." /> : <ErrorState onRetry={() => { setResult(null); setAttempt((value) => value + 1); }} /> : null)}
+          {!sample && !pending && (!result ? <div className="outing-preview-loading"><LoadingState /></div> : result.status ? result.status === 404 ? <EmptyState title="공개된 정보를 찾을 수 없어요." description="삭제되거나 공개 대상에서 제외된 자료일 수 있어요." /> : <ErrorState onRetry={() => { setResult(null); setAttempt((value) => value + 1); }} /> : null)}
         </div>
       </div>
       <div className="outing-preview-actions"><button type="button" className="button primary" onClick={() => navigate(`/detail/${item.id}`, true)}>상세 정보 보기 <Icon name="next" /></button></div>

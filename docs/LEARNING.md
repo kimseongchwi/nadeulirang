@@ -103,11 +103,17 @@ searchFormQuery는 URLSearchParams를 복사해 제출 조건을 만들고 scope
 
 Dialog는 service-scroll의 실제 본문 스크롤 영역을 사용한다. 포인터 핸들 드래그와 내부 본문 스크롤을 분리하고 ResizeObserver로 내용/사진 변화 뒤 기본 높이를 다시 계산한다. 확장 높이·고정 버튼·짧은 화면 경계는 sheet-drag의 계산과 테스트로 확인한다.
 
+[OutingPreview](../frontend/src/features/outings/outing-preview.tsx)의 조회 로딩은 본문 위에 `position: absolute`로 겹쳐 표시한다. 로딩 자체를 자연 높이 계산에서 빼므로 대기 중 시트가 크게 열렸다가 줄어들지 않는다. 실제 소개·사진·실패 안내가 바뀌면 기존 ResizeObserver가 내용에 맞는 높이를 계산하고 제목·닫기·하단 상세 버튼은 유지한다.
+
 ### 근거·텍스트·공유 UI
 
-detail-content·detail-information·fee-blocks는 표시용 배열만 만든다. 관측 ID로 반복 안내의 제목/본문을 묶고 의미가 같은 범위의 동일 문장만 정리한다. 입장 무료와 주차 무료는 분리한다. 주소/시간/전화/연령/기간/괄호 예외를 보존하며 모호한 요금 블록은 임의로 분류하지 않는다.
+detail-content·detail-information·fee-blocks는 표시용 배열만 만든다. 관측 ID로 반복 안내의 제목/본문을 묶고 의미가 같은 범위의 동일 문장만 정리한다. detail-content는 사용자 선택에 따라 시설 분류 필드의 ‘공립’ 행만 생략하고 소개 본문은 유지한다. 입장 무료와 주차 무료는 분리한다. 주소/시간/전화/연령/기간/괄호 예외를 보존하며 모호한 요금 블록은 임의로 분류하지 않는다.
 
-ExpandableDetailText는 소개·프로그램의 긴 본문만 펼친다. program-text는 확실한 소제목 접두부만 반환해 strong으로 감싸고 본문을 보존한다. 상세는 최근 자료 확인 날짜를 한 번 표시하며 API의 stale·실패·확인 시각 계약과 조회 오류 처리를 유지한다.
+[fee-presentation.ts](../frontend/src/features/outings/fee-presentation.ts)의 `feeParts`는 교육체험의 완결된 항목/금액 목록만 `group`으로 반환하고 [evidence.tsx](../frontend/src/features/outings/evidence.tsx)는 그 괄호 범위를 하위 행으로 렌더링한다. 괄호 밖 무료는 다음 형제 행으로 남는다. [information-parts.ts](../frontend/src/features/outings/information-parts.ts)의 `serviceInformation`은 안내서비스의 ‘가능(내용)’ 포장만 제거하며 내부 조건·문의와 원래 Evidence 객체를 보존한다. `serviceParts`는 그 결과에서 명확한 요일/시간 쌍과 문의를 나누고 혼합·불완전 조건은 문장으로 유지한다. 저장이나 API 응답을 바꾸지 않는 표시 변환이다.
+
+`routeFeeBlocks`는 명시된 할인·무료 대상과 내국인 예약을 이용 정보 행으로 연결한다. 사용자 선택에 따라 ‘화장실’ 제목의 관측 행 전체는 표시 배열에서 생략하며 다른 항목에 섞인 문구와 원본 Evidence는 유지한다. `hoursParts`는 완결된 기간/시간/입장 마감, `contactParts`는 명확한 기관/전화 관계만 좌우 행으로 반환한다. `displayFeeParts`는 상세 제목과 반복되는 첫 시설명만 정리한다. `AdmissionInformation`은 실제 상세와 가이드가 공유하며 `feeDisplayGroups`의 사용자 선택에 따라 대상별 요금표를 표시하고 허용된 별도 전부 무료 자료는 화면에서 생략한다. 원본 Evidence 배열은 유지한다. 이는 표시 선택이며 `feeAlternatives`의 출처별 충돌 근거·API의 요금 선택을 바꾸거나 무료 대상을 추정하는 동작이 아니다.
+
+ExpandableDetailText는 소개·프로그램의 긴 본문만 펼친다. program-text는 확실한 소제목 접두부만 반환해 strong으로 감싸고 본문을 보존한다. 연속 번호 제목의 첫 항목도 같은 제목으로 처리하고 명시된 주간 일정의 날짜·시간은 본문으로 남긴다. ※로 시작하는 줄은 note로 반환해 evidence-note 스타일로 감싸며 원문 기호·조건·줄바꿈은 유지한다. 시간 표시에서는 text-boundaries가 명확한 회차 뒤 대시를 시간과 연결하고 information-parts가 회차/시간 쌍을 만든다. 상세는 최근 자료 확인 날짜를 한 번 표시하며 API의 stale·실패·확인 시각 계약과 조회 오류 처리를 유지한다.
 
 file_asset은 사진 URL·출처·유형·관측/시각만 보존한다. PhotoPolicy와 API 검사는 허용 호스트/유형을 제한한다. OutingArtwork는 누락·실패 때 아이콘을 사용한다. 브랜드 팔레트는 SiteShell CSS 변수와 icon.ts가 공유한다. 가이드 카드·달력·개발 표시는 features/ui-design에 있으며 실제 서비스와 공유 UI를 사용한다.
 
@@ -125,11 +131,11 @@ file_asset은 사진 URL·출처·유형·관측/시각만 보존한다. PhotoPo
 
 `OutingStore.detail`은 먼저 공개 경계를 확인한 뒤 저장 사진 배열을 읽는다. 요약 `photo`와 상세 `photos[0]`은 같은 순서를 사용하므로 기존 목록 계약을 유지한다. Java의 `record`는 응답 값 묶음이며 사진 조회는 SQL/JdbcTemplate 기능이다. HTTP 조회에 원천 수집을 섞지 않아 새로고침이 TourAPI 예산을 소비하지 않는다.
 
-`PhotoGallery`는 서버가 검증한 저장 사진 배열을 받고 React의 `useState`로 선택 번호·실패 URL을 관리한다. `useRef`는 한 번의 터치 시작 위치만 유지하고, `photoSwipe`는 세로 스크롤과 짧은 접촉을 제외한다. 이 브라우저 상태는 DB 대표 선택을 바꾸지 않는다. 고정 비율 영역 안에 이미지의 자연 비율과 max-width/max-height로 전체 사진을 맞춰 가로/세로 전환의 높이를 유지한다. 둥근 모서리를 이미지 자체에 적용하므로 contain 여백과 실제 사진 모서리가 구분된다. 상세만 갤러리를 사용하고 공통 `OutingArtwork`는 목록·간단 보기에 남는다.
+`PhotoGallery`는 서버가 검증한 저장 사진 배열을 받고 React의 `useState`로 선택 번호·실패 URL을 관리한다. `useRef`는 한 번의 터치 시작 위치만 유지하고, `photoSwipe`는 세로 스크롤과 짧은 접촉을 제외한다. 이 브라우저 상태는 DB 대표 선택을 바꾸지 않는다. 첫 사진을 `gallery-reference`로 문서 흐름에 두고 CSS의 width 100%·height auto로 실제 비율과 영역 높이를 정한다. 다른 사진을 선택하면 첫 사진은 visibility hidden·빈 alt·aria-hidden으로 표시와 낭독만 숨겨 높이를 유지한다. 선택한 이후 사진과 실패 안내는 그 위에 절대 위치로 배치하며 max-width/max-height로 전체 사진을 맞춘다. 첫 사진의 비율을 아직 알 수 없거나 실패하면 Image의 720×480 크기 정보가 3:2 기본 공간을 제공한다. 둥근 모서리는 이미지 자체에 적용한다. 상세와 가이드의 실제 미리보기는 같은 갤러리를 사용하고 공통 `OutingArtwork`는 목록·간단 보기에 남는다.
 
 ### 요금 표시와 출처 확인의 연결
 
-[fee-presentation.ts](../frontend/src/features/outings/fee-presentation.ts)는 원문을 변경하지 않고 제목·명확한 대상/가격·설명으로 이루어진 표시 배열을 반환한다. 괄호 밖의 명시된 복합 항목과 교육체험 안의 완전한 이름/가격 목록만 줄을 나누므로 +나 무료 조건이 계산식으로 바뀌지 않는다. 조건부 무료는 제목으로 쪼개지 않는 text 값이다. 명확한 대상: 개인/단체 문장만 대상 소제목과 요금 행으로 바꾸고 시설별 가격의 휴관 조건, 차종별 기본 요금의 초과 조건을 같은 묶음에 둔다. [fee-blocks.ts](../frontend/src/features/outings/fee-blocks.ts)는 parkingfee/명확한 블록을 프론트 전용 parkingFee 행으로 옮긴다. DB/API에 새 필드를 추가하는 동작은 아니다.
+[fee-presentation.ts](../frontend/src/features/outings/fee-presentation.ts)는 원문을 변경하지 않고 제목·명확한 대상/가격·설명으로 이루어진 표시 배열을 반환한다. 괄호 밖의 명시된 복합 항목과 교육체험 안의 완전한 이름/가격 목록만 줄을 나누므로 +나 무료 조건이 계산식으로 바뀌지 않는다. 유료·예약 등 혼합 예외가 있는 무료 안내는 text로 유지하고, 명확한 연령 대상만 적힌 무료 안내는 대상/무료 쌍이다. 명확한 대상: 개인/단체 문장만 대상 소제목과 요금 행으로 바꾸고 시설별 가격의 휴관 조건, 차종별 기본 요금의 초과 조건을 같은 묶음에 둔다. [fee-blocks.ts](../frontend/src/features/outings/fee-blocks.ts)는 parkingfee/명확한 블록을 프론트 전용 parkingFee 행으로 옮긴다. DB/API에 새 필드를 추가하는 동작은 아니다.
 
 [fee-alternatives.ts](../frontend/src/features/outings/fee-alternatives.ts)는 충돌이 있는 경우 information의 유효 선택과 evidence의 다른 출처 현재 요금을 묶는다. 같은 원천/필드의 빈 응답이나 비선택 값을 유효 선택 대신 쓰지 않는다. [evidence.tsx](../frontend/src/features/outings/evidence.tsx)는 표시 배열을 공통 행/제목/보조 문단으로 렌더링한다. 원천 이름만 반복하는 상세 토글은 제거하고 푸터에서 공통 출처·필수 귀속·이용 조건을 제공한다. 별도 Context나 출처 페이지의 상세 재조회가 필요하지 않다. 새 원천 호출이나 사진 대표 선택 변경은 없다. 갤러리의 effect는 선택 썸네일의 좌우 경계를 비교해 줄의 scrollLeft만 바꾸며 본문 스크롤을 움직이지 않는다. Pointer Events는 가로 드래그가 확인된 뒤 포인터를 캡처해 썸네일 줄만 이동하고 드래그 뒤 클릭 선택은 억제한다. 세로 스크롤·핀치는 브라우저에 맡긴다.
 

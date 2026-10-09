@@ -2,7 +2,7 @@ import type { Evidence } from "./api-types";
 import { formatSeasonalHours } from "./seasonal-hours.ts";
 import { informationLines } from "./text-boundaries.ts";
 
-export type EvidencePresentation = "fee" | "closedDays" | "service";
+export type EvidencePresentation = "fee" | "closedDays" | "service" | "contact";
 const feeFields = new Set(["adultChrge", "yngbgsChrge", "childChrge", "admissionAdult"]);
 function money(value: string) {
   if (!/^(?:\d+|\d{1,3}(?:,\d{3})+)(?:원)?$/.test(value)) return value;

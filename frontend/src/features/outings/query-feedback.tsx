@@ -3,6 +3,6 @@ import { ErrorState, EmptyState } from "@/components/ui/feedback";
 import { NavigationLink, useNavigation } from "@/providers/navigation-provider";
 export function QueryFeedback({ status, message }: { status: number; message: string }) {
   const { refresh } = useNavigation();
-  if (status === 400) return <EmptyState title="검색 조건을 확인해 주세요." description={message}><NavigationLink href="/search" className="button secondary">초기화</NavigationLink></EmptyState>;
-  return <ErrorState onRetry={refresh} />;
+  if (status === 400) return <EmptyState placement="page" title="검색 조건을 확인해 주세요." description={message}><NavigationLink href="/search" className="button secondary">초기화</NavigationLink></EmptyState>;
+  return <ErrorState placement="page" onRetry={refresh} />;
 }

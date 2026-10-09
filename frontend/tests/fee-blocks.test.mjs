@@ -83,3 +83,34 @@ test("주차 필드와 반복 주차 안내만 독립 행으로 모으고 대상
   assert.equal(ambiguous.parkingFee, undefined);
   assert.equal(ambiguous.notes[1].value, mixed);
 });
+
+test("내국인 예약 조건은 유지하고 화장실 항목 전체는 표시에서만 생략한다", () => {
+  const original = {notes:[entry("infoname","내국인예약안내","예약"),entry("infotext","단체 사전 전화예약","예약"),
+    entry("infoname","내국인예약안내","가능"),entry("infotext","가능","가능"),
+    entry("infoname","예약안내","접수"),entry("infotext","전화 예약 가능(관람 당일 30분 전 접수 가능)","접수"),
+    entry("infoname","화장실","단순"),entry("infotext","있음","단순"),
+    entry("infoname","화장실","상세"),entry("infotext","있음(1층, 장애인 이용 가능)","상세")]};
+  const before=structuredClone(original); const result=routeFeeBlocks(original);
+  assert.deepEqual(result.reservation.map(e=>e.value),["내국인 단체 사전 전화예약","내국인 예약 안내","전화 예약 가능(관람 당일 30분 전 접수 가능)"]);
+  assert.deepEqual(detailContent(result).notes,[]);
+  assert.equal(result.notes.some(e=>["단순","상세"].includes(e.observationId)),false);
+  assert.equal(routeFeeBlocks({notes:[entry("infoname","내국인예약안내"),entry("infotext","불가능")]}).reservation[0].value,"내국인 불가능");
+  assert.deepEqual(routeFeeBlocks(result),result); assert.deepEqual(original,before);
+});
+
+test("화장실 제목으로 묶인 자료만 생략하고 다른 안내의 문구와 원본을 보존한다", () => {
+  const original={notes:[entry("infotext","화장실(남녀 구분)","화장실"),entry("infoname","[화장실]","화장실"),
+    entry("infoname","이용 안내","다른 안내"),entry("infotext","화장실은 별관 이용, 사전 예약 필수","다른 안내"),
+    entry("infotext","제목 없는 화장실 관련 문의","제목 없음")]};
+  const before=structuredClone(original);const result=routeFeeBlocks(original);
+  assert.deepEqual(result.notes,original.notes.filter(e=>e.observationId!=="화장실"));
+  assert.deepEqual(routeFeeBlocks(result),result);
+  assert.deepEqual(original,before);
+});
+test("대상별 할인·무료 입장은 할인 안내로 옮기고 혼합 추가 요금·불완전 비율은 그대로 둔다", () => {
+  const text="달성군민 50 할인, 미취학, 장애인, 국가유공자 등 조례에 따른 무료입장";
+  const original={extraFee:[entry("etcChrgeInfo",text),entry("etcChrgeInfo","교육체험 3000원, 주민 할인","체험"),entry("etcChrgeInfo","입장료 1000원, 장애인 무료입장","혼합")]};
+  const before=structuredClone(original); const result=routeFeeBlocks(original);
+  assert.equal(result.discount[0].value,text); assert.equal(result.extraFee.length,2);
+  assert.deepEqual(routeFeeBlocks(result),result); assert.deepEqual(original,before);
+});
