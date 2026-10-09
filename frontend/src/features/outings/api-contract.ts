@@ -49,6 +49,9 @@ export function isOptions(value: unknown): value is Options {
 }
 export function isDetail(value: unknown): value is Detail {
   return record(value) && isSummary(value.item) && arrayOf(value.sources, isSource) && record(value.information)
+    && arrayOf(value.photos, isPhoto)
+    && new Set(value.photos.map((photo) => photo.url)).size === value.photos.length
+    && (value.photos.length === 0 ? value.item.photo === null : value.item.photo?.id === value.photos[0].id && value.item.photo.url === value.photos[0].url)
     && Object.values(value.information).every((entries) => arrayOf(entries, isEvidence))
     && (value.evidence === undefined || arrayOf(value.evidence, isSourceEvidence))
     && Array.isArray(value.links) && value.links.every((link: unknown) => record(link) && strings(link, ["purpose", "url"]) && isEvidence(link.evidence))

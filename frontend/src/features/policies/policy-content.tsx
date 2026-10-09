@@ -44,6 +44,7 @@ export function PolicyContent({ type, samplePhoto = false }: { type: PolicyType;
               {" · "}
               <a href="https://www.kogl.or.kr/info/licenseType1.do" target="_blank" rel="noopener noreferrer">공공누리 제1유형(출처 표시)</a>
             </p>
+            <p>한국관광공사 제공 사진 중 제1유형으로 확인한 자료를 사용합니다. 피사체의 명예·인격을 침해하는 용도와 기업 CI·BI로 사용하지 않습니다. 목록은 일부 잘라 표시하고 상세는 전체 사진을 표시합니다.</p>
             {samplePhoto && <details className="policy-photo-credits">
               <summary>가이드 표본 사진 출처</summary>
               <ul>

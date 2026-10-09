@@ -124,3 +124,11 @@ file_asset은 사진 URL·출처·유형·관측/시각만 보존한다. PhotoPo
 `CollectionRunner`의 `photos-replay`는 DB에 저장된 호출 ID와 검토 URL 목록을 읽는다. `CollectionStore.replayPhotos`는 요청 contentid·전체 응답의 contentid·Type1·허용 URL을 대조한 후 같은 저장 원문만 `ingest`에 넘긴다. 사진별 `source_observation`을 유지하고 `file_asset`의 URL 중복 제거·대표·순서를 같은 트랜잭션에서 처리한다. V6는 기존 사진을 지우지 않고 대표 선택을 활성 여부에서 분리한다. 실제 보완 호출은 `SourceClient.reserve`의 영속 예산을 적용하며 페이지 원문과 `CollectionCheckpointStore` 커서를 남긴다.
 
 `OutingStore.detail`은 먼저 공개 경계를 확인한 뒤 저장 사진 배열을 읽는다. 요약 `photo`와 상세 `photos[0]`은 같은 순서를 사용하므로 기존 목록 계약을 유지한다. Java의 `record`는 응답 값 묶음이며 사진 조회는 SQL/JdbcTemplate 기능이다. HTTP 조회에 원천 수집을 섞지 않아 새로고침이 TourAPI 예산을 소비하지 않는다.
+
+`PhotoGallery`는 서버가 검증한 저장 사진 배열을 받고 React의 `useState`로 선택 번호·실패 URL을 관리한다. `useRef`는 한 번의 터치 시작 위치만 유지하고, `photoSwipe`는 세로 스크롤과 짧은 접촉을 제외한다. 이 브라우저 상태는 DB 대표 선택을 바꾸지 않는다. 고정 비율 영역의 CSS contain은 사진 전체를 보존하며 가로/세로 전환의 레이아웃 이동을 줄인다. 상세만 갤러리를 사용하고 공통 `OutingArtwork`는 목록·간단 보기에 남는다.
+
+### 요금 표시와 출처 확인의 연결
+
+[fee-presentation.ts](../frontend/src/features/outings/fee-presentation.ts)는 원문을 변경하지 않고 제목·명확한 대상/가격·설명으로 이루어진 표시 배열을 반환한다. 괄호 밖의 명시된 복합 항목과 교육체험 안의 완전한 이름/가격 목록만 줄을 나누므로 +나 무료 조건이 계산식으로 바뀌지 않는다. [fee-blocks.ts](../frontend/src/features/outings/fee-blocks.ts)는 parkingfee/명확한 블록을 프론트 전용 parkingFee 행으로 옮긴다. DB/API에 새 필드를 추가하는 동작은 아니다.
+
+[fee-alternatives.ts](../frontend/src/features/outings/fee-alternatives.ts)는 충돌이 있는 경우 information의 유효 선택과 evidence의 다른 출처 현재 요금을 묶는다. 같은 원천/필드의 빈 응답이나 비선택 값을 유효 선택 대신 쓰지 않는다. [evidence.tsx](../frontend/src/features/outings/evidence.tsx)의 EvidenceSources는 자료 바로 아래에서 근거를 펼치고 푸터는 공통 조건만 제공한다. 별도 Context나 출처 페이지의 상세 재조회가 필요하지 않다. 새 원천 호출이나 사진 대표 선택 변경은 없다. 갤러리의 effect는 선택 썸네일의 좌우 경계를 비교해 줄의 scrollLeft만 바꾸며 본문 스크롤을 움직이지 않는다. Pointer Events는 가로 드래그가 확인된 뒤 포인터를 캡처해 썸네일 줄만 이동하고 드래그 뒤 클릭 선택은 억제한다. 세로 스크롤·핀치는 브라우저에 맡긴다.

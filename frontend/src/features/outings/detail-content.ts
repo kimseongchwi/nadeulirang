@@ -8,7 +8,7 @@ const noteGroups: Readonly<Record<string, string>> = {
   "휴관·휴무": "closedDays", 휴관일: "closedDays", 휴무일: "closedDays",
   입장료: "generalFee", "일반입장료안내": "generalFee", 이용요금: "generalFee",
   "체험·추가요금": "extraFee", 할인안내: "discount", 예약안내: "reservation", 연락처: "contact",
-  주차: "parking", 주차안내: "parking", 주차요금: "parking",
+  주차: "parkingFee", 주차안내: "parkingFee", 주차요금: "parkingFee",
 };
 
 export function detailContent(information: Detail["information"]) {
@@ -23,8 +23,6 @@ export function detailContent(information: Detail["information"]) {
   }
   const known = new Map(Object.entries(information).filter(([key]) => key !== "notes")
     .map(([key, values]) => [key, new Set(values.map((entry) => comparable(entry.value)).filter(Boolean))]));
-  known.set("parking", new Set((information.extraFee || []).filter((entry) => entry.field === "parkingfee")
-    .map((entry) => comparable(entry.value)).filter(Boolean)));
   const addUnique = (values: Evidence[], group: string) => values.filter((entry) => {
     const value = comparable(entry.value);
     const seen = known.get(group) || new Set<string>();

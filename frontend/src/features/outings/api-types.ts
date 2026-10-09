@@ -28,6 +28,7 @@ export type SourceInfo = {
 };
 export type Detail = {
   item: Summary; sources: SourceInfo[]; information: Record<string, Evidence[]>;
+  photos: Photo[];
   links: { purpose: string; url: string; evidence: Evidence }[];
   unconfirmed: string[]; asOfDate: string;
   evidence?: SourceEvidence[];

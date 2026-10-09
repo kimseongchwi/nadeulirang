@@ -93,7 +93,7 @@ test("실제 API 상태를 표시에 사용하고 미확인 요금·주소에 �
   assert.equal(isSummary(summary), true);
   assert.equal(isSummary({ ...summary, districtName: undefined }), false);
   assert.equal(isSummary({ ...summary, districtName: 123 }), false);
-  const detail = { item: summary, sources: [], information: {}, links: [], unconfirmed: [], asOfDate: "2026-10-05" };
+  const detail = { item: summary, photos: [], sources: [], information: {}, links: [], unconfirmed: [], asOfDate: "2026-10-05" };
   assert.equal(isDetail(detail), true);
   assert.equal(isDetail({ ...detail, evidence: [] }), true);
   assert.equal(isDetail({ ...detail, evidence: [{ field: "adultChrge", value: "0" }] }), false);
