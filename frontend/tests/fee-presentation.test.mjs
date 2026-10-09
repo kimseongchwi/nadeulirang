@@ -35,10 +35,10 @@ test("조건부 무료는 제목으로 쪼개지 않고 유료 조건을 자료 
   ]);
 });
 
-test("다음 이름·금액이 명시된 요금 구분 대시만 띄우며 원문·날짜·범위·전화번호를 보존한다", () => {
+test("명시된 시설별 가격과 휴관 조건을 분리하며 원문·날짜·범위·전화번호를 보존한다", () => {
   const raw = "돔하우스 5,000원(공사에 따른 휴관)- 큐빅하우스 3,000원";
   const input = entry(raw);
-  assert.deepEqual(feeParts(input), [{ kind: "text", text: "돔하우스 5,000원(공사에 따른 휴관) - 큐빅하우스 3,000원" }]);
+  assert.deepEqual(feeParts(input), [{ kind: "pair", label: "돔하우스", price: "5,000원", note: "(공사에 따른 휴관)" }, { kind: "pair", label: "큐빅하우스", price: "3,000원" }]);
   assert.equal(input.value, raw);
   for (const text of ["2026-10-09", "1,000원-3,000원", "문의 055-123-4567", "관람 5,000원(휴관 2026-10-09)", "관람 5,000원(공사-휴관)"])
     assert.deepEqual(feeParts(entry(text)), [{ kind: "text", text }]);

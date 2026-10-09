@@ -17,7 +17,7 @@ export function OutingCard({ item, sample = false }: { item: Outing; sample?: bo
         <span className="outing-card-content">
           <span className="outing-card-meta">{regionLabel(item.region_name, item.district_name)} <span>·</span> {kindNames[item.kind]}</span>
           <span className="outing-card-name">{item.name}</span>
-          <span className="outing-card-period">{permanent(item) ? "상설 · 운영일 확인 필요" : period(item)}</span>
+          {!permanent(item) && <span className="outing-card-period">{period(item)}</span>}
           <span className="outing-card-bottom"><Badge item={item} /></span>
         </span>
       </button>

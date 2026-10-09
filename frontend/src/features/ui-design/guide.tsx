@@ -13,7 +13,7 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/ui/feedback";
 import { OutingCard } from "@/features/outings/outing-card";
 import { PolicyLinks } from "@/features/policies/policy-links";
 import { Pagination } from "@/features/outings/pagination";
-import { EvidenceList, UnknownValue } from "@/features/outings/evidence";
+import { AddressInformation, EvidenceList, HoursInformation, UnknownValue } from "@/features/outings/evidence";
 import type { Evidence } from "@/features/outings/api-types";
 
 const feeSample = (field: string, value: string): Evidence => ({ field, value, source: "TOUR", sourceKey: "가이드", url: "https://www.data.go.kr/data/15101578/openapi.do", sourceReference: null, collectedAt: "2026-10-09T00:00:00Z", checkedAt: "2026-10-09T00:00:00Z", stale: false, observationId: "가이드" });
@@ -212,22 +212,22 @@ export function GuideReview() {
           </section>
           <section id="detail-examples" className="guide-detail-examples">
             <h2>상세 요금·빈 자료 예시</h2>
-              <p className="section-description">표시 검토용 표본입니다. 공통 출처·이용 조건은 푸터에서, 자료 근거의 원천 이름은 실제 상세 본문 끝에서 확인합니다. 서로 다른 요금은 안내 1·2를 바로 보여줍니다. 실제 상세 갤러리는 위 미리보기를 사용해요.</p>
+              <p className="section-description">표시 검토용 표본입니다. 공통 출처·이용 조건은 푸터에서 확인합니다. 서로 다른 요금은 안내 1·2를 바로 보여줍니다. 실제 상세 갤러리는 위 미리보기를 사용해요.</p>
             <div className="sample"><dl className="detail-facts">
               <div><dt>입장료 안내 · 그룹 표본</dt><dd><EvidenceList presentation="fee" values={[feeSample("usefee", "[개인]- 일반 1,500원- 청소년 1,000원- 어린이 800원[단체(10인 이상)]- 일반 1,000원- 청소년 700원- 어린이 500원 [개인/단체 도민]- 일반 750원- 청소년 500원- 어린이 400원")]} /></dd></div>
               <div><dt>체험·추가 요금 · 복합 표본</dt><dd><EvidenceList presentation="fee" values={[feeSample("etcChrgeInfo", "단체 관람료 1000원+교육체험(보호자 입장권 2000원+아트키친 타일액자 10000원+소품 15000원+컬러링세라믹 10000원)+무료(유치원생~초등학생)")]} /></dd></div>
               <div><dt>체험·추가 요금 · 무료 조건</dt><dd><EvidenceList presentation="fee" values={[feeSample("etcChrgeInfo", "무료(김치체험학교 유료)")]} /></dd></div>
               <div><dt>입장료 안내 · 항목 구분</dt><dd><EvidenceList presentation="fee" values={[feeSample("usefee", "돔하우스 5,000원(공사에 따른 휴관)- 큐빅하우스 3,000원")]} /></dd></div>
               <div><dt>주차 요금</dt><dd><EvidenceList presentation="fee" showLabels={false} values={[feeSample("parkingfee", "무료")]} /></dd></div>
+              <div><dt>운영 시간 · 기간/입장 마감</dt><dd><HoursInformation values={[feeSample("usetime", "[1월~2월/11월~12월]09:00~17:00 (입장마감 16:00)[3월~5월/9월~10월]09:00~18:00 (입장마감 17:00)")]} /></dd></div>
+              <div><dt>운영 시간 · 평일/휴일</dt><dd><HoursInformation values={[feeSample("weekdayOperOpenHhmm", "09:00"), feeSample("weekdayOperColseHhmm", "17:00"), feeSample("holidayOperOpenHhmm", "10:00"), feeSample("holidayCloseOpenHhmm", "18:00")]} /></dd></div>
+              <div><dt>휴관·휴무</dt><dd><EvidenceList presentation="closedDays" values={[feeSample("restdate", "매주 화요일 ※ 단, 정기휴일이 공휴일 및 대체공휴일과 겹칠 경우에는 개방하며, 그 다음의 첫 번째 비공휴일이 정기휴일임")]} /></dd></div>
+              <div><dt>입장료 안내 · 대상/개인/단체</dt><dd><EvidenceList presentation="fee" values={[feeSample("usefee", "[오죽헌·시립박물관]- 어른 : 개인 3,000원 / 단체 2,000원- 청소년·군인 : 개인 2,000원 / 단체 1,500원- 어린이 : 개인 1,000원 / 단체 500원※ 무료 : 만65세 이상 / 강릉 시민 본인 / 만 6세 이하 미취학 아동※ 단체 : 30명 이상")]} /></dd></div>
+              <div><dt>주차 요금 · 기본/초과</dt><dd><EvidenceList presentation="fee" showLabels={false} values={[feeSample("parkingfee", "[소형차] 기본 1시간 3,000원 / 초과 시 매 10분마다 800원[중·대형차] 기본 1시간 5,000원 / 초과 시 매 10분마다 800원")]} /></dd></div>
+              <div><dt>주소</dt><dd><AddressInformation values={[feeSample("rdnmadr", "서울특별시 종로구 사직로 161"), feeSample("addr2", "광화문 입구")]} /></dd></div>
+              <div><dt>한국어안내서비스</dt><dd><EvidenceList presentation="service" showLabels={false} values={[feeSample("infotext", "가능(화요일~일요일 10:00~17:00)※ 전화 문의 : 063-626-1330")]} /></dd></div>
               <div><dt>연락처 · 빈 자료</dt><dd><UnknownValue /></dd></div>
             </dl></div>
-            <div className="sample"><h3>빈 자료 대시 길이 비교</h3>
-              <dl className="detail-facts">
-                <div><dt>긴 대시 — · 비교</dt><dd><UnknownValue mark="—" /></dd></div>
-                <div><dt>짧은 대시 – · 현재 표시</dt><dd><UnknownValue /></dd></div>
-              </dl>
-              <p className="hint">빈 자료는 짧은 대시를 15px·600·보조색으로 표시합니다. 긴 대시는 길이 비교용이며, 화면 낭독은 모두 미확인으로 읽습니다.</p>
-            </div>
           </section>
           <section id="navigation">
             <h2>02 · 상단·하단 내비게이션</h2>
@@ -279,7 +279,7 @@ export function GuideReview() {
               </div>
               <p className="hint">
                 로그인·북마크·상황별 AI 추천의 자리만 보는 가이드 예시입니다.
-                버튼은 선 아이콘을 유지하고 라벨의 진한 색상·굵기로 선택을 구분합니다.
+                버튼은 선 아이콘을 유지하고 진한 초록색·라벨 700·조금 굵은 선으로 선택을 구분합니다.
                 북마크 저장이나 AI 추천을 실행하지 않아요.
               </p>
             </div>
@@ -486,7 +486,7 @@ export function GuideReview() {
             </div>
             <div className="sample">
               <h3>상세 본문·조건 안내</h3>
-              <p className="small muted">프로그램 본문·소제목은 15px, 본문 400·소제목 600입니다. 콜론 뒤 설명과 날짜는 본문 굵기로 표시하고 긴 내용은 처음 5줄/더 보기·접기를 유지합니다.</p>
+              <p className="small muted">본문 값은 15px·400, 명확한 소제목은 14px·600, 가격·무료는 15px·500, 조건은 13px·400입니다. 콜론 뒤 설명과 날짜는 본문 굵기로 표시하고 긴 내용은 처음 5줄/더 보기·접기를 유지합니다.</p>
               <p className="hint">개인·단체·주민·무료 조건은 요금 행에서 함께 읽고, 전화 문의 같은 주석은 다음 줄의 보통 굵기로 표시합니다. 요금 괄호·요일·기간을 보존하며 체험·셔틀은 추가 요금, 주차는 독립 행으로 구분합니다.</p>
             </div>
           </section>
