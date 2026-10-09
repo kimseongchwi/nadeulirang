@@ -178,5 +178,55 @@ class CollectionBatchTests {
         runner.run(new DefaultApplicationArguments("--collection.mode=batch","--collection.max-items=5","--collection.campaign=test","--collection.env-file="+keys));
     }
 
+    @Test @DisplayName("사진 페이지는 시도별 공유 예산에서 차감하고 다음 실행에 저장 커서부터 재개한다")
+    void resumesPhotoBudget() throws Exception {
+        Instant at = Instant.now().minusSeconds(60);
+        var common = json.readTree("{\"contentid\":\"photo\",\"title\":\"검증 시설\"}");
+        var commonCall = store.reserve(Source.TOUR, "detailCommon2", json.createObjectNode(), at);
+        store.finish(commonCall, Source.TOUR, new SourceResponse("SUCCESS", "0000", common, java.util.List.of(common)), at);
+        store.ingest(Source.TOUR, commonCall, common, "detailCommon2", "TOUR:photo", "MUSEUM", "11", "서울특별시", "검증", at);
+        Path keys = directory.resolve("photo.env");
+        Files.writeString(keys, "TOURAPI_SERVICE_KEY=test\n");
+        Path seed = directory.resolve("photos.json");
+        var targets = json.createObjectNode();
+        targets.putArray("standard");
+        var item = targets.putArray("tour").addObject().put("id", "photo").put("photoCampaign", "photo-test");
+        var urls = item.putArray("photoUrls");
+        for (int i=1; i<=21; i++) urls.add("https://tong.visitkorea.or.kr/cms/resource/01/"+i+"_image2_1.jpg");
+        Files.writeString(seed, targets.toString());
+        var client = mock(SourceClient.class);
+        when(client.fetch(any(), eq("detailImage2"), any(), anyString())).thenAnswer(invocation -> {
+            JsonNode query = invocation.getArgument(2);
+            var started = at.plusSeconds(2L * calls.incrementAndGet());
+            var call = store.reserve(Source.TOUR, "detailImage2", query, started);
+            var root = json.createObjectNode();
+            var response = root.putObject("response");
+            response.putObject("header").put("resultCode", "0000");
+            var body = response.putObject("body");
+            body.put("totalCount", 21);
+            var rows = body.putObject("items").putArray("item");
+            int start = query.path("pageNo").asInt() == 1 ? 1 : 21;
+            for (int i=start; i<=Math.min(21,start+19); i++) rows.addObject().put("contentid", "photo").put("cpyrhtDivCd", "Type1")
+                .put("originimgurl", "https://tong.visitkorea.or.kr/cms/resource/01/"+i+"_image2_1.jpg");
+            var reply = SourceResponse.parse(Source.TOUR, 200, root.toString(), null);
+            store.finish(call, Source.TOUR, reply, started);
+            return new SourceClient.Result(call, reply, started);
+        });
+        var args = new DefaultApplicationArguments("--collection.mode=supplement", "--collection.operations=detailImage2",
+            "--collection.seed-file="+seed, "--collection.env-file="+keys, "--collection.account-limit=1000",
+            "--collection.quota-remaining=10", "--collection.quota-checked-at="+Instant.now().minusSeconds(1), "--collection.photo-call-budget=1");
+        new CollectionRunner(client,store,mock(ConfigurableApplicationContext.class),checkpoints).run(args);
+        assertThat(calls.get()).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM file_asset", Integer.class)).isEqualTo(20);
+        assertThat(jdbc.queryForObject("SELECT page_no FROM collection_checkpoint", Integer.class)).isEqualTo(2);
+        new CollectionRunner(client,store,mock(ConfigurableApplicationContext.class),checkpoints).run(args);
+        assertThat(calls.get()).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM file_asset", Integer.class)).isEqualTo(21);
+        new CollectionRunner(client,store,mock(ConfigurableApplicationContext.class),checkpoints).run(args);
+        assertThat(calls.get()).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT completed FROM collection_checkpoint", Boolean.class)).isTrue();
+        verify(client, times(2)).fetch(eq(Source.TOUR), eq("detailImage2"), any(), anyString());
+    }
+
     @AfterAll void removeSchema() { jdbc.execute("DROP SCHEMA \""+SCHEMA+"\" CASCADE"); }
 }

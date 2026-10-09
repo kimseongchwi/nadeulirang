@@ -118,3 +118,9 @@ file_asset은 사진 URL·출처·유형·관측/시각만 보존한다. PhotoPo
 프론트 회귀는 URL 조건·런타임 계약·요금/시간·원문/소제목 보존·시트 경계를 확인한다. 없어진 가이드 검색 구현 테스트는 제거하되 서울 자정·윤년은 date-model.test.mjs에 남긴다. 로컬 도구 테스트는 인증값 비노출·설정 우선순위·커밋 차단을 검증한다. 훅/CI 명령은 README를 따른다.
 
 선택 연습: SourceCallRepository.save 뒤 JDBC로 읽는 시점을 커밋 전/후로 비교하거나 빈 요금과 문자열 0의 차이를 CollectionPolicyTests에서 확인한다. 제품 코드를 학습용으로 변경할 필요는 없다.
+
+## 추가 사진의 저장과 조회
+
+`CollectionRunner`의 `photos-replay`는 DB에 저장된 호출 ID와 검토 URL 목록을 읽는다. `CollectionStore.replayPhotos`는 요청 contentid·전체 응답의 contentid·Type1·허용 URL을 대조한 후 같은 저장 원문만 `ingest`에 넘긴다. 사진별 `source_observation`을 유지하고 `file_asset`의 URL 중복 제거·대표·순서를 같은 트랜잭션에서 처리한다. V6는 기존 사진을 지우지 않고 대표 선택을 활성 여부에서 분리한다. 실제 보완 호출은 `SourceClient.reserve`의 영속 예산을 적용하며 페이지 원문과 `CollectionCheckpointStore` 커서를 남긴다.
+
+`OutingStore.detail`은 먼저 공개 경계를 확인한 뒤 저장 사진 배열을 읽는다. 요약 `photo`와 상세 `photos[0]`은 같은 순서를 사용하므로 기존 목록 계약을 유지한다. Java의 `record`는 응답 값 묶음이며 사진 조회는 SQL/JdbcTemplate 기능이다. HTTP 조회에 원천 수집을 섞지 않아 새로고침이 TourAPI 예산을 소비하지 않는다.

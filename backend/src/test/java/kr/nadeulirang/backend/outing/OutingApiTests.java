@@ -31,6 +31,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(OutingApiTests.TimeConfiguration.class)
@@ -303,7 +304,7 @@ class OutingApiTests {
         assertThat(olderEvidence.path("sources").get(0).path("stale").asBoolean()).isFalse();
     }
 
-    @Test @DisplayName("대표 사진은 중복 없이 재수집하고 실패 보존·유형 변경·사진 제거를 반영한다")
+    @Test @DisplayName("대표 사진은 중복 없이 재처리하고 실패·공란 보존과 명시적인 유형 변경을 반영한다")
     void storesRepresentativePhotoHistory() throws Exception {
         UUID id = save("사진 시설", "MUSEUM", "11", "", "");
         var row = json.createObjectNode().put("contentid", "1").put("title", "사진 시설")
@@ -327,7 +328,65 @@ class OutingApiTests {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM file_asset", Integer.class)).isEqualTo(2);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM file_asset WHERE active", Integer.class)).isEqualTo(1);
         ingest(row.put("firstimage", ""), "detailCommon2", "MUSEUM", "11", NOW);
-        assertThat(outings.detail(id, NOW).item().photo()).isNull();
+        assertThat(outings.detail(id, NOW).item().photo()).isNotNull();
+    }
+
+    @Test @DisplayName("추가 사진은 원문·동일 대상·Type1을 대조하고 대표·순서·중복·0건·실패·비공개 경계를 유지한다")
+    void storesGalleryFromSavedResponse() throws Exception {
+        UUID id = save("사진 시설", "MUSEUM", "11", "", "");
+        String first = "https://tong.visitkorea.or.kr/cms/resource/01/123_image2_1.jpg";
+        String second = "https://tong.visitkorea.or.kr/cms/resource/02/124_image2_1.jpg";
+        var row = json.createObjectNode().put("contentid", "1").put("title", "사진 시설").put("firstimage", first).put("cpyrhtDivCd", "Type1");
+        ingest(row, "detailCommon2", "MUSEUM", "11", NOW.minusSeconds(20));
+        var payload = json.createObjectNode();
+        var response = payload.putObject("response");
+        response.putObject("header").put("resultCode", "0000");
+        var body = response.putObject("body");
+        body.put("totalCount", 3);
+        var images = body.putObject("items").putArray("item");
+        images.addObject().put("contentid", "1").put("originimgurl", first).put("cpyrhtDivCd", "Type1").put("imgname", "시설 외관");
+        images.addObject().put("contentid", "1").put("originimgurl", second).put("cpyrhtDivCd", "Type1").put("imgname", "시설 내부");
+        images.addObject().put("contentid", "1").put("originimgurl", "https://tong.visitkorea.or.kr/cms/resource/03/125_image2_1.jpg").put("cpyrhtDivCd", "Type3");
+        UUID call = UUID.randomUUID();
+        jdbc.update("INSERT INTO source_call(id,source,operation,query,started_at,outcome) VALUES (?,'TOUR','detailImage2','{\"contentId\":\"1\"}'::jsonb,?,'STARTED')", call, java.sql.Timestamp.from(NOW));
+        collection.finish(call, Source.TOUR, SourceResponse.parse(Source.TOUR, 200, payload.toString(), null), NOW);
+        collection.replayPhotos("1", call, java.util.Set.of(first, second));
+        collection.replayPhotos("1", call, java.util.Set.of(first, second));
+        var detail = outings.detail(id, NOW);
+        assertThat(detail.photos()).extracting(OutingResponse.Photo::url).containsExactly(first, second);
+        assertThat(detail.item().photo().url()).isEqualTo(first);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM file_asset", Integer.class)).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM source_observation WHERE call_id=?", Integer.class, call)).isEqualTo(2);
+        collection.failedRecord(Source.TOUR, "1", "detailImage2", "CONNECTION_FAILED", NOW.plusSeconds(1));
+        collection.emptyOperation(Source.TOUR, "1", "detailImage2", NOW.plusSeconds(2));
+        collection.replayPhotos("1", call, java.util.Set.of(first, second));
+        assertThat(jdbc.queryForObject("SELECT last_failure_code FROM source_record WHERE source_key='1'", String.class)).isEqualTo("EMPTY_DETAIL");
+        assertThat(outings.detail(id, NOW).photos()).hasSize(2);
+        assertThatThrownBy(() -> collection.replayPhotos("2", call, java.util.Set.of(second))).isInstanceOf(IllegalArgumentException.class);
+        var mismatch = (tools.jackson.databind.node.ObjectNode) images.get(1).deepCopy();
+        mismatch.put("contentid", "2");
+        assertThatThrownBy(() -> collection.ingest(Source.TOUR, call, mismatch, "detailImage2", null, null, null, null, null, NOW)).isInstanceOf(IllegalArgumentException.class);
+        jdbc.update("UPDATE outing SET visibility='HIDDEN' WHERE id=?", id);
+        assertThat(get("/" + id).statusCode()).isEqualTo(404);
+        jdbc.update("UPDATE outing SET visibility='VISIBLE',review_status='PENDING' WHERE id=?", id);
+        assertThat(get("/" + id).statusCode()).isEqualTo(404);
+    }
+
+    @Test @DisplayName("기존 대표가 없으면 검토한 첫 추가 사진을 요약과 상세의 대표로 사용한다")
+    void selectsFirstGalleryPhoto() {
+        UUID id = save("사진 없는 시설", "MUSEUM", "11", "", "");
+        String url = "https://tong.visitkorea.or.kr/cms/resource/01/123_image2_1.jpg";
+        var payload = json.readTree("""
+            {"response":{"header":{"resultCode":"0000"},"body":{"totalCount":1,"items":{"item":[
+            {"contentid":"1","originimgurl":"https://tong.visitkorea.or.kr/cms/resource/01/123_image2_1.jpg","cpyrhtDivCd":"Type1"}]}}}}
+            """);
+        UUID call = UUID.randomUUID();
+        jdbc.update("INSERT INTO source_call(id,source,operation,query,started_at,outcome) VALUES (?,'TOUR','detailImage2','{\"contentId\":\"1\"}'::jsonb,?,'STARTED')", call, java.sql.Timestamp.from(NOW));
+        collection.finish(call, Source.TOUR, SourceResponse.parse(Source.TOUR, 200, payload.toString(), null), NOW);
+        collection.replayPhotos("1", call, java.util.Set.of(url));
+        assertThat(outings.detail(id, NOW).item().photo().url()).isEqualTo(url);
+        ingest(json.createObjectNode().put("contentid", "1").put("firstimage", "").put("cpyrhtDivCd", "Type3"), "detailCommon2", "MUSEUM", "11", NOW.plusSeconds(2));
+        assertThat(outings.detail(id, NOW).photos()).hasSize(1);
     }
 
     @Test @DisplayName("임의 호스트·쿼리·미확인 유형 사진은 거부하고 비공개 항목의 사진을 노출하지 않는다")

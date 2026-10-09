@@ -35,7 +35,7 @@ public final class OutingResponse {
 
     public record Detail(Summary item, List<Source> sources, Map<String, List<Evidence>> information,
                          List<Link> links, List<String> unconfirmed, LocalDate asOfDate,
-                         List<Evidence> evidence) { }
+                         List<Evidence> evidence, List<Photo> photos) { }
 
     public record Region(String code, String name, long count) { }
     public record Kind(String code, long count) { }
