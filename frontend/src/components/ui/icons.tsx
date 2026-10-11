@@ -13,6 +13,7 @@ const shapes = {
       <path d="m16 16 5 5" />
     </>
   ),
+  user: <><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" /></>,
   menu: <path d="M4 6h16M4 12h16M4 18h16" />,
   filter: (
     <>

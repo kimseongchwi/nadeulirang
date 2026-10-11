@@ -18,15 +18,12 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const style: DialogStyle = {};
   for (const [key, value] of Object.entries(brandPalette))
     style[`--${key}`] = value;
-  const navigation = [
-    [homeUrl, "home", "홈"],
-    [searchUrl, "search", "검색"],
-  ] as const;
+  const myPageArea = pathname === "/mypage" || pathname === "/faq" || pathname === "/notices" || pathname.startsWith("/notices/") || pathname.startsWith("/policy/");
+  const navigation = [[homeUrl, "home", "홈"], ["/mypage", "user", "내정보"]] as const;
   return (
     <div
       className={`service-root${guide ? " guide-mode" : ""}`}
       style={style}
-      data-nav="combined"
     >
       <GuideDevTools guide={guide} />
       <a href="#main" className="skip">
@@ -99,21 +96,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
                     >
                       <Icon name="search" />
                     </NavigationLink>
-                    <button
-                      className="icon-button"
-                      onClick={() => setMenuOpen(true)}
-                      aria-label="보조 메뉴 열기"
-                      aria-haspopup="dialog"
-                    >
+                    <button className="icon-button" onClick={() => setMenuOpen(true)} aria-label="보조 메뉴 열기" aria-haspopup="dialog">
                       <Icon name="menu" />
                     </button>
-                    <button
-                      className="button primary login-placeholder"
-                      disabled
-                      title="로그인 기능 준비 중"
-                    >
-                      로그인
-                    </button>
+                    <button className="button primary login-placeholder" disabled title="로그인 기능 준비 중">로그인</button>
                   </div>
                 </header>
               </>
@@ -162,43 +148,29 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 </span>
                 홈
               </NavigationLink>
-              <button
-                type="button"
-                disabled
-                title="북마크 기능 준비 중"
-                aria-label="북마크, 준비 중"
-              >
-                <span className="nav-icon">
-                  <Icon name="bookmark" />
-                </span>
+              <button type="button" disabled title="북마크 기능 준비 중" aria-label="북마크, 준비 중">
+                <span className="nav-icon"><Icon name="bookmark" /></span>
                 북마크
               </button>
+              <NavigationLink
+                href="/mypage"
+                aria-current={myPageArea ? pathname === "/mypage" ? "page" : "location" : undefined}
+              >
+                <span className="nav-icon">
+                  <Icon name="user" />
+                </span>
+                내정보
+              </NavigationLink>
             </nav>
           )}
         </div>
       </div>
       {pending && <NavigationProgress />}
-      <Dialog
-        open={menuOpen}
-        id="menuDialog"
-        title="메뉴"
-        className="menu-dialog"
-        onClose={() => setMenuOpen(false)}
-      >
+      <Dialog open={menuOpen} id="menuDialog" title="메뉴" className="menu-dialog" onClose={() => setMenuOpen(false)}>
         <nav aria-label="전체 메뉴">
-          {navigation.map(([href, name, label]) => (
-            <NavigationLink
-              key={name}
-              href={href}
-              onClick={() => setMenuOpen(false)}
-            >
-              <Icon name={name} />
-              <span>{label}</span>
-              <span className="menu-chevron">
-                <Icon name="next" />
-              </span>
-            </NavigationLink>
-          ))}
+          {navigation.map(([href, name, label]) => <NavigationLink key={name} href={href} onClick={() => setMenuOpen(false)}>
+            <Icon name={name} /><span>{label}</span><span className="menu-chevron"><Icon name="next" /></span>
+          </NavigationLink>)}
         </nav>
       </Dialog>
       {(Object.keys(policyTitles) as PolicyType[]).map((type) => (

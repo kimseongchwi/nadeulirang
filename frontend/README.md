@@ -11,13 +11,14 @@
 | src/components/layout | SiteShell·헤더/푸터·이동 로딩·본문 스크롤·뒤로 가기 |
 | src/features/outings | 공유 카드/간단 보기·홈 필터·타입·URL/API 처리·상세 텍스트/근거 |
 | src/features/policies | 공유 정책 본문·링크·시트 |
+| src/features/notices | 실제 공지 콘텐츠·게시일 표시·목록 정렬/조회 |
 | src/features/ui-design | 가이드·검토 달력·개발 표시·표본 데이터 |
 | src/providers | NavigationProvider의 필터·URL/이력/스크롤·시트 상태 |
 | src/config·src/styles | 공통 브랜드 값·service.css |
 | public/images | 현재 로고/심볼·가이드 사진·이용허락 |
 | tests | 날짜/요금/텍스트·API/URL·시트 경계 회귀 |
 
-page.tsx는 URL 조건·서버 데이터·제목을 처리하고 [home-screen.tsx](src/app/home-screen.tsx)·[search-screen.tsx](src/app/search/search-screen.tsx)·[detail-screen.tsx](src/app/detail/[id]/detail-screen.tsx)·[policy-screen.tsx](src/app/policy/[type]/policy-screen.tsx)가 전용 UI를 담당합니다. 범용 UI와 여러 화면/가이드가 사용하는 나들이 기능만 공유합니다.
+page.tsx는 URL 조건·서버 데이터·제목을 처리하고 옆 화면 파일이 페이지 전용 UI를 담당합니다. 범용 UI와 여러 화면/가이드가 사용하는 나들이 기능만 공유합니다.
 
 ## 서버와 브라우저
 
@@ -27,7 +28,7 @@ NavigationProvider는 직접 이동의 상단/본문 포커스, 이력 이동의
 
 ## UI 가이드 확인
 
-같은 Next.js 서버의 /ui-design에서 공유 컴포넌트·상태·달력·페이지네이션과 320/390/430px iframe을 확인합니다. iframe은 실제 홈/검색/상세이므로 백엔드가 필요합니다. [review-data.json](src/features/ui-design/data/review-data.json)은 가이드 카드 전용 표본이며 서비스 조회와 분리합니다. 달력은 검토 도구이고 첫 공개 필터가 아닙니다.
+같은 Next.js 서버의 /ui-design에서 공유 컴포넌트·상태·달력·페이지네이션과 320/390/430px iframe을 확인합니다. iframe은 실제 홈/검색/상세·내정보/FAQ/공지사항·찾을 수 없는 페이지이며 나들이 조회 화면은 백엔드가 필요합니다. [review-data.json](src/features/ui-design/data/review-data.json)은 가이드 카드 전용 표본이며 서비스 조회와 분리합니다. 달력은 검토 도구이고 첫 공개 필터가 아닙니다.
 
 [brand.ts](src/config/brand.ts)의 팔레트를 SiteShell CSS 변수와 icon.ts가 공유합니다. 사진·로고 원본과 이용 조건은 [IMAGE-CREDITS](public/images/IMAGE-CREDITS.md), 적용/미정 기준은 [DESIGN](../DESIGN.md)을 따릅니다. 가이드 링크는 개발 환경 PC 안내에서만 표시합니다.
 
@@ -38,3 +39,9 @@ NavigationProvider는 직접 이동의 상단/본문 포커스, 이력 이동의
 너비와 기간 비교 셀렉트는 ‘모바일 화면 한눈에 보기’ 오른쪽 위에서 순서대로 사용합니다. 기간은 홈 iframe의 previewDays만 바꾸고 서비스 기본 14일과 검색 조건은 유지합니다. ‘상세 요금·빈 자료’ 예시와 실제 상세 iframe에서 공통 시간/요금 정렬·기간별 입장 마감·대상별 개인/단체·복합 요금·기본/초과 주차 요금·통합 주소·대시를 확인합니다. 간단 보기는 기존 상세 조회의 실제 소개를 최대 3줄로 표시합니다.
 
 상세 본문 끝의 원천 이름 토글은 생략합니다. 원문·관측·시각은 DB/API에 보존합니다. 푸터 모달과 /policy/about은 공통 출처·필수 귀속·이용 조건을 제공합니다. 갤러리는 이미지 자체의 모서리를 둥글게 표시하며 썸네일 줄은 손가락·마우스로 잡아 끌거나 트랙패드·키보드로 뒤쪽 사진까지 이동합니다. 가이드 Wikimedia 귀속은 /policy/about?sample=clayarch입니다. 사진별 DB/API 계약과 원문은 그대로 유지합니다. 빈 자료는 짧은 대시·15px·600·보조색으로 표시하고 화면 낭독은 미확인입니다. 힌트/최신 정보 확인 필요 예시와 컴포넌트는 제거했으며 조회 오류·재시도는 유지합니다.
+
+## 내정보·FAQ·공지사항
+
+`/mypage`는 로그인 없는 내정보 안내 화면, `/faq`는 현재 기능의 문답, `/notices`와 `/notices/[id]`는 공지 목록/상세입니다. 이 페이지들은 원천 API나 DB를 조회하지 않습니다. 내정보는 FAQ·공지사항·설정(준비 중)만 표시하고 정책/출처는 기존 푸터 접근을 유지합니다.
+
+FAQ 문답은 [faq-screen.tsx](src/app/faq/faq-screen.tsx), 실제 게시할 공지는 [model.ts](src/features/notices/model.ts)의 `notices`에 등록합니다. 공지는 변경하지 않는 양의 정수 `id`, 제목, 서울 기준 게시일 `YYYY-MM-DD`, 일반 텍스트 문단 배열을 사용합니다. 목록은 최신 게시일 순·같은 날짜의 ID 역순이며 등록된 글이 없으면 빈 상태, 없는 상세는 404입니다. 상세 하단은 목록과 이전(오래된)/다음(새로운) 글을 연결하며 인접 글이 없으면 안내만 표시합니다. ID를 바꾸거나 재사용하지 않습니다. 실제 운영 공지의 내용은 P15에서 확인하며 공개용 예시 글은 넣지 않습니다. 관리자·로그인·북마크 저장·설정 기능은 추가하지 않았고 로그인·북마크·설정 자리는 유지합니다. 제품·화면 기준은 PRD·DESIGN을 따릅니다.

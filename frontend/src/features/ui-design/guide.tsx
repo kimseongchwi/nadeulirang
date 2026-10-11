@@ -71,7 +71,6 @@ export function GuideReview() {
   const {
     today,
     homeUrl,
-    searchUrl,
     upcomingDays,
     setUpcomingDays,
   } = useNavigation();
@@ -92,6 +91,10 @@ export function GuideReview() {
   const screens = [
     { label: "홈", src: `/?previewDays=${upcomingDays}` },
     { label: "검색", src: "/search" },
+    { label: "내정보", src: "/mypage" },
+    { label: "FAQ", src: "/faq" },
+    { label: "공지사항", src: "/notices" },
+    { label: "찾을 수 없는 페이지", src: "/notices/missing" },
     {
       label: "상세",
       src: detailCard ? `/detail/${detailCard.id}` : "/search",
@@ -252,18 +255,19 @@ export function GuideReview() {
           <section id="navigation">
             <h2>02 · 상단·하단 내비게이션</h2>
             <p className="section-description">
-              첨부 화면의 역할 분리를 나들이랑에 맞게 적용해요.
+              검색은 상단, 자주 묻는 질문과 공지사항은 하단 내정보에서 열어요.
             </p>
             <div className="sample">
               <h3>지금의 구성</h3>
               <dl className="guide-navigation-facts">
                 <div><dt>상단</dt><dd>로고 · 검색 · 햄버거 · 로그인</dd></div>
-                <div><dt>하단</dt><dd>홈 · 북마크</dd></div>
-                <div><dt>메뉴</dt><dd>홈 · 검색</dd></div>
+                <div><dt>하단</dt><dd>홈 · 북마크 · 내정보</dd></div>
+                <div><dt>햄버거 메뉴</dt><dd>홈 · 내정보</dd></div>
+                <div><dt>내정보</dt><dd>자주 묻는 질문 · 공지사항 · 설정(준비 중)</dd></div>
                 <div><dt>홈 필터</dt><dd>지역 · 종류를 바텀시트에서 선택</dd></div>
                 <div><dt>정책·출처</dt><dd>서비스 푸터</dd></div>
               </dl>
-              <p className="hint">로그인·북마크는 자리만 표시하며 기능은 후속입니다.</p>
+              <p className="hint">로그인·북마크·설정은 준비 중인 자리만 유지해요. 계정·저장·설정 기능과 AI 추천은 아직 제공하지 않아요.</p>
             </div>
             <div className="sample">
               <h3>후속 구성 예시 · 구현 보류</h3>
@@ -272,16 +276,8 @@ export function GuideReview() {
                 <span>
                   <Icon name="search" />
                 </span>
-                <span>
-                  <Icon name="menu" />
-                </span>
-                <button
-                  className="button primary login-placeholder"
-                  disabled
-                  title="로그인 기능 준비 중"
-                >
-                  로그인
-                </button>
+                <span><Icon name="menu" /></span>
+                <button className="button primary login-placeholder" disabled title="로그인 기능 준비 중">로그인</button>
               </div>
               <div className="future-nav">
                 {(
@@ -289,6 +285,7 @@ export function GuideReview() {
                     ["home", "홈"],
                     ["bookmark", "북마크"],
                     ["spark", "AI 추천"],
+                    ["user", "내정보"],
                   ] satisfies [IconName, string][]
                 ).map(([name, label]) => (
                   <button key={name} type="button" aria-pressed={futureSelection === name} aria-label={`${label} 선택 상태 예시`} onClick={() => setFutureSelection(name)}>
@@ -298,7 +295,7 @@ export function GuideReview() {
                 ))}
               </div>
               <p className="hint">
-                로그인·북마크·상황별 AI 추천의 자리만 보는 가이드 예시입니다.
+                북마크·상황별 AI 추천을 추가했을 때의 가이드 예시입니다.
                 버튼은 선 아이콘을 유지하고 진한 초록색·라벨 700·조금 굵은 선으로 선택을 구분합니다.
                 북마크 저장이나 AI 추천을 실행하지 않아요.
               </p>
@@ -310,21 +307,20 @@ export function GuideReview() {
                 rows={[
                   [
                     "현재 구성",
-                    "하단은 홈·북마크 자리, 검색은 상단과 햄버거에서 이동합니다. 정책·출처는 서비스 푸터에서 확인해요.",
+                    "상단 검색·햄버거·로그인 자리를 유지하고 하단은 홈·북마크·내정보입니다. 내정보에는 FAQ·공지사항·설정 자리가 있어요.",
                   ],
                   [
-                    "하단바만",
-                    "이동은 간단하지만 정책·출처·후속 메뉴까지 늘면 좁아져요. 보조 링크를 본문 하단에 두어야 해요.",
+                    "후속 확장",
+                    "북마크 저장·AI 추천은 후속이며 설정의 실제 기능은 필요가 정해지면 구현해요.",
                   ],
                   [
                     "햄버거 중심",
-                    "화면을 넓게 쓰지만 홈·검색까지 메뉴를 열어야 해요. 반복 이동에 한 단계가 더 들어갑니다.",
+                    "햄버거는 유지하며 홈·내정보로 이동합니다. 중복 검색 항목만 제거했어요.",
                   ],
                 ]}
               />
               <p className="hint">
-                하단 검색은 제거하고 북마크 자리를 유지합니다. 저장 기능은
-                아직 연결하지 않았어요.
+                내정보·FAQ·공지사항·정책 페이지에서는 하단 내정보를 선택 상태로 표시해요.
               </p>
             </div>
           </section>
@@ -428,9 +424,9 @@ export function GuideReview() {
                 >
                   <Icon name="back" />
                 </button>
-                <button className="back-label" onClick={() => setMessage("이전 화면 버튼의 스타일 예시예요.")}>
-                  <Icon name="back" />
-                  이전 화면
+                <button className="back-heading-button" onClick={() => setMessage("이전 화면 버튼의 스타일 예시예요.")}>
+                  <span className="back-heading-icon"><Icon name="back" /></span>
+                  <span>이전 화면</span>
                 </button>
                 <button
                   className="icon-button"
@@ -443,8 +439,8 @@ export function GuideReview() {
               <p className="hint">
                 여기서는 스타일만 확인하며 페이지를 이동하지 않습니다.
                 서비스의 뒤로 가기는 이전 화면·조건·스크롤로 복귀합니다. 직접 들어온
-                페이지는 검색으로 이동합니다. 최소 44px 터치 영역, 포커스 때
-                레이아웃 크기는 유지해요.
+                상세/정책은 검색, FAQ·공지 목록은 내정보, 공지 상세는 목록으로 이동합니다. 최소 44px 터치 영역을 제공하고
+                화살표와 라벨 전체를 눌러 이동하며 포커스 때 레이아웃 크기는 유지해요.
               </p>
             </div>
           </section>
@@ -693,8 +689,8 @@ export function GuideReview() {
             <GuideTable
               rows={[
                 [
-                  "실제 제공 · P12·P13·P44",
-                  "현재 DB 자료의 홈 · 이름/지역/종류 검색 · 상세/공식 출처 · 정책 · 대표 사진",
+                  "실제 제공 · P12·P13·P44·P82~P84",
+                  "현재 DB 자료의 홈 · 이름/지역/종류 검색 · 상세/공식 출처 · 정책 · 대표 사진 · 내정보 · FAQ · 공지사항",
                 ],
                 [
                   "이번 개선 · P76·P77·P78",
@@ -710,7 +706,7 @@ export function GuideReview() {
                 ],
                 [
                   "후속 보류",
-                  "P29 북마크 · P30 로그인 · P31 상황별 AI 추천. 북마크·로그인은 미연결 자리만 표시하고 AI 추천은 실제 메뉴에서 제외",
+                  "P29 북마크·P30 로그인은 미연결 자리 유지 · P31 AI 추천은 실제 메뉴에서 제외. 설정 자리만 표시하고 기능은 실제 필요를 정한 뒤 추가",
                 ],
                 [
                   "필요할 때 재검토",
@@ -735,25 +731,12 @@ export function GuideReview() {
           {message}
         </p>
       )}
-      {menu && (
-        <Dialog
-          open
-          id="guideMenu"
-          title="메뉴"
-          className="menu-dialog"
-          onClose={() => setMenu(false)}
-        >
-          <nav aria-label="전체 메뉴">
-            <NavigationLink href={homeUrl} onClick={() => setMenu(false)}>
-              <Icon name="home" />홈
-            </NavigationLink>
-            <NavigationLink href={searchUrl} onClick={() => setMenu(false)}>
-              <Icon name="search" />
-              검색
-            </NavigationLink>
-          </nav>
-        </Dialog>
-      )}
+      {menu && <Dialog open id="guideMenu" title="메뉴" className="menu-dialog" onClose={() => setMenu(false)}>
+        <nav aria-label="전체 메뉴">
+          <NavigationLink href={homeUrl} onClick={() => setMenu(false)}><Icon name="home" />홈</NavigationLink>
+          <NavigationLink href="/mypage" onClick={() => setMenu(false)}><Icon name="user" />내정보</NavigationLink>
+        </nav>
+      </Dialog>}
     </div>
   );
 }
