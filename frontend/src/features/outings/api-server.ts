@@ -15,5 +15,7 @@ async function request<T>(path: string, validate: (value: unknown) => value is T
 }
 export const getOptions = cache(() => request<Options>("/options", isOptions));
 export const getDetail = cache((id: string) => request<Detail>(`/${encodeURIComponent(id)}`, isDetail));
-export function getPage(query: URLSearchParams) { return request<Page>(`?${query}`, isPage); }
-export function getHome(query: URLSearchParams) { return request<Home>(`/home?${query}`, isHome); }
+const requestPage = cache((query: string) => request<Page>(`?${query}`, isPage));
+const requestHome = cache((query: string) => request<Home>(`/home?${query}`, isHome));
+export function getPage(query: URLSearchParams) { return requestPage(query.toString()); }
+export function getHome(query: URLSearchParams) { return requestHome(query.toString()); }

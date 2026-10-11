@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
+import { isPublicSite } from "./src/config/seo";
 
 const nextConfig: NextConfig = {
   devIndicators: { position: "bottom-left" },
+  // 존재 여부와 메타데이터를 결정한 뒤 HTML을 전송해 상세 404를 보존한다.
+  htmlLimitedBots: /.*/,
   async redirects() {
     return [
       { source: "/guide", destination: "/ui-design", permanent: false },
@@ -9,15 +12,12 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
-    return [
-      "/",
-      "/ui-design/:path*",
-      "/search",
-      "/detail/:id",
-      "/policy/:type(privacy|terms|about)",
-    ].map((source) => ({
+    return (isPublicSite() ? [
+      "/ui-design/:path*", "/mypage", "/search", "/api/:path*",
+      "/policy/:type(privacy|terms)",
+    ] : ["/:path*"]).map((source) => ({
       source,
-      headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      headers: [{ key: "X-Robots-Tag", value: isPublicSite() ? "noindex" : "noindex, nofollow" }],
     }));
   },
   outputFileTracingIncludes: {
