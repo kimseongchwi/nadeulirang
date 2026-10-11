@@ -1,6 +1,6 @@
 # 나들이랑 코드 학습
 
-현재 코드의 핵심 타입·파일 역할·호출 흐름·선택 이유를 설명한다. 실행은 [README](../README.md), 제품 기준은 [PRD](PRD.md), 원천 규칙은 [DATA_SOURCES](DATA_SOURCES.md)를 따른다. 관련 구현은 P10~P13·P38·P71·P73·P74다.
+현재 코드의 핵심 타입·파일 역할·호출 흐름·선택 이유를 설명한다. 실행은 [README](../README.md), 제품 기준은 [PRD](PRD.md), 원천 규칙은 [DATA_SOURCES](DATA_SOURCES.md)를 따른다. 관련 구현은 P10~P14·P38·P71·P73·P74다.
 
 ## 실행 환경과 설정
 
@@ -102,6 +102,16 @@ OutingStore는 REPEATABLE_READ·readOnly 트랜잭션으로 한 응답의 건수
 [BackHeading](../frontend/src/components/layout/back-heading.tsx)은 상세와 안내 화면의 화살표·페이지 제목을 하나의 버튼으로 공유해 라벨 클릭과 키보드 조작에도 복귀한다. `compact`는 제목의 의미를 가진 h1을 작은 글씨로 표시하며 공지 상세의 `labelOnly`는 실제 글 제목과 구분되는 보조 문구를 표시한다. `fallbackHref`는 서비스 내 이전 이동 기록이 없는 직접 접속의 복귀 주소다. 이전 기록이 있으면 기존 브라우저 뒤로가기를 사용하고 상세/정책의 기본 검색 복귀는 유지한다. 공지 빈 목록도 기존 `EmptyState`의 페이지 중앙 배치를 사용하고 설명이 없는 경우 보조 문단을 만들지 않는다.
 
 [FAQ 화면](../frontend/src/app/faq/faq-screen.tsx)의 `details`·`summary`는 HTML 요소다. 브라우저가 클릭/Enter/Space·펼침 상태와 접근성 정보를 처리하므로 FAQ 전용 React state나 클릭 처리가 필요하지 않다. 문답 자체는 초기 HTML에 포함된다. [공지 모델](../frontend/src/features/notices/model.ts)의 `Notice`는 TypeScript의 타입 선언이며 데이터 저장소를 생성하지 않는다. 실제 공지는 코드의 배열에 등록하고 `latestNotices`가 원본 복사 후 게시일·ID 역순으로 정렬한다. adjacentNotices는 정렬된 목록의 현재 위치에서 이전(오래된)·다음(새로운) 글을 찾아 ID가 연속되지 않아도 연결하며 양 끝/없는 글에는 링크 대상을 만들지 않는다. 공지 서버 페이지는 URL의 비동기 `params`를 읽고 등록되지 않은 ID면 Next.js의 `notFound()`로 404를 처리한다. 게시일 문자열은 이미 정해진 서울 날짜라서 브라우저 시간대로 변환하지 않고 표시 형식만 바꾼다.
+
+### 페이지 메타데이터와 HTTP 상태 (P14)
+
+`generateMetadata`는 Next.js가 서버 요청 때 실행하는 함수이며 TypeScript 문법이나 React 훅이 아니다. 페이지는 현재 API 자료에서 장소명·지역·종류를 읽어 제목/설명을 만들고, [seo.ts](../frontend/src/config/seo.ts)의 `pageMetadata`가 공개 설정·검색 노출 여부·절대 대표 주소를 연결한다. 환경 설정이 없으면 localhost를 대표 주소로 추정하지 않는다. 색인 정책은 [PRD](PRD.md#검색-유입과-공개-확인), 설정·실행은 [프론트 README](../frontend/README.md#공개-seo-설정-p14)를 따른다.
+
+HTTP 상태는 HTML 첫 바이트를 보내기 전에 정해진다. 상세 `loading.tsx`의 Suspense 경계 안에서 조회 후 `notFound()`를 호출하면 이미 시작한 스트리밍 응답의 200을 404로 바꿀 수 없다. [상세 layout](../frontend/src/app/detail/[id]/layout.tsx)은 그 경계 바깥에서 [detail-data.ts](../frontend/src/app/detail/[id]/detail-data.ts)의 공개 존재 확인을 기다린다. 없는 상세는 응답 전 404로, API 장애는 실제 오류/재시도로 구분한다. `htmlLimitedBots`는 Next 설정으로 메타데이터 스트리밍을 막아 사용자 에이전트에 관계없이 검색 설정을 응답 전에 정한다. 최초 응답은 조회를 기다리며 앱 내부의 이동 로딩은 NavigationProvider가 표시한다.
+
+[api-server.ts](../frontend/src/features/outings/api-server.ts)의 `cache`는 React 라이브러리 기능으로 같은 서버 렌더 안에서 layout·메타데이터·page의 동일 조회를 공유한다. 목록/홈은 새 URLSearchParams 객체의 참조 대신 직렬화한 조건 문자열을 키로 사용한다. 이 캐시는 요청마다 분리되고 fetch의 no-store는 유지되므로 다음 재시도에서 이전 실패를 재사용하지 않는다.
+
+[/sitemap.xml 라우트](../frontend/src/app/sitemap.xml/route.ts)는 기존 공개 목록 API를 페이지 순서대로 조회해 승인·표출·이용허락 경계를 재사용한다. [sitemap.ts](../frontend/src/features/outings/sitemap.ts)는 UUID·기간 상태·중복·건수/기준일·URL 한도를 확인한다. 조회 중 실패나 불일치가 나면 예외를 라우트가 받아 503으로 응답하고 오류 원문은 공개하지 않는다. 정상 0건과 실패를 구분하기 위해 실패를 빈 배열로 바꾸지 않는다.
 
 ### URL·이력·시트 복귀
 
