@@ -4,7 +4,7 @@ import { NavigationLink } from "@/providers/navigation-provider";
 export function MyPageScreen() {
   return <>
     <div className="intro">
-      <h1>내정보</h1>
+      <h1 className="mypage-title" aria-label="내정보">내정<span>보</span></h1>
     </div>
     <nav className="support-links" aria-label="내정보 메뉴">
       <NavigationLink href="/faq"><span>자주 묻는 질문</span><Icon name="next" /></NavigationLink>

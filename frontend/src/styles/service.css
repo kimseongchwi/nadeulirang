@@ -2626,6 +2626,7 @@ dialog > .navigation-progress { position: absolute; inset: 0; border-radius: inh
 .navigation-progress > .state-region, .navigation-progress .state-feedback { min-height: 0; }
 
 /* 로그인 없는 안내 화면과 FAQ·공지사항 */
+.mypage-title > span { display: inline-block; transform: scaleY(1.14); transform-origin: center 75%; }
 .notices-screen { display: flex; flex-direction: column; flex: 1; }
 .page-head.compact h1 { font-size: 16px; font-weight: 400; line-height: 1.6; }
 .support-links { display: grid; }
