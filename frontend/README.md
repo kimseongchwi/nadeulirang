@@ -28,7 +28,7 @@ NavigationProvider는 직접 이동의 상단/본문 포커스, 이력 이동의
 
 ## UI 가이드 확인
 
-같은 Next.js 서버의 /ui-design에서 공유 컴포넌트·상태·달력·페이지네이션과 320/390/430px iframe을 확인합니다. iframe은 실제 홈/검색/상세·내정보/FAQ/공지사항이며 나들이 조회 화면은 백엔드가 필요합니다. [review-data.json](src/features/ui-design/data/review-data.json)은 가이드 카드 전용 표본이며 서비스 조회와 분리합니다. 달력은 검토 도구이고 첫 공개 필터가 아닙니다.
+같은 Next.js 서버의 /ui-design에서 공유 컴포넌트·상태·달력·페이지네이션과 320/390/430px iframe을 확인합니다. iframe은 실제 홈/검색/상세·내정보/FAQ/공지사항·찾을 수 없는 페이지이며 나들이 조회 화면은 백엔드가 필요합니다. [review-data.json](src/features/ui-design/data/review-data.json)은 가이드 카드 전용 표본이며 서비스 조회와 분리합니다. 달력은 검토 도구이고 첫 공개 필터가 아닙니다.
 
 [brand.ts](src/config/brand.ts)의 팔레트를 SiteShell CSS 변수와 icon.ts가 공유합니다. 사진·로고 원본과 이용 조건은 [IMAGE-CREDITS](public/images/IMAGE-CREDITS.md), 적용/미정 기준은 [DESIGN](../DESIGN.md)을 따릅니다. 가이드 링크는 개발 환경 PC 안내에서만 표시합니다.
 

@@ -64,17 +64,20 @@ export function EmptyState({
   description,
   children,
   placement = "area",
+  titleAs = "strong",
 }: {
   title: string;
   description?: string;
   children?: ReactNode;
   placement?: StatePlacement;
+  titleAs?: "strong" | "h1";
 }) {
+  const Title = titleAs;
   return (
     <StateRegion placement={placement}>
       <div className="empty state-feedback">
         <StateArt type="empty" />
-        <strong className="state-title">{title}</strong>
+        <Title className="state-title">{title}</Title>
         {description && <p>{description}</p>}
         {children}
       </div>

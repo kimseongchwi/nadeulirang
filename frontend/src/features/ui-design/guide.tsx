@@ -94,6 +94,7 @@ export function GuideReview() {
     { label: "내정보", src: "/mypage" },
     { label: "FAQ", src: "/faq" },
     { label: "공지사항", src: "/notices" },
+    { label: "찾을 수 없는 페이지", src: "/notices/missing" },
     {
       label: "상세",
       src: detailCard ? `/detail/${detailCard.id}` : "/search",
