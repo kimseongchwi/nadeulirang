@@ -28,7 +28,7 @@ npm --prefix frontend run dev
 
 ## UI 디자인 가이드 확인
 
-같은 개발 서버의 [/ui-design](http://localhost:3000/ui-design)에서 공유 UI와 320/390/430px 미리보기를 확인합니다. 가이드 표본은 서비스 오류의 대체 데이터로 사용하지 않습니다. iframe은 실제 서비스 페이지이므로 백엔드가 필요합니다. 구조·가이드 사용법은 [프론트 README](frontend/README.md), 현재 적용/미정 기준은 [DESIGN](DESIGN.md)을 따릅니다. 공개 SEO 점검 전 noindex를 유지합니다(P14).
+같은 개발 서버의 [/ui-design](http://localhost:3000/ui-design)에서 공유 UI와 320/390/430px 미리보기를 확인합니다. 가이드 표본은 서비스 오류의 대체 데이터로 사용하지 않습니다. iframe은 실제 서비스 페이지이며 홈·검색·상세 조회에는 백엔드가 필요합니다. 구조·가이드 사용법은 [프론트 README](frontend/README.md), 현재 적용/미정 기준은 [DESIGN](DESIGN.md)을 따릅니다. 공개 SEO 점검 전 noindex를 유지합니다(P14).
 
 ## 백엔드 개발 환경
 

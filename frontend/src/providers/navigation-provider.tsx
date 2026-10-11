@@ -137,9 +137,9 @@ function useNavigationState(today: string) {
     },
     [router, saveScroll],
   );
-  const back = useCallback(() => {
+  const back = useCallback((fallbackHref = "/search") => {
     if (history.state?.reviewEntry) startTransition(() => router.back());
-    else navigate("/search");
+    else navigate(fallbackHref);
   }, [router, navigate]);
   useLayoutEffect(() => {
     const previousUrl = renderedUrl.current;

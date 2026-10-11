@@ -95,6 +95,14 @@ OutingStore는 REPEATABLE_READ·readOnly 트랜잭션으로 한 응답의 건수
 
 간단 보기는 열릴 때 /api/outings/:id의 Next route를 요청한다. 서버 전용 백엔드 주소와 같은 출처·검증/오류 계약을 유지하는 중계다. 공통 [api-request.ts](../frontend/src/features/outings/api-request.ts)는 HTTP/연결/본문 실패를 구분하고 시간 제한·캐시 제외·리다이렉트 차단을 적용한다. 닫기/항목 변경은 AbortController로 취소해 늦은 응답이 화면을 덮지 않게 한다. 가이드 표본은 실제 조회 실패의 대체값으로 사용하지 않는다.
 
+### 로그인 없는 안내 페이지
+
+[내정보 화면](../frontend/src/app/mypage/mypage-screen.tsx)은 `/mypage`에서 `/faq`·`/notices`를 연결하고 향후 설정 자리는 비활성 버튼으로 표시한다. 로그인이나 개인 계정 조회 없이 서버가 안내 본문을 렌더링하고 링크 이동은 기존 `NavigationLink`를 사용해 포커스·스크롤/조건 복귀를 유지한다. 햄버거는 기존 `Dialog`로 유지하며 검색은 헤더 아이콘에서 이동한다. 기존 로그인·북마크 버튼도 비활성 자리로 유지한다.
+
+[BackHeading](../frontend/src/components/layout/back-heading.tsx)은 상세와 안내 화면의 화살표·페이지 제목을 하나의 버튼으로 공유해 라벨 클릭과 키보드 조작에도 복귀한다. `compact`는 제목의 의미를 가진 h1을 작은 글씨로 표시하며 공지 상세의 `labelOnly`는 실제 글 제목과 구분되는 보조 문구를 표시한다. `fallbackHref`는 서비스 내 이전 이동 기록이 없는 직접 접속의 복귀 주소다. 이전 기록이 있으면 기존 브라우저 뒤로가기를 사용하고 상세/정책의 기본 검색 복귀는 유지한다. 공지 빈 목록도 기존 `EmptyState`의 페이지 중앙 배치를 사용하고 설명이 없는 경우 보조 문단을 만들지 않는다.
+
+[FAQ 화면](../frontend/src/app/faq/faq-screen.tsx)의 `details`·`summary`는 HTML 요소다. 브라우저가 클릭/Enter/Space·펼침 상태와 접근성 정보를 처리하므로 FAQ 전용 React state나 클릭 처리가 필요하지 않다. 문답 자체는 초기 HTML에 포함된다. [공지 모델](../frontend/src/features/notices/model.ts)의 `Notice`는 TypeScript의 타입 선언이며 데이터 저장소를 생성하지 않는다. 실제 공지는 코드의 배열에 등록하고 `latestNotices`가 원본 복사 후 게시일·ID 역순으로 정렬한다. adjacentNotices는 정렬된 목록의 현재 위치에서 이전(오래된)·다음(새로운) 글을 찾아 ID가 연속되지 않아도 연결하며 양 끝/없는 글에는 링크 대상을 만들지 않는다. 공지 서버 페이지는 URL의 비동기 `params`를 읽고 등록되지 않은 ID면 Next.js의 `notFound()`로 404를 처리한다. 게시일 문자열은 이미 정해진 서울 날짜라서 브라우저 시간대로 변환하지 않고 표시 형식만 바꾼다.
+
 ### URL·이력·시트 복귀
 
 [NavigationProvider](../frontend/src/providers/navigation-provider.tsx)는 검색/필터 URL·sessionStorage·pending·해시 시트를 연결한다. 조건 변경은 서버 재조회와 첫 페이지/상단 포커스, 뒤로/앞으로는 이전 위치 복원, 같은 페이지 모달 닫기는 열기 버튼 포커스·스크롤 복원이다. 해시 변경을 새 페이지 이동으로 처리하지 않는다. 기존 탭 호환성을 위해 저장 키·history 속성 이름은 보존한다.
