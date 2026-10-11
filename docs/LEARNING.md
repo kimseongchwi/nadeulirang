@@ -1,10 +1,33 @@
 # 나들이랑 코드 학습
 
-현재 코드의 핵심 타입·파일 역할·호출 흐름·선택 이유를 설명한다. 실행은 [README](../README.md), 제품 기준은 [PRD](PRD.md), 원천 규칙은 [DATA_SOURCES](DATA_SOURCES.md)를 따른다. 관련 구현은 P10~P14·P38·P71·P73·P74다.
+현재 코드의 핵심 타입·파일 역할·호출 흐름·선택 이유를 설명한다. 실행은 [README](../README.md), 제품 기준은 [PRD](PRD.md), 원천 규칙은 [DATA_SOURCES](DATA_SOURCES.md)를 따른다. 관련 구현은 P10~P14·P30·P38·P71·P73·P74다.
+
+## 회원·인증과 서버 세션 — P30
+
+[V7](../backend/src/main/resources/db/migration/V7__member_authentication.sql)의 `app_user`는 회원이고 `local_credential`·`oauth_account`는 로그인 수단이다. 서비스 데이터의 주인은 회원 UUID이며 소셜 이메일은 회원 결합 키가 아니다. `auth_token`은 일회성 증명, `user_consent`는 버전별 고지 확인, `spring_session`·attributes는 서버 로그인 상태다. 가입할 때 role/status를 받지 않고 DB 기본 USER/ACTIVE로 만들기 때문에 HTTP 입력으로 관리자가 될 수 없다.
+
+[AuthController](../backend/src/main/java/kr/nadeulirang/backend/auth/AuthController.java)는 JSON/경로를 받아 [AuthService](../backend/src/main/java/kr/nadeulirang/backend/auth/AuthService.java)에 전달한다. 이 서비스는 JdbcTemplate으로 유일 제약·회원 행 잠금·해시 토큰 소비를 명시적으로 처리한다. 새 JPA 엔티티 관계 계층을 추가하지 않았으며 기존 JpaTransactionManager가 JDBC 변경도 같은 트랜잭션으로 묶는다. 마지막 수단/같은 토큰의 경합은 `FOR UPDATE` 잠금과 DB 제약이 보장한다. [AuthRateLimiter](../backend/src/main/java/kr/nadeulirang/backend/auth/AuthRateLimiter.java)의 REQUIRES_NEW는 실패한 인증 트랜잭션과 독립적으로 횟수를 저장한다. 한도 예외에도 커밋하도록 `noRollbackFor`를 지정한다.
+
+`UUID.randomUUID`, `SecureRandom`, `MessageDigest`는 Java 표준 라이브러리 기능이며 Java 문법 자체가 아니다. `record`는 Java의 값 타입 선언 문법이다. BCryptPasswordEncoder는 Spring Security의 비밀번호 해시 도구다. 이메일 인증 토큰은 충분히 긴 난수라 SHA-256 해시로 원문 없이 조회할 수 있고, 사람이 정한 비밀번호는 느린 BCrypt로 무차별 대입 비용을 높인다. BCrypt 72바이트 제한 때문에 문자 수뿐 아니라 UTF-8 바이트 수도 검사한다.
+
+[SecurityConfiguration](../backend/src/main/java/kr/nadeulirang/backend/auth/SecurityConfiguration.java)의 SecurityFilterChain이 컨트롤러 전에 CSRF·인증·권한을 검사한다. [AuthSessions](../backend/src/main/java/kr/nadeulirang/backend/auth/AuthSessions.java)는 성공 시 세션 ID를 바꾸고 UUID principal의 SecurityContext를 명시적으로 저장한다. 세션에는 제공자 access token이나 비밀번호를 넣지 않는다. [MemberSessionFilter](../backend/src/main/java/kr/nadeulirang/backend/auth/MemberSessionFilter.java)는 인증된 UUID에만 DB 조회를 적용하고 익명 방문은 통과시킨다. 상태·역할·auth_version을 다시 읽어 정지/권한 회수와 전체 종료를 기존 세션에 반영한다. HttpOnly 쿠키는 JS가 세션 ID를 읽지 못하게 하지만 CSRF 자체를 막아 주지는 않으므로 CSRF 토큰과 Origin 검사도 필요하다.
+
+[OAuthConfiguration](../backend/src/main/java/kr/nadeulirang/backend/auth/OAuthConfiguration.java)은 Spring OAuth2 Client의 authorization code/state 검증·토큰 교환·프로필 조회를 사용하고 제공자의 고유 ID만 남긴다. 시작은 CSRF 보호 POST로 세션에 목적/대상/유효 시각을 기록하고 GET으로 제공자에 이동한다. 콜백은 같은 세션·state·최근 인증·회원 버전을 확인한 뒤 회원 UUID 인증으로 바꾼다. 새 수단을 증명한 것만으로 다른 기존 회원을 연결할 권한이 생기지는 않는다. 원격 해제 때 회원 잠금을 유지하고 성공 뒤 로컬 수단을 제거하지만, 원격 시스템과 DB는 하나의 트랜잭션이 아니므로 원격 성공 뒤 DB 실패는 재인증/재시도해야 한다.
+
+[프론트 인증 중계](../frontend/src/features/auth/proxy.ts)는 서버 주소/키를 숨기면서 쿠키·CSRF를 보존한다. [계정 화면](../frontend/src/app/account/account-screen.tsx)은 fetch 결과를 브라우저 메모리에서 관리하고 변경마다 CSRF를 갱신한다. 메일 fragment는 서버 요청/Referrer로 전송되지 않으며 즉시 주소에서 지우고 POST로 소비한다. `useState`는 React의 상태 라이브러리 API이고 JSX/TypeScript 타입 검사는 이메일 소유나 권한을 증명하지 않는다. 실제 권한은 서버에서 판단한다.
+
+| 어노테이션 출처·대상 | 해석 주체·시점 |
+|---|---|
+| Spring `Configuration`·`Bean` / 설정 클래스·팩토리 메서드 | 시작 시 Spring이 보안 도구·해시 도구·제공자 등록을 생성/연결 |
+| Boot `ConditionalOnWebApplication` / 웹 보안 설정 | 시작 시 Servlet 웹 환경에만 필터 체인을 생성; 수집 전용 실행은 제외 |
+| Spring `Transactional` / 인증 서비스 메서드 | 프록시가 외부 메서드 호출 때 트랜잭션/잠금을 시작하고 성공 커밋·실패 롤백 |
+| Spring MVC `RequestBody`·`PathVariable` / 컨트롤러 인수 | HTTP 요청 처리 시 JSON/경로를 Java record/UUID로 변환; 서비스 검증을 대체하지 않음 |
+
+실제 흐름·설정·실패 계약은 [백엔드 인증 안내](../backend/README.md#회원-인증-api--p30), 코드 검증과 실제 제공자/메일 검증의 상태는 [PLAN](../PLAN.md)을 따른다.
 
 ## 실행 환경과 설정
 
-[use-local-env.ps1](../scripts/use-local-env.ps1)은 현재 PowerShell의 JAVA_HOME·PATH와 DB 변수만 준비한다. [local-db.ps1](../scripts/local-db.ps1)의 DB 시작은 별도 동작이다. 다른 터미널은 이 프로세스의 환경을 자동 공유하지 않는다.
+[use-local-env.ps1](../scripts/use-local-env.ps1)은 현재 PowerShell의 JAVA_HOME·PATH·DB와 작업 폴더의 인증 환경 변수를 준비한다. 인증 설정은 [use-auth-env.ps1](../scripts/use-auth-env.ps1)의 허용 목록으로만 읽으며 홈 공통 설정에 복사하지 않는다. [local-db.ps1](../scripts/local-db.ps1)의 DB 시작은 별도 동작이다. 다른 터미널은 이 프로세스의 환경을 자동 공유하지 않는다.
 
 [local-settings.mjs](../scripts/local-settings.mjs)·[local-settings.ps1](../scripts/local-settings.ps1)·CollectionRunner.readKeys는 공통 설정을 먼저 읽고 폴더별 비어 있지 않은 값만 덮어쓴다. 파일을 명령으로 평가하지 않아 비밀번호의 $()도 문자로 읽는다. 공통 설정은 같은 PC에서 유지하는 로컬 파일이며 배포 비밀 설정과 구분한다.
 

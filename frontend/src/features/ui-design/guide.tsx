@@ -271,11 +271,11 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 <div><dt>상단</dt><dd>로고 · 검색 · 햄버거 · 로그인</dd></div>
                 <div><dt>하단</dt><dd>홈 · 북마크 · 내정보</dd></div>
                 <div><dt>햄버거 메뉴</dt><dd>홈 · 내정보</dd></div>
-                <div><dt>내정보</dt><dd>자주 묻는 질문 · 공지사항 · 설정(준비 중)</dd></div>
+                <div><dt>내정보</dt><dd>로그인·계정 관리 · 자주 묻는 질문 · 공지사항 · 설정(준비 중)</dd></div>
                 <div><dt>홈 필터</dt><dd>지역 · 종류를 바텀시트에서 선택</dd></div>
                 <div><dt>정책·출처</dt><dd>서비스 푸터</dd></div>
               </dl>
-              <p className="hint">로그인·북마크·설정은 준비 중인 자리만 유지해요. 계정·저장·설정 기능과 AI 추천은 아직 제공하지 않아요.</p>
+              <p className="hint">로그인은 계정 관리로 연결해요. 가입·소셜 로그인은 외부 설정과 정책 확인 후 사용할 수 있으며 북마크·설정·AI 추천은 준비 중이에요.</p>
             </div>
             <div className="sample">
               <h3>후속 구성 예시 · 구현 보류</h3>

@@ -7,6 +7,7 @@ export function MyPageScreen() {
       <h1 className="mypage-title" aria-label="내정보">내정<span>보</span></h1>
     </div>
     <nav className="support-links" aria-label="내정보 메뉴">
+      <NavigationLink href="/account"><span>로그인·계정 관리</span><Icon name="next" /></NavigationLink>
       <NavigationLink href="/faq"><span>자주 묻는 질문</span><Icon name="next" /></NavigationLink>
       <NavigationLink href="/notices"><span>공지사항</span><Icon name="next" /></NavigationLink>
       <button type="button" disabled title="설정 기능 준비 중"><span>설정</span><span className="support-pending">준비 중</span></button>
