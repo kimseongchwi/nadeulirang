@@ -14,7 +14,7 @@ import { isDetail } from "./api-contract";
 import { requestJson } from "./api-request";
 import { detailContent } from "./detail-content";
 
-export function OutingPreview({ item, open, sample = false }: { item: Outing; open: boolean; sample?: boolean }) {
+export function OutingPreview({ item, open, sample = false, previewId = item.id }: { item: Outing; open: boolean; sample?: boolean; previewId?: string }) {
   const { closeSheet, navigate, pending } = useNavigation();
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<{ data?: Detail; status?: number } | null>(null);
@@ -29,7 +29,7 @@ export function OutingPreview({ item, open, sample = false }: { item: Outing; op
     return () => controller.abort();
   }, [item.id, sample, attempt, open]);
   return (
-    <Dialog id={`outingPreview-${item.id}`} title="간단 보기" open={open} onClose={closeSheet} sheet className="policy-sheet outing-preview">
+    <Dialog id={`outingPreview-${previewId}`} title="간단 보기" open={open} onClose={closeSheet} sheet className="policy-sheet outing-preview">
       <div className="outing-preview-body">
         <OutingArtwork item={item} large />
         <div className="outing-preview-content">

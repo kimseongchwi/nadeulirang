@@ -1977,27 +1977,14 @@ body.filter-open {
   background: white;
 }
 .guide-home-notes {
-  margin-top: 20px;
-  border-top: 1px solid var(--line);
-  padding-top: 12px;
-}
-.guide-home-notes h3 {
-  min-height: 44px;
-  color: var(--action);
-  font-size: 14px;
-  display: flex;
-  align-items: center;
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 13px;
 }
 .date-calendar { border: 0; background: transparent; width: 44px; border-radius: 0; }
 .date-calendar svg { width: 20px; height: 20px; }
 .guide-home-notes p {
-  margin: 12px 0;
-}
-.guide-home-notes label {
-  margin-top: 16px;
-}
-.guide-home-notes select {
-  max-width: 240px;
+  margin: 4px 0;
 }
 .guide-board #navigation {
   display: grid;
@@ -2022,7 +2009,7 @@ body.filter-open {
   word-break: keep-all;
 }
 .guide-board #cards {
-  grid-column: span 2;
+  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
@@ -2607,6 +2594,15 @@ dialog[open]::backdrop { opacity: 1; }
 .fee-labeled .fee-text { font-weight: 500; text-align: right; }
 .fee-text.fee-free, .fee-pair strong.fee-free { font-weight: 600; }
 .guide-width-control select + label { margin-top: 12px; }
+.guide-ad-placement { grid-column: 1 / -1; min-width: 0; }
+.guide-ad-frame { width: var(--guide-preview-width); max-width: 100%; height: 680px; margin: 0 auto; padding: 16px; overflow: auto; scrollbar-gutter: stable; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.guide-ad-frame:focus-visible { outline: 2px solid var(--action); outline-offset: 3px; }
+.guide-ad-count { margin: 0; font-size: 12px; color: var(--muted); }
+.guide-ad-list { margin: 0; padding: 0; list-style: none; }
+.guide-ad-placeholder { display: flex; position: relative; flex-direction: column; align-items: center; justify-content: center; min-height: 140px; margin-top: 10px; padding: 32px 16px 20px; border: 1px dashed var(--line); border-radius: 18px; background: var(--soft); color: var(--muted); }
+.guide-ad-placeholder > span { position: absolute; top: 12px; left: 14px; font-size: 12px; }
+.guide-ad-placeholder > strong { font-size: 15px; font-weight: 600; }
+.guide-ad-placeholder > p { margin: 6px 0 0; font-size: 12px; }
 .guide-detail-examples { grid-column: 1 / -1; }
 .guide-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
 .guide-detail-grid > .sample { min-width: 0; width: 100%; max-width: none; margin: 0; }

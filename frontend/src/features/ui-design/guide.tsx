@@ -16,13 +16,15 @@ import { Pagination } from "@/features/outings/pagination";
 import { AddressInformation, AdmissionInformation, EvidenceList, HoursInformation, UnknownValue } from "@/features/outings/evidence";
 import { routeFeeBlocks } from "@/features/outings/fee-blocks";
 import { ExpandableDetailText } from "@/features/outings/expandable-detail-text";
-import type { Evidence } from "@/features/outings/api-types";
+import type { ApiResult, Evidence, Page } from "@/features/outings/api-types";
+import { AdPlacementPreview } from "./ad-placement-preview";
 
 const feeSample = (field: string, value: string): Evidence => ({ field, value, source: "TOUR", sourceKey: "가이드", url: "https://www.data.go.kr/data/15101578/openapi.do", sourceReference: null, collectedAt: "2026-10-09T00:00:00Z", checkedAt: "2026-10-09T00:00:00Z", stale: false, observationId: "가이드" });
 
 const sections = [
   ["brand-colors", "브랜드 색상"],
   ["screens", "화면"],
+  ["ad-placement", "광고 위치"],
   ["detail-examples", "상세 요금·빈 자료"],
   ["navigation", "내비게이션"],
   ["inputs", "입력·선택"],
@@ -67,7 +69,7 @@ function PaginationExample({ title, initialPage, width }: { title: string; initi
     <button type="button" className="text-button" onClick={() => setPage(initialPage)}>처음 상태로</button>
   </article>;
 }
-export function GuideReview() {
+export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
   const {
     today,
     homeUrl,
@@ -149,7 +151,7 @@ export function GuideReview() {
           <section id="screens" className="guide-screens">
             <div className="guide-section-head">
               <div>
-                <h2>01 · 모바일 화면 한눈에 보기</h2>
+                <h2>모바일 화면 한눈에 보기</h2>
                 <p className="section-description">
                   실제 시안을 같은 너비로 나란히 봅니다. 각 화면 안에서
                   스크롤·검색·필터를 직접 사용할 수 있어요.
@@ -186,6 +188,10 @@ export function GuideReview() {
               </select>
               </div>
             </div>
+            <div className="guide-home-notes">
+              <p>진행 중(종료일순) → 곧 시작(시작일순) → 상설(이름순) · 섹션별 최대 3곳</p>
+              <p>더 보기는 조건 유지 · 기본 내일부터 14일, 7·30일은 비교용</p>
+            </div>
             <div className="guide-screen-grid">
               {screens.map((screen) => (
                 <figure className="guide-screen" key={screen.label}>
@@ -202,19 +208,21 @@ export function GuideReview() {
                 </figure>
               ))}
             </div>
-            <div className="guide-home-notes">
-              <h3>채택한 홈 구성·기간 비교</h3>
-              <p className="small">
-                진행 중 → 곧 시작 → 상설 시설 순서. 각 섹션 최대 3곳, 더 보기는
-                조건을 유지한 검색으로 이동합니다. 진행 중은 종료일 순, 다가오는
-                것은 시작일 순, 상설은 이름순입니다.
-              </p>
-
-              <p className="hint">
-                채택한 기본 구간은 내일부터 14일입니다. 7일·30일은 가이드의
-                비교 옵션이며 기본 기준을 바꾸지 않습니다.
-              </p>
+          </section>
+          <section id="ad-placement" className="guide-ad-placement">
+            <div className="guide-section-head">
+              <h2>목록 중간 광고 위치</h2>
+              <div className="guide-width-control">
+                <label htmlFor="adPreviewWidth">광고 목록 미리보기 너비</label>
+                <select id="adPreviewWidth" value={previewWidth} onChange={(event) => setPreviewWidth(Number(event.target.value))}>
+                  <option value="320">320px · 작은 화면</option>
+                  <option value="390">390px · 기본</option>
+                  <option value="430">430px · 넓은 화면</option>
+                </select>
+              </div>
             </div>
+            <p className="section-description">실제 목록의 6번째·14번째 카드 뒤에 광고 자리를 표시합니다. 위치·크기는 검토용이며 실제 광고는 불러오지 않습니다.</p>
+            <AdPlacementPreview result={adPreview} />
           </section>
           <section id="detail-examples" className="guide-detail-examples">
             <h2>상세 요금·빈 자료 예시</h2>
@@ -253,7 +261,7 @@ export function GuideReview() {
             </div>
           </section>
           <section id="navigation">
-            <h2>02 · 상단·하단 내비게이션</h2>
+            <h2>상단·하단 내비게이션</h2>
             <p className="section-description">
               검색은 상단, 자주 묻는 질문과 공지사항은 하단 내정보에서 열어요.
             </p>
@@ -325,7 +333,7 @@ export function GuideReview() {
             </div>
           </section>
           <section id="inputs">
-            <h2>03 · 인풋·셀렉트</h2>
+            <h2>인풋·셀렉트</h2>
             <div className="sample stack">
               <div>
                 <label htmlFor="guideInput">기본 입력</label>
@@ -372,7 +380,7 @@ export function GuideReview() {
             </div>
           </section>
           <section id="dates">
-            <h2>04 · 날짜 선택</h2>
+            <h2>날짜 선택</h2>
             <div className="sample">
               <DateField />
               <p className="hint">
@@ -390,7 +398,7 @@ export function GuideReview() {
             </p>
           </section>
           <section id="buttons">
-            <h2>05 · 버튼·뒤로가기</h2>
+            <h2>버튼·뒤로가기</h2>
             <div className="sample">
               <div className="row wrap">
                 <button
@@ -467,7 +475,7 @@ export function GuideReview() {
             <p className="hint">검색 화면과 같은 44px 선택 영역과 현재 페이지 표시예요. 번호는 최대 5개, 360px 이하에서는 주변 3개로 줄어듭니다. 결과가 한 페이지뿐이면 페이지네이션은 생략해요. 예시의 선택은 이 영역 안에서만 바뀝니다.</p>
           </section>
           <section id="cards">
-            <h2>06 · 카드·상태</h2>
+            <h2>카드·상태</h2>
             <p className="section-description">
               사진 또는 종류 아이콘 옆에 이름·지역·일정을 간결하게 표시합니다.
               카드를 누르면 간단 보기 시트가 올라오고, 상세 정보 보기로 개별
@@ -509,7 +517,7 @@ export function GuideReview() {
           <section id="states">
             <div className="guide-section-head">
               <div>
-                <h2>07 · 로딩·빈 결과·오류</h2>
+                <h2>로딩·빈 결과·오류</h2>
                 <p className="section-description">
                   전체 페이지 안내는 본문 가운데보다 조금 위에, 목록 일부·팝업
                   안내는 해당 영역 가운데에 표시합니다. 로딩·빈 결과·실패를 구분하고
@@ -568,7 +576,7 @@ export function GuideReview() {
             </p>
           </section>
           <section id="tokens">
-            <h2>08 · 글자·간격·보조 색상</h2>
+            <h2>글자·간격·보조 색상</h2>
             <p className="section-description">
               글자·간격과 정보 상태를 구분하는 보조 색상입니다.
             </p>
@@ -612,7 +620,7 @@ export function GuideReview() {
             />
           </section>
           <section id="brand">
-            <h2>09 · 현재 로고·심볼</h2>
+            <h2>현재 로고·심볼</h2>
             <p className="section-description">
               채택한 한글 로고·두 사람 심볼을 숲 초록으로 표시합니다.
               웹에서는 현재 투명 PNG 원본과 같은 심볼의 파비콘을 사용합니다.
@@ -674,7 +682,7 @@ export function GuideReview() {
             </div>
           </section>
           <section id="policies">
-            <h2>10 · 정책·하단 안내</h2>
+            <h2>정책·하단 안내</h2>
             <p className="small muted">
               정책·출처는 서비스 푸터에서 바텀시트로 열립니다. 뒤로
               가기로 닫으면 보던 화면을 유지해요.
@@ -682,7 +690,7 @@ export function GuideReview() {
             <PolicyLinks variant="buttons" />
           </section>
           <section id="featurePlan">
-            <h2>11 · 기능 계획 다시 보기</h2>
+            <h2>기능 계획 다시 보기</h2>
             <p className="section-description">
               비교를 제외하고, 북마크·로그인·AI는 후속으로 보류합니다.
             </p>

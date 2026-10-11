@@ -95,6 +95,8 @@ OutingStore는 REPEATABLE_READ·readOnly 트랜잭션으로 한 응답의 건수
 
 간단 보기는 열릴 때 /api/outings/:id의 Next route를 요청한다. 서버 전용 백엔드 주소와 같은 출처·검증/오류 계약을 유지하는 중계다. 공통 [api-request.ts](../frontend/src/features/outings/api-request.ts)는 HTTP/연결/본문 실패를 구분하고 시간 제한·캐시 제외·리다이렉트 차단을 적용한다. 닫기/항목 변경은 AbortController로 취소해 늦은 응답이 화면을 덮지 않게 한다. 가이드 표본은 실제 조회 실패의 대체값으로 사용하지 않는다.
 
+[OutingCard](../frontend/src/features/outings/outing-card.tsx)의 선택 입력 `previewId`는 간단 보기의 URL hash와 Dialog의 DOM ID를 구분한다. 기본값은 자료 ID이며, 같은 자료를 한 가이드에서 여러 번 표시할 때 광고 위치 미리보기만 별도 접두부를 사용해 시트가 동시에 열리거나 HTML ID가 중복되는 것을 막는다. 상세 API 조회와 상세 링크는 원래 자료 ID를 그대로 사용한다.
+
 ### 로그인 없는 안내 페이지
 
 [내정보 화면](../frontend/src/app/mypage/mypage-screen.tsx)은 `/mypage`에서 `/faq`·`/notices`를 연결하고 향후 설정 자리는 비활성 버튼으로 표시한다. 로그인이나 개인 계정 조회 없이 서버가 안내 본문을 렌더링하고 링크 이동은 기존 `NavigationLink`를 사용해 포커스·스크롤/조건 복귀를 유지한다. 햄버거는 기존 `Dialog`로 유지하며 검색은 헤더 아이콘에서 이동한다. 기존 로그인·북마크 버튼도 비활성 자리로 유지한다.
