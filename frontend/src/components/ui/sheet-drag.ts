@@ -6,11 +6,19 @@ export function sheetBounds(available: number, natural: number): SheetBounds {
 }
 export function sheetDragHeight(start: number, delta: number, bounds: SheetBounds) {
   const requested = start - delta;
-  return { height: Math.max(bounds.minimum, Math.min(bounds.expanded, requested)),
-    offset: Math.max(0, bounds.minimum - requested) };
+  return {
+    height: Math.max(bounds.minimum, Math.min(bounds.expanded, requested)),
+    offset: Math.max(0, bounds.minimum - requested),
+  };
 }
-export function sheetDragTarget(start: number, delta: number, bounds: SheetBounds, expanded: boolean) {
-  if (delta > 0 && start - delta < bounds.collapsed - Math.max(100, bounds.collapsed * 0.3)) return "close";
+export function sheetDragTarget(
+  start: number,
+  delta: number,
+  bounds: SheetBounds,
+  expanded: boolean,
+) {
+  if (delta > 0 && start - delta < bounds.collapsed - Math.max(100, bounds.collapsed * 0.3))
+    return "close";
   if (delta < -48) return "expanded";
   if (delta > 48) return "collapsed";
   return expanded ? "expanded" : "collapsed";

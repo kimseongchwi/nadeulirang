@@ -6,8 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class NadeulirangApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(NadeulirangApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(NadeulirangApplication.class, args);
+    }
 }

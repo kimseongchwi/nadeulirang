@@ -4,6 +4,7 @@
   "engines": { "node": ">=24" },
   "scripts": {
     "test": "node --test tests/tooling/*.test.mjs",
+    "check:docs": "node scripts/check-docs.mjs",
     "check:commit": "node scripts/check-commit.mjs",
     "check:backend": "node scripts/check-backend.mjs",
     "setup:hooks": "git config --local core.hooksPath .githooks"

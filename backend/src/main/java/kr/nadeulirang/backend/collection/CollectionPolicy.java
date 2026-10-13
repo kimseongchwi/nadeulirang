@@ -14,7 +14,7 @@ public final class CollectionPolicy {
     public static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final Pattern URL = Pattern.compile("https?://[^\\s<>\"']+");
 
-    private CollectionPolicy() { }
+    private CollectionPolicy() {}
 
     public static String normalize(String value) {
         return value.replaceAll("\\([^)]*\\)", "").replaceAll("\\s+", "").strip();
@@ -22,8 +22,10 @@ public final class CollectionPolicy {
 
     public static String hash(String value) {
         try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
-                    .digest(value.getBytes(StandardCharsets.UTF_8)));
+            return HexFormat.of()
+                    .formatHex(
+                            MessageDigest.getInstance("SHA-256")
+                                    .digest(value.getBytes(StandardCharsets.UTF_8)));
         } catch (java.security.NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 지원이 필요합니다.");
         }
@@ -42,7 +44,9 @@ public final class CollectionPolicy {
             var uri = java.net.URI.create(candidate);
             if (uri.getHost() == null || uri.getRawUserInfo() != null) return null;
             return candidate;
-        } catch (IllegalArgumentException e) { return null; }
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public static String tourKind(String type, String first, String second, String third) {
@@ -62,15 +66,20 @@ public final class CollectionPolicy {
                 return LocalDate.parse(value, java.time.format.DateTimeFormatter.BASIC_ISO_DATE);
             }
             return LocalDate.parse(value);
-        } catch (java.time.DateTimeException e) { return null; }
+        } catch (java.time.DateTimeException e) {
+            return null;
+        }
     }
 
     public static boolean stale(boolean event, Instant success, Instant now) {
-        return success == null || success.isBefore(now.minus(event ? Duration.ofHours(48) : Duration.ofDays(30)));
+        return success == null
+                || success.isBefore(now.minus(event ? Duration.ofHours(48) : Duration.ofDays(30)));
     }
 
     public static boolean detailDue(boolean event, boolean changed, Instant success, Instant now) {
-        return changed || success == null || !success.isAfter(now.minus(Duration.ofDays(event ? 7 : 30)));
+        return changed
+                || success == null
+                || !success.isAfter(now.minus(Duration.ofDays(event ? 7 : 30)));
     }
 
     public static String lifecycle(LocalDate start, LocalDate end, boolean cancelled, Instant now) {

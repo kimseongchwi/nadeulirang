@@ -18,10 +18,12 @@ class AuthSessions {
     static final String VERSION = "MEMBER_VERSION";
     static final String CREATED = "MEMBER_LOGIN_AT";
     static final String REAUTH = "MEMBER_REAUTH_AT";
-    final HttpSessionSecurityContextRepository contexts = new HttpSessionSecurityContextRepository();
+    final HttpSessionSecurityContextRepository contexts =
+            new HttpSessionSecurityContextRepository();
     final HttpSessionCsrfTokenRepository csrf = new HttpSessionCsrfTokenRepository();
 
-    void login(AuthService.Member member, HttpServletRequest request, HttpServletResponse response) {
+    void login(
+            AuthService.Member member, HttpServletRequest request, HttpServletResponse response) {
         if (request.getSession(false) != null) request.changeSessionId();
         var context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication(member));
@@ -33,22 +35,34 @@ class AuthSessions {
         csrf.saveToken(null, request, response);
         contexts.saveContext(context, request, response);
     }
+
     static UsernamePasswordAuthenticationToken authentication(AuthService.Member member) {
-        return UsernamePasswordAuthenticationToken.authenticated(member.id().toString(), null,
+        return UsernamePasswordAuthenticationToken.authenticated(
+                member.id().toString(),
+                null,
                 List.of(new SimpleGrantedAuthority("ROLE_" + member.role())));
     }
+
     UUID user() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser")) throw AuthFailure.denied();
-        try { return UUID.fromString(auth.getName()); }
-        catch (IllegalArgumentException failure) { throw AuthFailure.denied(); }
+        if (auth == null || !auth.isAuthenticated() || auth.getPrincipal().equals("anonymousUser"))
+            throw AuthFailure.denied();
+        try {
+            return UUID.fromString(auth.getName());
+        } catch (IllegalArgumentException failure) {
+            throw AuthFailure.denied();
+        }
     }
+
     void recent(HttpServletRequest request) {
-        user(); HttpSession session = request.getSession(false);
-        if (session == null || !(session.getAttribute(REAUTH) instanceof Long timestamp)
+        user();
+        HttpSession session = request.getSession(false);
+        if (session == null
+                || !(session.getAttribute(REAUTH) instanceof Long timestamp)
                 || timestamp < Instant.now().minusSeconds(300).getEpochSecond())
             throw new AuthFailure(403, "REAUTHENTICATION_REQUIRED", "다시 인증한 뒤 진행하세요.");
     }
+
     void logout(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         if (session != null) session.invalidate();

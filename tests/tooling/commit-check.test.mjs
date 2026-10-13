@@ -41,19 +41,23 @@ test("프론트·백엔드 검사 실패와 부분 스테이징을 차단하고 
   okGit("config", "user.name", "커밋 검사 테스트");
   okGit("config", "user.email", "test@example.invalid");
   okGit("config", "core.hooksPath", ".test-hooks");
+  // 테스트 훅을 설치하기 전에 임시 저장소의 ignore 기반만 만든다.
+  write(".gitignore", ".test-hooks/\n");
+  okGit("add", ".gitignore");
+  okGit("commit", "-m", "chore(test): 검증 기반", "-m", "임시 저장소의 훅 폴더 제외.");
+  const baseline = git("rev-parse", "HEAD").stdout.trim();
   const shellQuote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
   const script = fileURLToPath(new URL("../../scripts/check-commit.mjs", import.meta.url));
   write(".test-hooks/pre-commit", `#!/bin/sh\nexec ${shellQuote(process.execPath.replaceAll("\\", "/"))} ${shellQuote(script.replaceAll("\\", "/"))}\n`);
   chmodSync(path.join(dir, ".test-hooks/pre-commit"), 0o755);
-  write(".gitignore", ".test-hooks/\n");
-  write("frontend/package.json", JSON.stringify({ scripts: { "check:quick": "node --check bad.js" } }));
+  write("frontend/package.json", JSON.stringify({ scripts: { "format:check": "node --check bad.js", "check:quick": "node --check bad.js" } }));
   write("frontend/bad.js", "const = ;\n");
   write("tests/tooling/README.md", "# 임시 검증용 문서\n");
   okGit("add", ".gitignore", "frontend", "tests/tooling/README.md");
   const result = git("commit", "-m", "chore(frontend): 검증용 변경", "-m", "검증: 실패하는 코드 검사가 커밋을 차단하는지 확인.");
   assert.notEqual(result.status, 0);
   assert.match(result.stderr + result.stdout, /검사 실패: 커밋을 중단/);
-  assert.notEqual(git("rev-parse", "--verify", "HEAD").status, 0, "차단한 커밋이 생성되면 안 됩니다.");
+  assert.equal(git("rev-parse", "HEAD").stdout.trim(), baseline, "차단한 커밋이 생성되면 안 됩니다.");
   // 도구 폴더의 문서 때문에 별도 도구 테스트가 실행되면 이 커밋은 실패한다.
   write("frontend/bad.js", "const value = 1;\n");
   okGit("add", "frontend/bad.js");
@@ -89,4 +93,21 @@ test("프론트·백엔드 검사 실패와 부분 스테이징을 차단하고 
   const collectorPartial = git("commit", "-m", "chore(collection): 수집 실행 검사", "-m", "검증: 수집 스크립트도 백엔드 미스테이징 변경을 차단.");
   assert.notEqual(collectorPartial.status, 0);
   assert.match(collectorPartial.stderr + collectorPartial.stdout, /미스테이징 변경.*backend\/bad.js/);
+
+  write("backend/bad.js", "const value = 3;\n");
+  okGit("add", "backend/bad.js");
+  okGit("commit", "-m", "chore(collection): 검증용 도구", "-m", "검증: 수집 도구 검사 성공.");
+  write(".env.local", "TEST_ONLY=dummy\n");
+  okGit("add", ".env.local");
+  const secret = git("commit", "-m", "chore(test): 민감 파일 차단", "-m", "검증: 임시 설정 파일명 차단.");
+  assert.notEqual(secret.status, 0);
+  assert.match(secret.stderr + secret.stdout, /민감한 설정·키 파일/);
+  okGit("reset", "--", ".env.local");
+  rmSync(path.join(dir, ".env.local"));
+  okGit("checkout", "-b", "main");
+  write("README.md", "# main 직접 커밋 검증\n");
+  okGit("add", "README.md");
+  const main = git("commit", "-m", "docs(test): 직접 커밋 차단", "-m", "검증: main 직접 커밋 차단.");
+  assert.notEqual(main.status, 0);
+  assert.match(main.stderr + main.stdout, /main 직접 커밋을 중단/);
 });

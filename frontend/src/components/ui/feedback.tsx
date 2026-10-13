@@ -11,13 +11,19 @@ function StateRegion({ placement, children }: { placement: StatePlacement; child
 function StateArt({ type }: { type: "loading" | "empty" | "error" }) {
   if (type === "loading")
     return (
-      <span className="state-art walking-scene" aria-hidden="true">
+      <span
+        className="state-art walking-scene"
+        aria-hidden="true"
+      >
         <span className="people-mask walking-mark" />
         <span className="walking-shadow" />
       </span>
     );
   return (
-    <span className={`state-art state-${type}`} aria-hidden="true">
+    <span
+      className={`state-art state-${type}`}
+      aria-hidden="true"
+    >
       <svg
         width="48"
         height="48"
@@ -102,7 +108,10 @@ export function ErrorState({
         <StateArt type="error" />
         <strong className="state-title">나들이를 불러오지 못했어요.</strong>
         <p>잠시 후 다시 시도해 주세요.</p>
-        <button className="button secondary" onClick={onRetry}>
+        <button
+          className="button primary"
+          onClick={onRetry}
+        >
           다시 시도
         </button>
       </div>

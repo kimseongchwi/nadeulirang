@@ -5,8 +5,12 @@ export function queryFailure(status = 503) {
   return {
     ok: false as const,
     status: code,
-    message: code === 404 ? "공개된 정보를 찾을 수 없어요."
-      : code === 400 ? "검색 조건을 확인해 주세요." : "나들이 정보를 불러오지 못했어요.",
+    message:
+      code === 404
+        ? "공개된 정보를 찾을 수 없어요."
+        : code === 400
+          ? "검색 조건을 확인해 주세요."
+          : "나들이 정보를 불러오지 못했어요.",
   };
 }
 

@@ -23,7 +23,13 @@ export function PolicySheet({ type, open }: { type: PolicyType; open: boolean })
         tabIndex={0}
         aria-label="정책 안내 내용"
       >
-        <PolicyContent type={type} samplePhoto={pathname === "/ui-design" || pathname === "/policy/about" && query.get("sample") === "clayarch"} />
+        <PolicyContent
+          type={type}
+          samplePhoto={
+            pathname === "/ui-design" ||
+            (pathname === "/policy/about" && query.get("sample") === "clayarch")
+          }
+        />
       </div>
     </Dialog>
   );

@@ -3,7 +3,12 @@
 import { Icon } from "@/components/ui/icons";
 import { useNavigation } from "@/providers/navigation-provider";
 
-export function BackHeading({ title, labelOnly = false, compact = false, fallbackHref }: {
+export function BackHeading({
+  title,
+  labelOnly = false,
+  compact = false,
+  fallbackHref,
+}: {
   title: string;
   labelOnly?: boolean;
   compact?: boolean;
@@ -17,7 +22,9 @@ export function BackHeading({ title, labelOnly = false, compact = false, fallbac
       onClick={() => back(fallbackHref)}
       aria-label={`${title}, 이전 페이지로 돌아가기`}
     >
-      <span className="back-heading-icon"><Icon name="back" /></span>
+      <span className="back-heading-icon">
+        <Icon name="back" />
+      </span>
       <span>{title}</span>
     </button>
   );

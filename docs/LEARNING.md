@@ -2,34 +2,7 @@
 
 현재 코드의 핵심 타입·파일 역할·호출 흐름·선택 이유를 설명한다. 실행은 [README](../README.md), 제품 기준은 [PRD](PRD.md), 원천 규칙은 [DATA_SOURCES](DATA_SOURCES.md)를 따른다. 관련 구현은 P10~P14·P30·P38·P71·P73·P74다.
 
-## 회원·인증과 서버 세션 — P30
-
-[V7](../backend/src/main/resources/db/migration/V7__member_authentication.sql)의 `app_user`는 회원이고 `oauth_account`는 현재 소셜 로그인 수단이다. V8은 구글 제공자만 추가하고 이전 자체 인증/토큰 테이블과 자료는 보존하지만 사용하지 않는다. 서비스 데이터의 주인은 회원 UUID이며 소셜 이메일은 회원 결합 키가 아니다. `auth_token`은 이전 자체 인증 증명, `user_consent`는 버전별 고지 확인, `spring_session`·attributes는 서버 로그인 상태다. 가입할 때 role/status를 받지 않고 DB 기본 USER/ACTIVE로 만들기 때문에 HTTP 입력으로 관리자가 될 수 없다.
-
-[AuthController](../backend/src/main/java/kr/nadeulirang/backend/auth/AuthController.java)는 JSON/경로를 받아 [AuthService](../backend/src/main/java/kr/nadeulirang/backend/auth/AuthService.java)에 전달한다. 이 서비스는 JdbcTemplate으로 유일 제약·회원 행 잠금을 명시적으로 처리한다. 새 JPA 엔티티 관계 계층을 추가하지 않았으며 기존 JpaTransactionManager가 JDBC 변경도 같은 트랜잭션으로 묶는다. 마지막 소셜 수단의 경합은 `FOR UPDATE` 잠금과 DB 제약이 보장한다. [AuthRateLimiter](../backend/src/main/java/kr/nadeulirang/backend/auth/AuthRateLimiter.java)의 REQUIRES_NEW는 실패한 인증 트랜잭션과 독립적으로 횟수를 저장한다. 한도 예외에도 커밋하도록 `noRollbackFor`를 지정한다.
-
-`UUID.randomUUID`·`MessageDigest`는 Java 표준 라이브러리 기능이고 `record`는 값 타입 선언 문법이다. 자체 비밀번호/메일 도구는 제거했다. 요청 제한의 해시 키는 개인정보 원문을 남기지 않는 데 사용한다.
-
-[SecurityConfiguration](../backend/src/main/java/kr/nadeulirang/backend/auth/SecurityConfiguration.java)의 SecurityFilterChain이 컨트롤러 전에 CSRF·인증·권한을 검사한다. [AuthSessions](../backend/src/main/java/kr/nadeulirang/backend/auth/AuthSessions.java)는 성공 시 세션 ID를 바꾸고 UUID principal의 SecurityContext를 명시적으로 저장한다. 세션에는 제공자 access token이나 비밀번호를 넣지 않는다. [MemberSessionFilter](../backend/src/main/java/kr/nadeulirang/backend/auth/MemberSessionFilter.java)는 인증된 UUID에만 DB 조회를 적용하고 익명 방문은 통과시킨다. 상태·역할·auth_version을 다시 읽어 정지/권한 회수와 전체 종료를 기존 세션에 반영한다. HttpOnly 쿠키는 JS가 세션 ID를 읽지 못하게 하지만 CSRF 자체를 막아 주지는 않으므로 CSRF 토큰과 Origin 검사도 필요하다.
-
-[OAuthConfiguration](../backend/src/main/java/kr/nadeulirang/backend/auth/OAuthConfiguration.java)은 Spring OAuth2 Client의 authorization code/state 검증·토큰 교환·프로필 조회를 사용하고 제공자의 고유 ID만 남긴다. 구글은 openid만 요청하고 Spring OIDC가 서명·issuer·audience·nonce를 검증한 sub를 사용한다. 시작은 CSRF 보호 POST로 세션에 목적/대상/유효 시각을 기록하고 GET으로 제공자에 이동한다. 콜백은 같은 세션·state·최근 인증·회원 버전을 확인한 뒤 회원 UUID 인증으로 바꾼다. 새 수단을 증명한 것만으로 다른 기존 회원을 연결할 권한이 생기지는 않는다. 원격 해제 때 회원 잠금을 유지하고 성공 뒤 로컬 수단을 제거하지만, 원격 시스템과 DB는 하나의 트랜잭션이 아니므로 원격 성공 뒤 DB 실패는 재인증/재시도해야 한다.
-
-[프론트 인증 중계](../frontend/src/features/auth/proxy.ts)는 소셜 인증/세션 경로만 허용하고 자체 인증 경로를 차단한다. [로그인 화면](../frontend/src/app/login/login-screen.tsx)은 세 제공자 진입과 로그인된 회원의 닉네임·둘러보기 링크를 표시한다. 별도 계정 관리 화면은 제거했다. [인증 클라이언트](../frontend/src/features/auth/client.ts)는 응답을 브라우저 메모리에서 관리하고 변경마다 CSRF를 새로 받는다. React useState와 TypeScript 타입 검사는 화면 상태/응답 형식을 관리하며 실제 인증/권한은 서버가 판단한다.
-
-| 어노테이션 출처·대상 | 해석 주체·시점 |
-|---|---|
-| Spring `Configuration`·`Bean` / 설정 클래스·팩토리 메서드 | 시작 시 Spring이 보안 도구·제공자 등록을 생성/연결 |
-| Boot `ConditionalOnWebApplication` / 웹 보안 설정 | 시작 시 Servlet 웹 환경에만 필터 체인을 생성; 수집 전용 실행은 제외 |
-| Spring `Transactional` / 인증 서비스 메서드 | 프록시가 외부 메서드 호출 때 트랜잭션/잠금을 시작하고 성공 커밋·실패 롤백 |
-| Spring MVC `RequestBody`·`PathVariable` / 컨트롤러 인수 | HTTP 요청 처리 시 JSON/경로를 Java record/UUID로 변환; 서비스 검증을 대체하지 않음 |
-
-실제 흐름·설정·실패 계약은 [백엔드 인증 안내](../backend/README.md#회원-인증-api--p30), 코드 검증과 실제 제공자 검증의 상태는 [PLAN](../PLAN.md)을 따른다.
-
-## 실행 환경과 설정
-
-[use-local-env.ps1](../scripts/use-local-env.ps1)은 현재 PowerShell의 JAVA_HOME·PATH·DB와 작업 폴더의 인증 환경 변수를 준비한다. 인증 설정은 [use-auth-env.ps1](../scripts/use-auth-env.ps1)의 허용 목록으로만 읽으며 홈 공통 설정에 복사하지 않는다. [local-db.ps1](../scripts/local-db.ps1)의 DB 시작은 별도 동작이다. 다른 터미널은 이 프로세스의 환경을 자동 공유하지 않는다.
-
-[local-settings.mjs](../scripts/local-settings.mjs)·[local-settings.ps1](../scripts/local-settings.ps1)·CollectionRunner.readKeys는 공통 설정을 먼저 읽고 폴더별 비어 있지 않은 값만 덮어쓴다. 파일을 명령으로 평가하지 않아 비밀번호의 $()도 문자로 읽는다. 공통 설정은 같은 PC에서 유지하는 로컬 파일이며 배포 비밀 설정과 구분한다.
+읽는 순서: Java·Spring 기본 → 프론트 요청/화면 → 공개 조회 → 수집/트랜잭션 → 사진·표시 → 인증. 실행 환경은 필요할 때 찾아 읽는다.
 
 ## Java와 Spring 시작 코드
 
@@ -55,60 +28,9 @@ Boot는 DataSource·Hikari 연결 풀을 준비하고 Flyway를 적용한 뒤 Hi
 
 Next.js와 Spring은 서로 다른 서버다. 포트에 서버가 없으면 접속 실패, 서버가 있지만 경로가 없으면 404, Spring health의 DB 장애는 503이다. /actuator/health는 연결 상태만 검사하며 수집 품질·모든 제품 동작의 검증을 대신하지 않는다.
 
-## 데이터 모델과 수집 코드
-
-### 원문과 제품 항목의 ID
-
-outing은 서비스 내부 ID·검토/표출·분류·요금/일정 요약, source_record는 원천 식별자와 내부 ID 연결, source_observation은 호출별 원문, field_evidence는 필드 값·출처·기준일·확인 시각이다. source_link_history·outing_review는 검토한 연결/제품 결정의 근거를 보존한다. 원문만 저장하면 조회 때마다 재해석해야 하고 요약만 저장하면 근거를 잃으므로 두 가지를 유지한다.
-
-TourAPI는 contentid를 사용한다. 표준 원천의 연결 후보는 이름·기관·정규화 주소이며 축제는 기간·장소까지 포함한다. 페이지/행 순번·이름만으로 합치지 않는다. ingest의 ON CONFLICT는 실제 유일 제약을 기준으로 같은 호출/행의 재처리를 멱등하게 처리한다. 새 호출의 원문은 이력으로 남는다.
-
-### JPA 저장과 트랜잭션
-
-JPA는 객체를 DB에 저장·조회하는 표준 API, Hibernate는 그 표준을 실행해 SQL·객체 변경 추적을 처리하는 구현체, Spring Data JPA는 Repository 인터페이스로 반복 조회/저장 구현을 제공하는 Spring 도구다. [Spring Data JPA](https://spring.io/projects/spring-data-jpa/)
-
-| 실제 모델 → 테이블 | 필드·제약의 의미 |
-|---|---|
-| [CollectionSourceEntity](../backend/src/main/java/kr/nadeulirang/backend/collection/CollectionSourceEntity.java) → collection_source | Source enum 이름이 PK. blockedReason·lastStartedAt은 처음에는 null이며 원천 중단·간격을 관리 |
-| [SourceCallEntity](../backend/src/main/java/kr/nadeulirang/backend/collection/SourceCallEntity.java) → source_call | 앱에서 만든 UUID PK·원천·오퍼레이션·query jsonb·시도/완료 시각·결과/본문. 실패·실행 중 시도도 예산에 포함 |
-| [CollectionCheckpointEntity](../backend/src/main/java/kr/nadeulirang/backend/collection/CollectionCheckpointEntity.java) → collection_checkpoint | streamKey PK·원천/목록 조건·페이지/행·완료 상태. page_call은 새 페이지/완료 시 null인 FK |
-
-source_call.source·checkpoint.source/page_call의 관계는 원천 이름·호출 UUID로만 매핑한다. DB의 기존 FK가 무결성을 보장하며 객체 관계·cascade를 추가하지 않아 원문 연쇄 삭제·N+1 조회·순환 응답을 피한다. 필요한 엔티티 3개만 만들고 공개 나들이 응답은 기존 OutingResponse record를 유지한다.
-
-| 모델/Repository의 어노테이션 | 출처·대상·해석과 처리 시점 |
-|---|---|
-| Entity·Table(name=...) | jakarta.persistence · 클래스. Hibernate가 시작 시 매핑을 등록·검증 |
-| Id·Column(name=..., nullable=..., columnDefinition=...) | jakarta.persistence · 필드. Hibernate가 로딩/쓰기에서 PK·실제 컬럼 타입을 사용. 유일/FK/check 제약 생성은 Flyway 담당 |
-| Enumerated(EnumType.STRING) | jakarta.persistence · Source 필드. Hibernate가 조회/저장 시 enum 이름을 text로 변환, enum 순번 변화에 영향받지 않음 |
-| JdbcTypeCode(SqlTypes.JSON) | org.hibernate.annotations/hibernate.type · JSON 문자열 필드. Hibernate가 바인딩/읽기 시 PostgreSQL jsonb를 사용, 문자열을 JSON 문자열 값으로 이중 인코딩하지 않음 |
-| Lock(PESSIMISTIC_WRITE)·Query | org.springframework.data.jpa.repository · Repository 메서드. Spring Data가 시작 시 쿼리를 준비하고 호출 때 행 잠금 쿼리를 실행 |
-| Modifying·Query(nativeQuery=true) | 같은 Spring Data 패키지 · 커서 initialize. 호출 때 최초 생성의 ON CONFLICT DO NOTHING 실행 |
-
-protected 기본 생성자는 Hibernate가 조회 결과로 객체를 만들 때 사용한다. 필드에 매핑을 붙여 getter/setter를 모두 공개할 필요가 없다. private 필드 변경은 관리 중인 객체의 메서드로 수행하고 Hibernate가 트랜잭션 완료 시 변경 내용을 반영한다.
-
-호출 흐름은 SourceClient → CollectionStore.reserve → CollectionSourceRepository.lock → SourceCallRepository.countBySourceAndStartedAtAfter/save → Hibernate SQL → PostgreSQL이다. Repository는 필요한 메서드만 노출하는 Spring Data Repository 인터페이스다. 구현 객체는 Spring Data가 시작 시 만들어 생성자로 전달한다. 호출 예산 확인과 STARTED 저장은 원천 행 잠금을 가진 트랜잭션으로 커밋하고 **그 뒤** 네트워크를 호출한다. 네트워크/행 저장 실패가 이미 소비한 호출을 되돌리지 않는다.
-
-CollectionStore의 TransactionTemplate은 JPA와 남은 JdbcTemplate SQL을 같은 JpaTransactionManager·DataSource 연결로 묶는다. finish는 호출 결과와 원천 중단 상태를 같이 확정하고 ingest는 제품·원문·필드·사진·요약 갱신을 함께 롤백한다. JPA는 쓰기를 완료 시점까지 늦출 수 있으므로 같은 트랜잭션에서 JDBC가 새 값을 읽어야 한다면 flush가 필요하다. 현재 호출 예약·결과는 외부 ingest 호출 전에 커밋되며 [공동 롤백 테스트](../backend/src/test/java/kr/nadeulirang/backend/collection/CollectionStoreTests.java)가 flush 후 JDBC 읽기와 SQL 실패의 공동 롤백을 확인한다.
-
-원천 상태·호출 기록·커서 갱신/성공 페이지 조회의 JDBC 코드는 JPA로 대체했다. 커서 최초 생성은 경합 시 기존 위치를 덮지 않도록 native ON CONFLICT를 유지한다. query 비교는 Repository의 파생 조회를 통해 jsonb 동등성으로 처리해 키 순서·1/1.0 차이를 허용한다. 원문 upsert·최신 근거 뷰·같은 관측의 날짜 쌍·요금 충돌·공개 조회는 PostgreSQL SQL이 보장 조건을 더 직접적으로 보여줘 유지한다. JDBC는 JPA starter의 하위 의존성으로 여전히 필요하며 직접 starter-jdbc 중복 선언만 제거했다.
-
-CollectionStore·CollectionCheckpointStore·OutingStore는 처리/조회 조율용 Component다. 직접 JdbcTemplate이 SQL 접근 예외를 변환한다. 이 클래스에 Repository 예외 변환까지 적용하면 정책의 IllegalArgumentException/IllegalStateException이 JPA 접근 오류로 바뀌어 API 400 계약이나 예산 중단 처리를 깨뜨리므로 사용하지 않는다. JPA Repository 자체의 DB 오류 변환은 Spring Data가 처리한다. 배치 잠금은 finally에서 해제해 정책 실패 후에도 다음 실행을 허용한다.
-
-### 응답·정책·커서
-
-SourceResponse record는 outcome·code·JsonNode payload·List<JsonNode> rows를 담는다. Jackson의 JsonNode/JsonMapper는 JSON 라이브러리 타입이다. parse는 HTTP·원천 결과 코드·본문을 검사하고 키를 제거한다. CollectionPolicy는 0원/미확인·조건 문장·분류·서울 날짜 경계를 처리한다. SourceClient는 공식 주소·허용 요청·간격·예산을 제한하며 원천 세션 잠금은 네트워크 요청 전체를 직렬화한다.
-
-CollectionRunner는 수동 seed·batch·supplement를 조율한다. 커서는 성공 목록 응답을 재사용하고 부분 페이지의 다음 행에서 이어간다. 실패 후보에서는 진행하지 않는다. 이는 변경 목록 전체 추적이나 운영 크론이 아니며 그 미완료 조건은 DATA_SOURCES에서 관리한다.
-
-## 목록·상세 HTTP 조회와 공개 경계
-
-OutingController는 URL 값을 OutingQuery로 검사하고 Clock에서 받은 한 Instant를 OutingStore에 전달한다. API 응답은 엔티티 대신 별도 record다. OutingErrorHandler는 잘못된 조건 400·없는/비공개 404·DB/트랜잭션 실패 503을 제공하며 SQL/설정 원문을 반환하지 않는다. 정확한 필드는 [API 계약](../backend/README.md#목록상세-조회-api)을 따른다.
-
-OutingStore는 REPEATABLE_READ·readOnly 트랜잭션으로 한 응답의 건수·항목·근거를 맞춘다. 홈 세 구분은 동일 시각·트랜잭션 안에서 각각 DB가 최대 3개를 선정한다. 상한 조건은 페이지 분할 전에 적용한다. 외부 프록시 호출이 트랜잭션을 열며 내부 list 호출이 새 프록시 호출이 되는 것은 아니다.
-
-공개 SQL은 승인·표출·이용허락·실제 원문을 모든 조회에 적용한다. 상세는 공개 가능한 종료/취소도 유지하고 목록은 제외한다. 바인딩은 값의 SQL 삽입을 막으며 strpos는 %/_도 문자 그대로 검색한다. V5 effective_field_evidence는 같은 원천/대상/오퍼레이션/필드의 유효 기준일·마지막 유효 응답을 선택한다. 원문·실패·빈 값은 보존하며 빈 상세가 기존 요금/날짜를 지우지 않는다. 같은 기준일·교차 원천의 서로 다른 요금/날짜 쌍을 임의로 합치지 않는다.
-
 ## 프론트 파일과 실행 흐름
+
+UI 가이드도 실제 공유 UI의 사용처다. 독립 표본을 나누면 요금 예시 수정이 가이드 전체 상태와 섞이지 않는다. `guide.tsx`의 `GuideReview` → `DetailExamples`는 자료 표본을, `StateExamples`는 자체 `useState`로 안내 위치를 제어하고 부모의 메시지 콜백만 호출한다. 서버 조회 경계는 바꾸지 않는다. CSS의 같은 선택자는 뒤쪽 선언이 앞쪽 값을 보정하므로 `styles/service.css`의 import 순서(shared → guide → feedback → outings → information-pages)를 유지한다. 공유 스타일 안의 가이드 보정도 순서 때문에 남아 있다.
 
 ### 서버 페이지와 브라우저 상태
 
@@ -160,17 +82,66 @@ ExpandableDetailText는 소개·프로그램의 긴 본문만 펼친다. program
 
 file_asset은 사진 URL·출처·유형·관측/시각만 보존한다. PhotoPolicy와 API 검사는 허용 호스트/유형을 제한한다. OutingArtwork는 누락·실패 때 아이콘을 사용한다. 브랜드 팔레트는 SiteShell CSS 변수와 icon.ts가 공유한다. 가이드 카드·달력·개발 표시는 features/ui-design에 있으며 실제 서비스와 공유 UI를 사용한다.
 
-## 테스트와 개발 도구
+## 목록·상세 HTTP 조회와 공개 경계
 
-백엔드 테스트는 실행마다 UUID 스키마에서 실제 PostgreSQL의 제약·마이그레이션·잠금·롤백·API를 검증한다. 테스트 초기화는 앱 스키마에 접근하지 않는다. 순수 정책 테스트는 날짜·요금·분류·원천 응답을 빠르게 확인한다.
+OutingController는 URL 값을 OutingQuery로 검사하고 Clock에서 받은 한 Instant를 OutingStore에 전달한다. API 응답은 엔티티 대신 별도 record다. OutingErrorHandler는 잘못된 조건 400·없는/비공개 404·DB/트랜잭션 실패 503을 제공하며 SQL/설정 원문을 반환하지 않는다. 정확한 필드는 [API 계약](../backend/README.md#목록상세-조회-api)을 따른다.
 
-프론트 회귀는 URL 조건·런타임 계약·요금/시간·원문/소제목 보존·시트 경계를 확인한다. 없어진 가이드 검색 구현 테스트는 제거하되 서울 자정·윤년은 date-model.test.mjs에 남긴다. 로컬 도구 테스트는 인증값 비노출·설정 우선순위·커밋 차단을 검증한다. 훅/CI 명령은 README를 따른다.
+OutingStore는 REPEATABLE_READ·readOnly 트랜잭션으로 한 응답의 건수·항목·근거를 맞춘다. 홈 세 구분은 동일 시각·트랜잭션 안에서 각각 DB가 최대 3개를 선정한다. 상한 조건은 페이지 분할 전에 적용한다. 외부 프록시 호출이 트랜잭션을 열며 내부 list 호출이 새 프록시 호출이 되는 것은 아니다.
 
-선택 연습: SourceCallRepository.save 뒤 JDBC로 읽는 시점을 커밋 전/후로 비교하거나 빈 요금과 문자열 0의 차이를 CollectionPolicyTests에서 확인한다. 제품 코드를 학습용으로 변경할 필요는 없다.
+공개 SQL은 승인·표출·이용허락·실제 원문을 모든 조회에 적용한다. 상세는 공개 가능한 종료/취소도 유지하고 목록은 제외한다. 바인딩은 값의 SQL 삽입을 막으며 strpos는 %/_도 문자 그대로 검색한다. V5 effective_field_evidence는 같은 원천/대상/오퍼레이션/필드의 유효 기준일·마지막 유효 응답을 선택한다. 원문·실패·빈 값은 보존하며 빈 상세가 기존 요금/날짜를 지우지 않는다. 같은 기준일·교차 원천의 서로 다른 요금/날짜 쌍을 임의로 합치지 않는다.
+
+## 데이터 모델과 수집 코드
+
+### 원문과 제품 항목의 ID
+
+outing은 서비스 내부 ID·검토/표출·분류·요금/일정 요약, source_record는 원천 식별자와 내부 ID 연결, source_observation은 호출별 원문, field_evidence는 필드 값·출처·기준일·확인 시각이다. source_link_history·outing_review는 검토한 연결/제품 결정의 근거를 보존한다. 원문만 저장하면 조회 때마다 재해석해야 하고 요약만 저장하면 근거를 잃으므로 두 가지를 유지한다.
+
+TourAPI는 contentid를 사용한다. 표준 원천의 연결 후보는 이름·기관·정규화 주소이며 축제는 기간·장소까지 포함한다. 페이지/행 순번·이름만으로 합치지 않는다. ingest의 ON CONFLICT는 실제 유일 제약을 기준으로 같은 호출/행의 재처리를 멱등하게 처리한다. 새 호출의 원문은 이력으로 남는다.
+
+`CollectionStore.relink`는 연결 근거를 기록한 뒤 이전/대상 항목의 날짜·요금 요약을 같은 트랜잭션에서 재계산한다. 날짜 쌍이 하나면 사용하고 서로 다르면 미확인으로 둔다. 유효 근거가 아예 없는 경우 기존 요약을 지우지 않는 보존 규칙도 유지한다. `CollectionRunner.storeTourDetail`은 일반 상세와 보완의 실패/빈 응답·식별자 확인·행 저장을 공유한다. 호출 예약/HTTP는 밖에서, 행별 트랜잭션은 Store에서 처리하므로 네트워크를 큰 저장 트랜잭션으로 감싸지 않는다.
+
+`OutingStore`의 `evidence` 메서드는 두 SQL 결과에서 같은 응답 record를 만드는 부분만 공유한다. 원문 근거 조회와 필드별 유효 근거 선택 SQL은 목적이 다르므로 분리한 채 유지한다. 과거 행 전체 선택 함수는 실제 호출이 없어 제거했으며 현재 선택은 V5의 `effective_field_evidence`와 실제 API 회귀로 확인한다.
+
+### JPA 저장과 트랜잭션
+
+JPA는 객체를 DB에 저장·조회하는 표준 API, Hibernate는 그 표준을 실행해 SQL·객체 변경 추적을 처리하는 구현체, Spring Data JPA는 Repository 인터페이스로 반복 조회/저장 구현을 제공하는 Spring 도구다. [Spring Data JPA](https://spring.io/projects/spring-data-jpa/)
+
+| 실제 모델 → 테이블 | 필드·제약의 의미 |
+|---|---|
+| [CollectionSourceEntity](../backend/src/main/java/kr/nadeulirang/backend/collection/CollectionSourceEntity.java) → collection_source | Source enum 이름이 PK. blockedReason·lastStartedAt은 처음에는 null이며 원천 중단·간격을 관리 |
+| [SourceCallEntity](../backend/src/main/java/kr/nadeulirang/backend/collection/SourceCallEntity.java) → source_call | 앱에서 만든 UUID PK·원천·오퍼레이션·query jsonb·시도/완료 시각·결과/본문. 실패·실행 중 시도도 예산에 포함 |
+| [CollectionCheckpointEntity](../backend/src/main/java/kr/nadeulirang/backend/collection/CollectionCheckpointEntity.java) → collection_checkpoint | streamKey PK·원천/목록 조건·페이지/행·완료 상태. page_call은 새 페이지/완료 시 null인 FK |
+
+source_call.source·checkpoint.source/page_call의 관계는 원천 이름·호출 UUID로만 매핑한다. DB의 기존 FK가 무결성을 보장하며 객체 관계·cascade를 추가하지 않아 원문 연쇄 삭제·N+1 조회·순환 응답을 피한다. 필요한 엔티티 3개만 만들고 공개 나들이 응답은 기존 OutingResponse record를 유지한다.
+
+| 모델/Repository의 어노테이션 | 출처·대상·해석과 처리 시점 |
+|---|---|
+| Entity·Table(name=...) | jakarta.persistence · 클래스. Hibernate가 시작 시 매핑을 등록·검증 |
+| Id·Column(name=..., nullable=..., columnDefinition=...) | jakarta.persistence · 필드. Hibernate가 로딩/쓰기에서 PK·실제 컬럼 타입을 사용. 유일/FK/check 제약 생성은 Flyway 담당 |
+| Enumerated(EnumType.STRING) | jakarta.persistence · Source 필드. Hibernate가 조회/저장 시 enum 이름을 text로 변환, enum 순번 변화에 영향받지 않음 |
+| JdbcTypeCode(SqlTypes.JSON) | org.hibernate.annotations/hibernate.type · JSON 문자열 필드. Hibernate가 바인딩/읽기 시 PostgreSQL jsonb를 사용, 문자열을 JSON 문자열 값으로 이중 인코딩하지 않음 |
+| Lock(PESSIMISTIC_WRITE)·Query | org.springframework.data.jpa.repository · Repository 메서드. Spring Data가 시작 시 쿼리를 준비하고 호출 때 행 잠금 쿼리를 실행 |
+| Modifying·Query(nativeQuery=true) | 같은 Spring Data 패키지 · 커서 initialize. 호출 때 최초 생성의 ON CONFLICT DO NOTHING 실행 |
+
+protected 기본 생성자는 Hibernate가 조회 결과로 객체를 만들 때 사용한다. 필드에 매핑을 붙여 getter/setter를 모두 공개할 필요가 없다. private 필드 변경은 관리 중인 객체의 메서드로 수행하고 Hibernate가 트랜잭션 완료 시 변경 내용을 반영한다.
+
+호출 흐름은 SourceClient → CollectionStore.reserve → CollectionSourceRepository.lock → SourceCallRepository.countBySourceAndStartedAtAfter/save → Hibernate SQL → PostgreSQL이다. Repository는 필요한 메서드만 노출하는 Spring Data Repository 인터페이스다. 구현 객체는 Spring Data가 시작 시 만들어 생성자로 전달한다. 호출 예산 확인과 STARTED 저장은 원천 행 잠금을 가진 트랜잭션으로 커밋하고 **그 뒤** 네트워크를 호출한다. 네트워크/행 저장 실패가 이미 소비한 호출을 되돌리지 않는다.
+
+CollectionStore의 TransactionTemplate은 JPA와 남은 JdbcTemplate SQL을 같은 JpaTransactionManager·DataSource 연결로 묶는다. finish는 호출 결과와 원천 중단 상태를 같이 확정하고 ingest는 제품·원문·필드·사진·요약 갱신을 함께 롤백한다. JPA는 쓰기를 완료 시점까지 늦출 수 있으므로 같은 트랜잭션에서 JDBC가 새 값을 읽어야 한다면 flush가 필요하다. 현재 호출 예약·결과는 외부 ingest 호출 전에 커밋되며 [공동 롤백 테스트](../backend/src/test/java/kr/nadeulirang/backend/collection/CollectionStoreTests.java)가 flush 후 JDBC 읽기와 SQL 실패의 공동 롤백을 확인한다.
+
+커서 최초 생성은 경합 시 기존 위치를 덮지 않도록 native ON CONFLICT를 유지한다. query 비교는 Repository의 파생 조회를 통해 jsonb 동등성으로 처리해 키 순서·1/1.0 차이를 허용한다. 원문 upsert·최신 근거 뷰·같은 관측의 날짜 쌍·요금 충돌·공개 조회는 PostgreSQL SQL이 보장 조건을 더 직접적으로 보여줘 유지한다. JdbcTemplate은 JPA starter의 JDBC 하위 의존성으로 제공된다.
+
+CollectionStore·CollectionCheckpointStore·OutingStore는 처리/조회 조율용 Component다. 직접 JdbcTemplate이 SQL 접근 예외를 변환한다. 이 클래스에 Repository 예외 변환까지 적용하면 정책의 IllegalArgumentException/IllegalStateException이 JPA 접근 오류로 바뀌어 API 400 계약이나 예산 중단 처리를 깨뜨리므로 사용하지 않는다. JPA Repository 자체의 DB 오류 변환은 Spring Data가 처리한다. 배치 잠금은 finally에서 해제해 정책 실패 후에도 다음 실행을 허용한다.
+
+### 응답·정책·커서
+
+SourceResponse record는 outcome·code·JsonNode payload·List<JsonNode> rows를 담는다. Jackson의 JsonNode/JsonMapper는 JSON 라이브러리 타입이다. parse는 HTTP·원천 결과 코드·본문을 검사하고 키를 제거한다. CollectionPolicy는 0원/미확인·조건 문장·분류·서울 날짜 경계를 처리한다. SourceClient는 공식 주소·허용 요청·간격·예산을 제한하며 원천 세션 잠금은 네트워크 요청 전체를 직렬화한다.
+
+CollectionRunner는 수동 seed·batch·supplement를 조율한다. 커서는 성공 목록 응답을 재사용하고 부분 페이지의 다음 행에서 이어간다. 실패 후보에서는 진행하지 않는다. 이는 변경 목록 전체 추적이나 운영 크론이 아니며 그 미완료 조건은 DATA_SOURCES에서 관리한다.
 
 ## 추가 사진의 저장과 조회
 
-`CollectionRunner`의 `photos-replay`는 DB에 저장된 호출 ID와 검토 URL 목록을 읽는다. `CollectionStore.replayPhotos`는 요청 contentid·전체 응답의 contentid·Type1·허용 URL을 대조한 후 같은 저장 원문만 `ingest`에 넘긴다. 사진별 `source_observation`을 유지하고 `file_asset`의 URL 중복 제거·대표·순서를 같은 트랜잭션에서 처리한다. V6는 기존 사진을 지우지 않고 대표 선택을 활성 여부에서 분리한다. 실제 보완 호출은 `SourceClient.reserve`의 영속 예산을 적용하며 페이지 원문과 `CollectionCheckpointStore` 커서를 남긴다.
+`CollectionRunner`의 `photos-replay`는 DB에 저장된 호출 ID와 검토 URL 목록을 읽는다. `CollectionStore.replayPhotos`는 요청 contentid·전체 응답의 contentid·Type1·허용 URL을 대조한 후 같은 저장 원문만 `ingest`에 넘긴다. 사진별 `source_observation`을 유지하고 `file_asset`의 URL 중복 제거·대표·순서를 같은 트랜잭션에서 처리한다. V6는 기존 사진을 지우지 않고 대표 선택을 활성 여부에서 분리한다. 실제 보완 호출은 `SourceClient.fetch → CollectionStore.reserve`의 영속 예산을 적용하며 페이지 원문과 `CollectionCheckpointStore` 커서를 남긴다.
 
 `OutingStore.detail`은 먼저 공개 경계를 확인한 뒤 저장 사진 배열을 읽는다. 요약 `photo`와 상세 `photos[0]`은 같은 순서를 사용하므로 기존 목록 계약을 유지한다. Java의 `record`는 응답 값 묶음이며 사진 조회는 SQL/JdbcTemplate 기능이다. HTTP 조회에 원천 수집을 섞지 않아 새로고침이 TourAPI 예산을 소비하지 않는다.
 
@@ -183,3 +154,41 @@ file_asset은 사진 URL·출처·유형·관측/시각만 보존한다. PhotoPo
 [fee-alternatives.ts](../frontend/src/features/outings/fee-alternatives.ts)는 충돌이 있는 경우 information의 유효 선택과 evidence의 다른 출처 현재 요금을 묶는다. 같은 원천/필드의 빈 응답이나 비선택 값을 유효 선택 대신 쓰지 않는다. [evidence.tsx](../frontend/src/features/outings/evidence.tsx)는 표시 배열을 공통 행/제목/보조 문단으로 렌더링한다. 원천 이름만 반복하는 상세 토글은 제거하고 푸터에서 공통 출처·필수 귀속·이용 조건을 제공한다. 별도 Context나 출처 페이지의 상세 재조회가 필요하지 않다. 새 원천 호출이나 사진 대표 선택 변경은 없다. 갤러리의 effect는 선택 썸네일의 좌우 경계를 비교해 줄의 scrollLeft만 바꾸며 본문 스크롤을 움직이지 않는다. Pointer Events는 가로 드래그가 확인된 뒤 포인터를 캡처해 썸네일 줄만 이동하고 드래그 뒤 클릭 선택은 억제한다. 세로 스크롤·핀치는 브라우저에 맡긴다.
 
 [information-parts.ts](../frontend/src/features/outings/information-parts.ts)는 완전한 괄호와 명확한 시간 구문을 확인해 기간 제목·시간·입장 마감을 표시 배열로 만든다. [address-presentation.ts](../frontend/src/features/outings/address-presentation.ts)는 원천/대상/관측별 주소와 상세 위치를 묶고 같은 관측의 도로명을 우선한다. 다른 관측의 위치를 임의로 붙이지 않으며 행사 장소는 주소 영역 안의 이름 있는 줄로 구분한다. 표시 결과만 만들고 Evidence의 값과 근거는 변경하지 않는다. OutingPreview는 이미 조회한 Detail을 detailContent로 읽어 원문 소개를 3줄 제한으로 표시하므로 추가 HTTP 요청이 필요하지 않다.
+## 회원·인증과 서버 세션 — P30
+
+[V7](../backend/src/main/resources/db/migration/V7__member_authentication.sql)의 `app_user`는 회원이고 `oauth_account`는 현재 소셜 로그인 수단이다. V8은 구글 제공자만 추가하고 이전 자체 인증/토큰 테이블과 자료는 보존하지만 사용하지 않는다. 서비스 데이터의 주인은 회원 UUID이며 소셜 이메일은 회원 결합 키가 아니다. `auth_token`은 이전 자체 인증 증명, `user_consent`는 버전별 고지 확인, `spring_session`·attributes는 서버 로그인 상태다. 가입할 때 role/status를 받지 않고 DB 기본 USER/ACTIVE로 만들기 때문에 HTTP 입력으로 관리자가 될 수 없다.
+
+[AuthController](../backend/src/main/java/kr/nadeulirang/backend/auth/AuthController.java)는 JSON/경로를 받아 [AuthService](../backend/src/main/java/kr/nadeulirang/backend/auth/AuthService.java)에 전달한다. 이 서비스는 JdbcTemplate으로 유일 제약·회원 행 잠금을 명시적으로 처리한다. 새 JPA 엔티티 관계 계층을 추가하지 않았으며 기존 JpaTransactionManager가 JDBC 변경도 같은 트랜잭션으로 묶는다. 마지막 소셜 수단의 경합은 `FOR UPDATE` 잠금과 DB 제약이 보장한다. [AuthRateLimiter](../backend/src/main/java/kr/nadeulirang/backend/auth/AuthRateLimiter.java)의 REQUIRES_NEW는 실패한 인증 트랜잭션과 독립적으로 횟수를 저장한다. 한도 예외에도 커밋하도록 `noRollbackFor`를 지정한다.
+
+`UUID.randomUUID`·`MessageDigest`는 Java 표준 라이브러리 기능이고 `record`는 값 타입 선언 문법이다. 요청 제한의 해시 키는 개인정보 원문을 남기지 않는 데 사용한다.
+
+[SecurityConfiguration](../backend/src/main/java/kr/nadeulirang/backend/auth/SecurityConfiguration.java)의 SecurityFilterChain이 컨트롤러 전에 CSRF·인증·권한을 검사한다. [AuthSessions](../backend/src/main/java/kr/nadeulirang/backend/auth/AuthSessions.java)는 성공 시 세션 ID를 바꾸고 UUID principal의 SecurityContext를 명시적으로 저장한다. 세션에는 제공자 access token이나 비밀번호를 넣지 않는다. [MemberSessionFilter](../backend/src/main/java/kr/nadeulirang/backend/auth/MemberSessionFilter.java)는 인증된 UUID에만 DB 조회를 적용하고 익명 방문은 통과시킨다. 상태·역할·auth_version을 다시 읽어 정지/권한 회수와 전체 종료를 기존 세션에 반영한다. HttpOnly 쿠키는 JS가 세션 ID를 읽지 못하게 하지만 CSRF 자체를 막아 주지는 않으므로 CSRF 토큰과 Origin 검사도 필요하다.
+
+[OAuthConfiguration](../backend/src/main/java/kr/nadeulirang/backend/auth/OAuthConfiguration.java)은 Spring OAuth2 Client의 authorization code/state 검증·토큰 교환·프로필 조회를 사용하고 제공자의 고유 ID만 남긴다. 구글은 openid만 요청하고 Spring OIDC가 서명·issuer·audience·nonce를 검증한 sub를 사용한다. 시작은 CSRF 보호 POST로 세션에 목적/대상/유효 시각을 기록하고 GET으로 제공자에 이동한다. 콜백은 같은 세션·state·최근 인증·회원 버전을 확인한 뒤 회원 UUID 인증으로 바꾼다. 새 수단을 증명한 것만으로 다른 기존 회원을 연결할 권한이 생기지는 않는다. 원격 해제 때 회원 잠금을 유지하고 성공 뒤 로컬 수단을 제거하지만, 원격 시스템과 DB는 하나의 트랜잭션이 아니므로 원격 성공 뒤 DB 실패는 재인증/재시도해야 한다.
+
+[프론트 인증 중계](../frontend/src/features/auth/proxy.ts)는 소셜 인증/세션 경로만 허용하고 자체 인증 경로를 차단한다. [로그인 화면](../frontend/src/app/login/login-screen.tsx)은 세 제공자 진입과 로그인된 회원의 닉네임·둘러보기 링크를 표시한다. [인증 클라이언트](../frontend/src/features/auth/client.ts)는 응답을 브라우저 메모리에서 관리하고 변경마다 CSRF를 새로 받는다. React useState와 TypeScript 타입 검사는 화면 상태/응답 형식을 관리하며 실제 인증/권한은 서버가 판단한다.
+
+| 어노테이션 출처·대상 | 해석 주체·시점 |
+|---|---|
+| Spring `Configuration`·`Bean` / 설정 클래스·팩토리 메서드 | 시작 시 Spring이 보안 도구·제공자 등록을 생성/연결 |
+| Boot `ConditionalOnWebApplication` / 웹 보안 설정 | 시작 시 Servlet 웹 환경에만 필터 체인을 생성; 수집 전용 실행은 제외 |
+| Spring `Transactional` / 인증 서비스 메서드 | 프록시가 외부 메서드 호출 때 트랜잭션/잠금을 시작하고 성공 커밋·실패 롤백 |
+| Spring MVC `RequestBody`·`PathVariable` / 컨트롤러 인수 | HTTP 요청 처리 시 JSON/경로를 Java record/UUID로 변환; 서비스 검증을 대체하지 않음 |
+
+실제 흐름·설정·실패 계약은 [백엔드 인증 안내](../backend/README.md#회원-인증-api--p30), 코드 검증과 실제 제공자 검증의 상태는 [PLAN](../PLAN.md)을 따른다.
+
+## 실행 환경과 설정
+
+[use-local-env.ps1](../scripts/use-local-env.ps1)은 현재 PowerShell의 JAVA_HOME·PATH·DB와 작업 폴더의 인증 환경 변수를 준비한다. 인증 설정은 [use-auth-env.ps1](../scripts/use-auth-env.ps1)의 허용 목록으로만 읽으며 홈 공통 설정에 복사하지 않는다. [local-db.ps1](../scripts/local-db.ps1)의 DB 시작은 별도 동작이다. 다른 터미널은 이 프로세스의 환경을 자동 공유하지 않는다.
+
+[local-settings.mjs](../scripts/local-settings.mjs)·[local-settings.ps1](../scripts/local-settings.ps1)·CollectionRunner.readKeys는 공통 설정을 먼저 읽고 폴더별 비어 있지 않은 값만 덮어쓴다. 파일을 명령으로 평가하지 않아 비밀번호의 $()도 문자로 읽는다. 공통 설정은 같은 PC에서 유지하는 로컬 파일이며 배포 비밀 설정과 구분한다.
+
+## 테스트와 개발 도구
+
+백엔드 테스트는 실행마다 UUID 스키마에서 실제 PostgreSQL의 제약·마이그레이션·잠금·롤백·API를 검증한다. 테스트 초기화는 앱 스키마에 접근하지 않는다. 순수 정책 테스트는 날짜·요금·분류·원천 응답을 빠르게 확인한다.
+
+프론트 회귀는 URL 조건·런타임 계약·요금/시간·원문/소제목 보존·시트 경계를 확인한다. 서울 자정·윤년은 date-model.test.mjs에서 확인한다. 로컬 도구 테스트는 인증값 비노출·설정 우선순위·커밋 차단을 검증한다. 훅/CI 명령은 README를 따른다.
+
+변경 영역 선택은 검사를 빠뜨리지 않으면서 피드백 시간을 줄이기 위한 것이다. `check-commit.mjs`는 Git 인덱스의 경로를, `check-ci-paths.mjs`는 push/PR의 비교 경로를 `check-scopes.mjs`에 전달한다. 이동을 삭제+추가로 읽어 원래 영역의 검사도 유지한다. 공통 설정/검사 규칙 변경은 모든 영역을 검사하며 문서 전용 CI도 기존 상태 검사 이름을 반환한다. 프론트 빠른 검사와 Maven validate에는 포맷 검사가 포함되고, DB 테스트/빌드는 계속 별도 의미를 갖는다. `check-docs.mjs`는 직접 작성한 문서의 내부 파일/제목 링크를 검사하며 외부 문서의 최신성까지 검증하지는 않는다.
+
+선택 연습: SourceCallRepository.save 뒤 JDBC로 읽는 시점을 커밋 전/후로 비교하거나 빈 요금과 문자열 0의 차이를 CollectionPolicyTests에서 확인한다. 제품 코드를 학습용으로 변경할 필요는 없다.

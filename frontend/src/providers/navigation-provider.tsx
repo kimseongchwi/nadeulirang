@@ -49,10 +49,7 @@ function useSetting(key: string, fallback: string) {
     () => readSetting(key, fallback),
     () => fallback,
   );
-  const setValue = useCallback(
-    (next: string) => writeSetting(key, next),
-    [key],
-  );
+  const setValue = useCallback((next: string) => writeSetting(key, next), [key]);
   return [value, setValue] as const;
 }
 function subscribeHash(listener: () => void) {
@@ -74,15 +71,13 @@ function useNavigationState(today: string) {
     setPendingLinks((previous) => {
       if (previous.has(id) === active) return previous;
       const next = new Set(previous);
-      if (active) next.add(id); else next.delete(id);
+      if (active) next.add(id);
+      else next.delete(id);
       return next;
     });
   }, []);
   const pending = transitionPending || pendingLinks.size > 0;
-  const [homeQuery, setHomeQuery] = useSetting(
-    "outing-review-home-filters",
-    "",
-  );
+  const [homeQuery, setHomeQuery] = useSetting("outing-review-home-filters", "");
   const [days, setDays] = useSetting("outing-review-days", "14");
   const hash = useSyncExternalStore(
     subscribeHash,
@@ -137,10 +132,13 @@ function useNavigationState(today: string) {
     },
     [router, saveScroll],
   );
-  const back = useCallback((fallbackHref = "/search") => {
-    if (history.state?.reviewEntry) startTransition(() => router.back());
-    else navigate(fallbackHref);
-  }, [router, navigate]);
+  const back = useCallback(
+    (fallbackHref = "/search") => {
+      if (history.state?.reviewEntry) startTransition(() => router.back());
+      else navigate(fallbackHref);
+    },
+    [router, navigate],
+  );
   useLayoutEffect(() => {
     const previousUrl = renderedUrl.current;
     renderedUrl.current = `${pathname}${search ? `?${search}` : ""}`;
@@ -148,8 +146,7 @@ function useNavigationState(today: string) {
     if (previousUrl && previousUrl !== renderedUrl.current) {
       // 직접 이동 표시가 없는 URL 변경은 뒤로/앞으로 가기다. 해시 변경은 제외된다.
       const restore = !nextNavigation.current;
-      if (nextNavigation.current)
-        history.replaceState({ ...history.state, reviewEntry: true }, "");
+      if (nextNavigation.current) history.replaceState({ ...history.state, reviewEntry: true }, "");
       nextNavigation.current = false;
       const saved = Number(readSetting(`outing-review-scroll:${renderedUrl.current}`, "0"));
       const scroll = restore && Number.isFinite(saved) ? Math.max(0, saved) : 0;
@@ -169,10 +166,7 @@ function useNavigationState(today: string) {
     return () => cancelAnimationFrame(frame);
   }, [hash, pathname, search]);
   const openSheet = useCallback((value: string) => {
-    history.replaceState(
-      { ...history.state, reviewSheetScroll: serviceScrollTop() },
-      "",
-    );
+    history.replaceState({ ...history.state, reviewSheetScroll: serviceScrollTop() }, "");
     history.pushState(
       { ...history.state, reviewSheet: true },
       "",
@@ -183,20 +177,19 @@ function useNavigationState(today: string) {
   const closeSheet = useCallback(() => {
     if (history.state?.reviewSheet) history.back();
     else {
-      history.replaceState(
-        history.state,
-        "",
-        `${location.pathname}${location.search}`,
-      );
+      history.replaceState(history.state, "", `${location.pathname}${location.search}`);
       window.dispatchEvent(new Event("hashchange"));
     }
   }, []);
-  const replaceSheet = useCallback((url: string) => {
-    if (url !== `${location.pathname}${location.search}`) saveScroll();
-    // Next.js가 내부 라우터 상태를 보존하고 검색 매개변수 변경을 반영한다.
-    // 검색 조건 변경은 서버 페이지를 다시 조회해야 하므로 라우터로 이동한다.
-    startTransition(() => router.replace(url, { scroll: false }));
-  }, [router, saveScroll]);
+  const replaceSheet = useCallback(
+    (url: string) => {
+      if (url !== `${location.pathname}${location.search}`) saveScroll();
+      // Next.js가 내부 라우터 상태를 보존하고 검색 매개변수 변경을 반영한다.
+      // 검색 조건 변경은 서버 페이지를 다시 조회해야 하므로 라우터로 이동한다.
+      startTransition(() => router.replace(url, { scroll: false }));
+    },
+    [router, saveScroll],
+  );
   return {
     today,
     pathname,
@@ -221,28 +214,16 @@ function useNavigationState(today: string) {
 }
 type NavigationState = ReturnType<typeof useNavigationState>;
 const NavigationContext = createContext<NavigationState | null>(null);
-export function NavigationProvider({
-  today,
-  children,
-}: {
-  today: string;
-  children: ReactNode;
-}) {
+export function NavigationProvider({ today, children }: { today: string; children: ReactNode }) {
   const state = useNavigationState(today);
-  return (
-    <NavigationContext.Provider value={state}>{children}</NavigationContext.Provider>
-  );
+  return <NavigationContext.Provider value={state}>{children}</NavigationContext.Provider>;
 }
 export function useNavigation() {
   const state = useContext(NavigationContext);
   if (!state) throw new Error("화면 이동 Provider가 필요합니다.");
   return state;
 }
-export function NavigationLink({
-  onNavigate,
-  children,
-  ...props
-}: ComponentProps<typeof Link>) {
+export function NavigationLink({ onNavigate, children, ...props }: ComponentProps<typeof Link>) {
   const { saveScroll, navigate } = useNavigation();
   return (
     <Link
@@ -250,12 +231,18 @@ export function NavigationLink({
       scroll={false}
       onNavigate={(event) => {
         onNavigate?.(event);
-        if (typeof props.href === "string" && props.href === `${location.pathname}${location.search}`) {
+        if (
+          typeof props.href === "string" &&
+          props.href === `${location.pathname}${location.search}`
+        ) {
           event.preventDefault();
           navigate(props.href);
         } else saveScroll();
       }}
-    >{children}<LinkPending /></Link>
+    >
+      {children}
+      <LinkPending />
+    </Link>
   );
 }
 function LinkPending() {

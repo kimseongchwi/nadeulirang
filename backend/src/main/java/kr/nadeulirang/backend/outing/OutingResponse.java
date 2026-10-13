@@ -8,36 +8,84 @@ import java.util.Map;
 import java.util.UUID;
 
 public final class OutingResponse {
-    private OutingResponse() { }
+    private OutingResponse() {}
 
-    public record Photo(UUID id, String url, String thumbnailUrl, String provider,
-                        String attributionUrl, String license, Instant checkedAt) { }
+    public record Photo(
+            UUID id,
+            String url,
+            String thumbnailUrl,
+            String provider,
+            String attributionUrl,
+            String license,
+            Instant checkedAt) {}
 
-    public record Summary(UUID id, String name, String kind, String regionCode, String regionName,
-                          String districtName,
-                          String period, LocalDate eventStart, LocalDate eventEnd, String feeStatus,
-                          BigDecimal adultFee, boolean feeConflict, boolean operationVerified,
-                          Instant collectedAt, Instant sourceCheckedAt, Photo photo) { }
+    public record Summary(
+            UUID id,
+            String name,
+            String kind,
+            String regionCode,
+            String regionName,
+            String districtName,
+            String period,
+            LocalDate eventStart,
+            LocalDate eventEnd,
+            String feeStatus,
+            BigDecimal adultFee,
+            boolean feeConflict,
+            boolean operationVerified,
+            Instant collectedAt,
+            Instant sourceCheckedAt,
+            Photo photo) {}
 
-    public record Page(List<Summary> items, int page, int pageSize, long total, LocalDate asOfDate) { }
-    public record Home(List<Summary> ongoing, List<Summary> upcoming, List<Summary> permanent,
-                       long total, int days, LocalDate asOfDate) { }
+    public record Page(
+            List<Summary> items, int page, int pageSize, long total, LocalDate asOfDate) {}
 
-    public record Source(String source, String sourceKey, String url, String license,
-                         Instant collectedAt, Instant checkedAt, Instant lastFailureAt,
-                         String lastFailureCode, boolean stale) { }
+    public record Home(
+            List<Summary> ongoing,
+            List<Summary> upcoming,
+            List<Summary> permanent,
+            long total,
+            int days,
+            LocalDate asOfDate) {}
 
-    public record Evidence(String field, String value, String source, String sourceKey, String url,
-                           String sourceReference, Instant collectedAt, Instant checkedAt, boolean stale,
-                           UUID observationId) { }
+    public record Source(
+            String source,
+            String sourceKey,
+            String url,
+            String license,
+            Instant collectedAt,
+            Instant checkedAt,
+            Instant lastFailureAt,
+            String lastFailureCode,
+            boolean stale) {}
 
-    public record Link(String purpose, String url, Evidence evidence) { }
+    public record Evidence(
+            String field,
+            String value,
+            String source,
+            String sourceKey,
+            String url,
+            String sourceReference,
+            Instant collectedAt,
+            Instant checkedAt,
+            boolean stale,
+            UUID observationId) {}
 
-    public record Detail(Summary item, List<Source> sources, Map<String, List<Evidence>> information,
-                         List<Link> links, List<String> unconfirmed, LocalDate asOfDate,
-                         List<Evidence> evidence, List<Photo> photos) { }
+    public record Link(String purpose, String url, Evidence evidence) {}
 
-    public record Region(String code, String name, long count) { }
-    public record Kind(String code, long count) { }
-    public record Options(List<Region> regions, List<Kind> kinds, long total, LocalDate asOfDate) { }
+    public record Detail(
+            Summary item,
+            List<Source> sources,
+            Map<String, List<Evidence>> information,
+            List<Link> links,
+            List<String> unconfirmed,
+            LocalDate asOfDate,
+            List<Evidence> evidence,
+            List<Photo> photos) {}
+
+    public record Region(String code, String name, long count) {}
+
+    public record Kind(String code, long count) {}
+
+    public record Options(List<Region> regions, List<Kind> kinds, long total, LocalDate asOfDate) {}
 }

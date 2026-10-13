@@ -21,7 +21,8 @@ export function NavigationProgress() {
       if (!element || !container) return;
       const rect = container.getBoundingClientRect();
       const main = document.getElementById("main")?.getBoundingClientRect();
-      const headerBottom = document.querySelector(".service-header")?.getBoundingClientRect().bottom || 0;
+      const headerBottom =
+        document.querySelector(".service-header")?.getBoundingClientRect().bottom || 0;
       const navHeight = document.getElementById("bottomNav")?.getBoundingClientRect().height || 0;
       const left = Math.max(0, main?.left ?? rect.left);
       element.style.left = `${left}px`;
@@ -37,5 +38,15 @@ export function NavigationProgress() {
       window.removeEventListener("scroll", position, true);
     };
   }, [container]);
-  return container ? createPortal(<div className="navigation-progress" ref={progress}><LoadingState placement={container.tagName === "DIALOG" ? "area" : "page"} /></div>, container) : null;
+  return container
+    ? createPortal(
+        <div
+          className="navigation-progress"
+          ref={progress}
+        >
+          <LoadingState placement={container.tagName === "DIALOG" ? "area" : "page"} />
+        </div>,
+        container,
+      )
+    : null;
 }

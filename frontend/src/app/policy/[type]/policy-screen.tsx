@@ -8,7 +8,10 @@ export function PolicyScreen({ type, samplePhoto }: { type: PolicyType; samplePh
   return (
     <>
       <BackHeading title={policyTitles[type]} />
-      <PolicyContent type={type} samplePhoto={samplePhoto} />
+      <PolicyContent
+        type={type}
+        samplePhoto={samplePhoto}
+      />
     </>
   );
 }

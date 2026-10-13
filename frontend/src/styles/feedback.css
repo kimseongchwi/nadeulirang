@@ -1,0 +1,187 @@
+/* P24 브랜드 심볼 로딩·빈 결과·실패 안내 검토안 */
+.state-region {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  min-height: 260px;
+}
+.service-root:not(.guide-mode) .service-content > main:has(> .state-region-page) {
+  padding-block: 0;
+}
+.state-region-page {
+  flex: 1;
+  padding-block: 16px clamp(16px, 7dvh, 64px);
+}
+.state-region > .state-feedback {
+  width: 100%;
+  min-height: 260px;
+}
+@media (max-height: 480px) {
+  .state-region-page {
+    min-height: 0;
+    padding-block: 8px 16px;
+  }
+  .state-region-page > .state-feedback {
+    min-height: 0;
+    padding: 12px;
+    gap: 6px;
+  }
+  .state-region-page .state-art {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 0;
+  }
+  .state-region-page .state-feedback .button {
+    margin-top: 0;
+  }
+}
+.state-feedback {
+  padding: 28px 16px;
+  min-height: 220px;
+  gap: 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  text-align: center;
+}
+.state-feedback .state-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.6;
+}
+.state-feedback p:not(.state-title) {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+.state-feedback .button {
+  margin-top: 6px;
+}
+.state-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 64px;
+  flex: none;
+  margin-bottom: 2px;
+  color: var(--brand);
+}
+.state-empty {
+  color: var(--action);
+}
+.state-error {
+  color: var(--warning);
+}
+.walking-scene {
+  position: relative;
+}
+.walking-mark {
+  display: block;
+  width: 48px;
+  height: 48px;
+  transform-origin: 50% 90%;
+  animation: outing-walk 1.1s ease-in-out infinite;
+}
+.walking-shadow {
+  position: absolute;
+  bottom: 2px;
+  left: 14px;
+  width: 32px;
+  height: 2px;
+  border-radius: 50%;
+  background: var(--brand);
+  opacity: 0.16;
+  animation: outing-ground 1.1s ease-in-out infinite;
+}
+.guide-board #states {
+  grid-column: 1/-1;
+}
+.state-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+.state-example {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  min-width: 0;
+}
+.state-example h3 {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.state-example-stage {
+  display: flex;
+  flex-direction: column;
+  min-height: 390px;
+}
+.state-example-stage > .state-region {
+  flex: 1;
+  max-width: 390px;
+  width: 100%;
+  margin-inline: auto;
+}
+.state-example > .hint {
+  margin-top: 12px;
+  text-align: center;
+}
+@keyframes outing-walk {
+  0%,
+  100% {
+    transform: translateX(-3px) translateY(0) rotate(-3deg);
+  }
+  25% {
+    transform: translateX(0) translateY(-2px) rotate(1deg);
+  }
+  50% {
+    transform: translateX(3px) translateY(0) rotate(3deg);
+  }
+  75% {
+    transform: translateX(0) translateY(-2px) rotate(-1deg);
+  }
+}
+@keyframes outing-ground {
+  0%,
+  50%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.16;
+  }
+  25%,
+  75% {
+    transform: scaleX(0.86);
+    opacity: 0.11;
+  }
+}
+@media (max-width: 1100px) {
+  .state-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .state-gallery {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .walking-mark,
+  .walking-shadow {
+    animation: none;
+    transform: none;
+  }
+}
+
+.service-root {
+  min-height: 100dvh;
+}
+.info-row {
+  display: contents;
+}

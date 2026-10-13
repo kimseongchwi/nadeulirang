@@ -9,7 +9,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 @RestControllerAdvice(assignableTypes = OutingController.class)
 public class OutingErrorHandler {
-    public record Error(String code, String message, boolean retryable) { }
+    public record Error(String code, String message, boolean retryable) {}
 
     @ExceptionHandler(OutingNotFoundException.class)
     public ResponseEntity<Error> notFound() {
@@ -18,11 +18,13 @@ public class OutingErrorHandler {
 
     @ExceptionHandler({IllegalArgumentException.class, MethodArgumentTypeMismatchException.class})
     public ResponseEntity<Error> invalidQuery() {
-        return ResponseEntity.badRequest().body(new Error("INVALID_REQUEST", "주소 또는 검색 조건을 확인하세요.", false));
+        return ResponseEntity.badRequest()
+                .body(new Error("INVALID_REQUEST", "주소 또는 검색 조건을 확인하세요.", false));
     }
 
     @ExceptionHandler({DataAccessException.class, TransactionException.class})
     public ResponseEntity<Error> unavailable() {
-        return ResponseEntity.status(503).body(new Error("QUERY_UNAVAILABLE", "정보를 불러오지 못했습니다. 다시 시도하세요.", true));
+        return ResponseEntity.status(503)
+                .body(new Error("QUERY_UNAVAILABLE", "정보를 불러오지 못했습니다. 다시 시도하세요.", true));
     }
 }

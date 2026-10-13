@@ -15,8 +15,7 @@ import org.hibernate.type.SqlTypes;
 @Entity
 @Table(name = "source_call")
 class SourceCallEntity {
-    @Id
-    private UUID id;
+    @Id private UUID id;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, columnDefinition = "text")
@@ -46,7 +45,7 @@ class SourceCallEntity {
     @Column(columnDefinition = "jsonb")
     private String payload;
 
-    protected SourceCallEntity() { }
+    protected SourceCallEntity() {}
 
     SourceCallEntity(UUID id, Source source, String operation, String query, Instant now) {
         this.id = id;
@@ -64,8 +63,19 @@ class SourceCallEntity {
         payload = reply.payload() == null ? null : reply.payload().toString();
     }
 
-    Source source() { return source; }
-    String outcome() { return outcome; }
-    String payload() { return payload; }
-    Instant finishedAt() { return finishedAt; }
+    Source source() {
+        return source;
+    }
+
+    String outcome() {
+        return outcome;
+    }
+
+    String payload() {
+        return payload;
+    }
+
+    Instant finishedAt() {
+        return finishedAt;
+    }
 }

@@ -34,24 +34,17 @@ function Calendar({
     { length: new Date(Date.UTC(year, monthNumber - 1, 1)).getUTCDay() },
     () => null,
   );
-  for (let day = 1; day <= length; day++)
-    cells.push(`${month}-${String(day).padStart(2, "0")}`);
+  for (let day = 1; day <= length; day++) cells.push(`${month}-${String(day).padStart(2, "0")}`);
   while (cells.length % 7) cells.push(null);
   const rows = Array.from({ length: cells.length / 7 }, (_, index) =>
     cells.slice(index * 7, index * 7 + 7),
   );
   function changeMonth(next: string, focusGrid = false) {
     const bounded =
-      next < today.slice(0, 7)
-        ? today.slice(0, 7)
-        : next > "9999-12"
-          ? "9999-12"
-          : next;
+      next < today.slice(0, 7) ? today.slice(0, 7) : next > "9999-12" ? "9999-12" : next;
     const day = Math.min(
       Number(focusDate.slice(8)),
-      new Date(
-        Date.UTC(Number(bounded.slice(0, 4)), Number(bounded.slice(5)), 0),
-      ).getUTCDate(),
+      new Date(Date.UTC(Number(bounded.slice(0, 4)), Number(bounded.slice(5)), 0)).getUTCDate(),
     );
     let focus = `${bounded}-${String(day).padStart(2, "0")}`;
     if (focus < today) focus = today;
@@ -63,8 +56,7 @@ function Calendar({
   function moveMonth(step: number, focusGrid = false) {
     const date = new Date(`${month}-01T12:00:00Z`);
     date.setUTCMonth(date.getUTCMonth() + step);
-    if (date.getUTCFullYear() > 9999 || date.getUTCFullYear() < minimumYear)
-      return;
+    if (date.getUTCFullYear() > 9999 || date.getUTCFullYear() < minimumYear) return;
     changeMonth(date.toISOString().slice(0, 7), focusGrid);
   }
   function gridKey(event: KeyboardEvent<HTMLDivElement>) {
@@ -117,9 +109,7 @@ function Calendar({
               aria-label={`연도 선택, ${year}년 ${monthNumber}월`}
               aria-expanded={false}
               onClick={() => {
-                setYearStart(
-                  minimumYear + Math.floor((year - minimumYear) / 12) * 12,
-                );
+                setYearStart(minimumYear + Math.floor((year - minimumYear) / 12) * 12);
                 setYearsView(true);
                 setFocusTarget(`calendar-year-${year}`);
               }}
@@ -138,7 +128,10 @@ function Calendar({
               <Icon name="next" />
             </button>
           </div>
-          <div className="weekdays" aria-hidden="true">
+          <div
+            className="weekdays"
+            aria-hidden="true"
+          >
             {["일", "월", "화", "수", "목", "금", "토"].map((day) => (
               <span key={day}>{day}</span>
             ))}
@@ -151,7 +144,10 @@ function Calendar({
             onKeyDown={gridKey}
           >
             {rows.map((row, rowIndex) => (
-              <div role="row" key={rowIndex}>
+              <div
+                role="row"
+                key={rowIndex}
+              >
                 {row.map((date, index) =>
                   date ? (
                     <button
@@ -172,17 +168,21 @@ function Calendar({
                         setFocusTarget(`calendar-day-${date}`);
                       }}
                     >
-                      <span className="day-number">
-                        {Number(date.slice(8))}
-                      </span>
+                      <span className="day-number">{Number(date.slice(8))}</span>
                       {date === today && (
-                        <span className="today-label" aria-hidden="true">
+                        <span
+                          className="today-label"
+                          aria-hidden="true"
+                        >
                           오늘
                         </span>
                       )}
                     </button>
                   ) : (
-                    <span role="gridcell" key={`blank-${index}`} />
+                    <span
+                      role="gridcell"
+                      key={`blank-${index}`}
+                    />
                   ),
                 )}
               </div>
@@ -209,9 +209,7 @@ function Calendar({
               className="icon-button"
               aria-label="이전 연도 묶음"
               disabled={yearStart <= minimumYear}
-              onClick={() =>
-                setYearStart(Math.max(minimumYear, yearStart - 12))
-              }
+              onClick={() => setYearStart(Math.max(minimumYear, yearStart - 12))}
             >
               <Icon name="back" />
             </button>
@@ -246,40 +244,36 @@ function Calendar({
               event.preventDefault();
               const next = Math.max(
                 minimumYear,
-                Math.min(
-                  9999,
-                  Number(event.target.dataset.year) + offsets[event.key],
-                ),
+                Math.min(9999, Number(event.target.dataset.year) + offsets[event.key]),
               );
               if (next < yearStart || next > yearEnd)
-                setYearStart(
-                  minimumYear + Math.floor((next - minimumYear) / 12) * 12,
-                );
+                setYearStart(minimumYear + Math.floor((next - minimumYear) / 12) * 12);
               setFocusTarget(`calendar-year-${next}`);
             }}
           >
-            {Array.from(
-              { length: yearEnd - yearStart + 1 },
-              (_, index) => yearStart + index,
-            ).map((value) => (
-              <button
-                key={value}
-                type="button"
-                id={`calendar-year-${value}`}
-                data-year={value}
-                className="year-option"
-                aria-current={value === year ? "true" : undefined}
-                onClick={() => changeMonth(`${value}${month.slice(4)}`, true)}
-              >
-                {value}
-              </button>
-            ))}
+            {Array.from({ length: yearEnd - yearStart + 1 }, (_, index) => yearStart + index).map(
+              (value) => (
+                <button
+                  key={value}
+                  type="button"
+                  id={`calendar-year-${value}`}
+                  data-year={value}
+                  className="year-option"
+                  aria-current={value === year ? "true" : undefined}
+                  onClick={() => changeMonth(`${value}${month.slice(4)}`, true)}
+                >
+                  {value}
+                </button>
+              ),
+            )}
           </div>
         </>
       )}
-      <p id="calendarKeys" className="sr-only">
-        방향키로 이동, Enter로 선택, Page Up과 Page Down으로 월 이동, Escape로
-        취소합니다.
+      <p
+        id="calendarKeys"
+        className="sr-only"
+      >
+        방향키로 이동, Enter로 선택, Page Up과 Page Down으로 월 이동, Escape로 취소합니다.
       </p>
       <div className="calendar-actions">
         <button
@@ -290,7 +284,10 @@ function Calendar({
           지우기
         </button>
         <div className="calendar-actions-right">
-          <button className="button secondary" onClick={onClose}>
+          <button
+            className="button secondary"
+            onClick={onClose}
+          >
             취소
           </button>
           <button
@@ -317,7 +314,10 @@ export function DateField() {
   return (
     <>
       <div>
-        <span className="field-label" id="guideDateLabel">
+        <span
+          className="field-label"
+          id="guideDateLabel"
+        >
           방문 날짜
         </span>
         <div className="date-control">
@@ -337,13 +337,24 @@ export function DateField() {
               type="button"
               className="icon-button date-clear"
               aria-label="날짜 지우기"
-              onClick={() => { setValue(""); trigger.current?.focus(); }}
+              onClick={() => {
+                setValue("");
+                trigger.current?.focus();
+              }}
             >
               <Icon name="close" />
             </button>
           )}
-          <button type="button" className="icon-button date-calendar" aria-label="방문 날짜 달력 열기"
-            aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}><Icon name="calendar" /></button>
+          <button
+            type="button"
+            className="icon-button date-calendar"
+            aria-label="방문 날짜 달력 열기"
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            onClick={() => setOpen(true)}
+          >
+            <Icon name="calendar" />
+          </button>
         </div>
       </div>
       {open && (
