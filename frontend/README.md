@@ -14,11 +14,13 @@
 | src/features/notices | 실제 공지 콘텐츠·게시일 표시·목록 정렬/조회 |
 | src/features/ui-design | 가이드·검토 달력·개발 표시·표본 데이터 |
 | src/providers | NavigationProvider의 필터·URL/이력/스크롤·시트 상태 |
-| src/config·src/styles | 공통 브랜드 값·service.css |
+| src/config·src/styles | 브랜드 값·service.css의 순서별 스타일 조합·사진/인증 스타일 |
 | public/images | 현재 로고/심볼·가이드 사진·이용허락 |
 | tests | 날짜/요금/텍스트·API/URL·시트 경계 회귀 |
 
 page.tsx는 URL 조건·서버 데이터·제목을 처리하고 옆 화면 파일이 페이지 전용 UI를 담당합니다. 범용 UI와 여러 화면/가이드가 사용하는 나들이 기능만 공유합니다.
+
+`service.css`는 shared → guide → feedback → outings → information-pages 순서로 불러옵니다. 공통 UI의 뒤쪽 보정까지 기존 순서로 유지하므로 선택자를 다른 파일로 옮길 때 우선순위도 확인합니다. `guide.tsx`는 전체 가이드와 공유 너비/메시지를, `detail-examples.tsx`는 상세 표시 표본을, `state-examples.tsx`는 상태 예시와 위치 선택을 담당합니다.
 
 ## 공개 SEO 설정 (P14)
 

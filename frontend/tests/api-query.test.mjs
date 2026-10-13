@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { backendQuery, orderedHours, orderedNotes, parameters, previewLocation, queryParameters, safeUrl, searchFormQuery, windowDays } from "../src/features/outings/api-query.ts";
+import { backendQuery, orderedNotes, parameters, previewLocation, queryParameters, safeUrl, searchFormQuery, windowDays } from "../src/features/outings/api-query.ts";
 import { isDetail, isOptions, isPage, isPhoto, isSummary } from "../src/features/outings/api-contract.ts";
 import { badgeInfo, outingSummary, regionLabel } from "../src/features/outings/model.ts";
 import { detailContent } from "../src/features/outings/detail-content.ts";
@@ -123,6 +123,4 @@ test("공통 요약의 확인된 시군구를 표시하고 반복 안내의 제�
   assert.equal(previewLocation({ item: { ...data.item, districtName: null } }), "경상남도");
   const notes = [{ observationId: "첫째", field: "infoname", value: "주차" }, { observationId: "둘째", field: "infoname", value: "예약" }, { observationId: "첫째", field: "infotext", value: "무료" }, { observationId: "둘째", field: "infotext", value: "미확인" }];
   assert.deepEqual(orderedNotes(notes).map((entry) => entry.value), ["주차", "무료", "예약", "미확인"]);
-  const hours = [{ observationId: "구조화", field: "weekdayOperColseHhmm", value: "18:00" }, { observationId: "문장", field: "usetime", value: "월요일 휴무" }, { observationId: "구조화", field: "weekdayOperOpenHhmm", value: "10:00" }];
-  assert.deepEqual(orderedHours(hours).map((entry) => entry.value), ["10:00", "18:00", "월요일 휴무"]);
 });

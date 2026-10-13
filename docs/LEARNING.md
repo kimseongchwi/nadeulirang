@@ -30,6 +30,8 @@ Next.js와 Spring은 서로 다른 서버다. 포트에 서버가 없으면 접�
 
 ## 프론트 파일과 실행 흐름
 
+UI 가이드도 실제 공유 UI의 사용처다. 독립 표본을 나누면 요금 예시 수정이 가이드 전체 상태와 섞이지 않는다. `guide.tsx`의 `GuideReview` → `DetailExamples`는 자료 표본을, `StateExamples`는 자체 `useState`로 안내 위치를 제어하고 부모의 메시지 콜백만 호출한다. 서버 조회 경계는 바꾸지 않는다. CSS의 같은 선택자는 뒤쪽 선언이 앞쪽 값을 보정하므로 `styles/service.css`의 import 순서(shared → guide → feedback → outings → information-pages)를 유지한다. 공유 스타일 안의 가이드 보정도 순서 때문에 남아 있다.
+
 ### 서버 페이지와 브라우저 상태
 
 [page.tsx](../frontend/src/app/page.tsx)는 URL 조건·서버 조회, 옆 [HomeScreen](../frontend/src/app/home-screen.tsx)은 UI를 맡는다. 검색·상세·정책도 페이지 전용 화면을 옆에 둔다. 공통 UI는 components, 실제 공유 카드·나들이 타입·API/텍스트 처리는 features/outings에 둔다. 이는 폴더 역할이며 Next.js의 필수 폴더 이름은 아니다.

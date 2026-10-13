@@ -110,11 +110,3 @@ function orderedEvidence(values: Evidence[], fields: readonly string[]) {
 export function orderedNotes(values: Evidence[]) {
   return orderedEvidence(values, ["infoname", "infotext"]);
 }
-export function orderedHours(values: Evidence[]) {
-  return orderedEvidence(values, [
-    "weekdayOperOpenHhmm",
-    "weekdayOperColseHhmm",
-    "holidayOperOpenHhmm",
-    "holidayCloseOpenHhmm",
-  ]);
-}
