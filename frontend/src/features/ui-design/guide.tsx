@@ -272,11 +272,12 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 <div><dt>상단</dt><dd>로고 · 검색 · 햄버거 · 로그인</dd></div>
                 <div><dt>하단</dt><dd>홈 · 북마크 · 내정보</dd></div>
                 <div><dt>햄버거 메뉴</dt><dd>홈 · 내정보</dd></div>
-                <div><dt>내정보</dt><dd>로그인하러 가기 · 자주 묻는 질문 · 공지사항 · 설정(준비 중)</dd></div>
+                <div><dt>내정보</dt><dd>로그인하러 가기 · 공지사항 · 자주 묻는 질문 · 설정(항상 마지막)</dd></div>
+                <div><dt>설정</dt><dd>개인정보처리방침 · 이용약관 · 서비스·데이터 출처</dd></div>
                 <div><dt>홈 필터</dt><dd>지역 · 종류를 바텀시트에서 선택</dd></div>
-                <div><dt>정책·출처</dt><dd>서비스 푸터</dd></div>
+                <div><dt>정책·출처</dt><dd>설정 · 서비스 푸터</dd></div>
               </dl>
-              <p className="hint">로그인은 카카오·네이버·구글 계정으로 진행해요. 외부 설정과 정책 확인 후 사용할 수 있으며 북마크·설정·AI 추천은 준비 중이에요.</p>
+              <p className="hint">로그인은 카카오·네이버·구글 계정으로 진행해요. 외부 설정과 정책 확인 후 사용할 수 있으며 북마크·AI 추천과 사용자 환경 설정은 준비 중이에요.</p>
             </div>
             <div className="sample">
               <h3>후속 구성 예시 · 구현 보류</h3>
@@ -316,11 +317,11 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 rows={[
                   [
                     "현재 구성",
-                    "상단 검색·햄버거·로그인 자리를 유지하고 하단은 홈·북마크·내정보입니다. 내정보에는 FAQ·공지사항·설정 자리가 있어요.",
+                    "상단 검색·햄버거·로그인 자리를 유지하고 하단은 홈·북마크·내정보입니다. 내정보 목록은 공지사항·FAQ·설정 순서이며 설정은 항상 마지막에 두고 정책·출처를 확인해요.",
                   ],
                   [
                     "후속 확장",
-                    "북마크 저장·AI 추천은 후속이며 설정의 실제 기능은 필요가 정해지면 구현해요.",
+                    "북마크 저장·AI 추천은 후속이며 사용자 환경 설정은 필요가 정해지면 구현해요.",
                   ],
                   [
                     "햄버거 중심",
@@ -329,7 +330,7 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 ]}
               />
               <p className="hint">
-                내정보·FAQ·공지사항·정책 페이지에서는 하단 내정보를 선택 상태로 표시해요.
+                내정보·설정·FAQ·공지사항·정책 페이지에서는 하단 내정보를 선택 상태로 표시해요.
               </p>
             </div>
           </section>
@@ -715,7 +716,7 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 ],
                 [
                   "후속 보류",
-                  "P29 북마크·P31 AI 추천은 후속. P30 소셜 로그인은 연결했으며 실제 외부 연동은 미확인. 설정 자리만 표시하고 기능은 실제 필요를 정한 뒤 추가",
+                  "P29 북마크·P31 AI 추천은 후속. P30 소셜 로그인은 연결했으며 실제 외부 연동은 미확인. 설정은 정책·출처 조회를 제공하고 사용자 환경 설정은 실제 필요를 정한 뒤 추가",
                 ],
                 [
                   "필요할 때 재검토",

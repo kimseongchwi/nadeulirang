@@ -122,7 +122,7 @@ OutingStore는 REPEATABLE_READ·readOnly 트랜잭션으로 한 응답의 건수
 
 ### 로그인 없는 안내 페이지
 
-[내정보 화면](../frontend/src/app/mypage/mypage-screen.tsx)은 `/mypage`에서 `/faq`·`/notices`를 연결하고 향후 설정 자리는 비활성 버튼으로 표시한다. 로그인이나 개인 계정 조회 없이 서버가 안내 본문을 렌더링하고 링크 이동은 기존 `NavigationLink`를 사용해 포커스·스크롤/조건 복귀를 유지한다. 햄버거는 기존 `Dialog`로 유지하며 검색은 헤더 아이콘에서 이동한다. 로그인은 /login으로 연결하고 북마크는 비활성 자리로 유지한다.
+[내정보 화면](../frontend/src/app/mypage/mypage-screen.tsx)은 `/mypage`에서 로그인·공지사항·FAQ·설정을 연결한다. [설정 화면](../frontend/src/app/settings/settings-screen.tsx)은 `PolicyLinks`의 목록 형태로 기존 정책 시트를 열고 직접 접속의 뒤로가기는 내정보로 복귀한다. 로그인이나 개인 계정 조회 없이 서버가 안내 본문을 렌더링하고 링크 이동은 기존 `NavigationLink`를 사용해 포커스·스크롤/조건 복귀를 유지한다. 햄버거는 기존 `Dialog`로 유지하며 검색은 헤더 아이콘에서 이동한다. 로그인은 /login으로 연결하고 북마크는 비활성 자리로 유지한다.
 
 [BackHeading](../frontend/src/components/layout/back-heading.tsx)은 상세와 안내 화면의 화살표·페이지 제목을 하나의 버튼으로 공유해 라벨 클릭과 키보드 조작에도 복귀한다. `compact`는 제목의 의미를 가진 h1을 작은 글씨로 표시하며 공지 상세의 `labelOnly`는 실제 글 제목과 구분되는 보조 문구를 표시한다. `fallbackHref`는 서비스 내 이전 이동 기록이 없는 직접 접속의 복귀 주소다. 이전 기록이 있으면 기존 브라우저 뒤로가기를 사용하고 상세/정책의 기본 검색 복귀는 유지한다. 공지 빈 목록도 기존 `EmptyState`의 페이지 중앙 배치를 사용하고 설명이 없는 경우 보조 문단을 만들지 않는다.
 

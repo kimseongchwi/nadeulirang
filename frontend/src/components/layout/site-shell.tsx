@@ -18,7 +18,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const style: DialogStyle = {};
   for (const [key, value] of Object.entries(brandPalette))
     style[`--${key}`] = value;
-  const myPageArea = pathname === "/mypage" || pathname === "/faq" || pathname === "/notices" || pathname.startsWith("/notices/") || pathname.startsWith("/policy/");
+  const myPageArea = pathname === "/mypage" || pathname === "/settings" || pathname === "/faq" || pathname === "/notices" || pathname.startsWith("/notices/") || pathname.startsWith("/policy/");
   const navigation = [[homeUrl, "home", "홈"], ["/mypage", "user", "내정보"]] as const;
   return (
     <div

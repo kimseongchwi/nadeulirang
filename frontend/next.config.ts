@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return (isPublicSite() ? [
-      "/ui-design/:path*", "/mypage", "/search", "/api/:path*",
+      "/ui-design/:path*", "/mypage", "/settings", "/search", "/api/:path*",
       "/policy/:type(privacy|terms)",
     ] : ["/:path*"]).map((source) => ({
       source,
