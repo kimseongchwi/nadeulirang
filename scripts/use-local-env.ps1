@@ -21,3 +21,4 @@ foreach ($name in @('DB_URL', 'DB_USERNAME', 'DB_PASSWORD')) {
     if ($settings.ContainsKey($name)) { [Environment]::SetEnvironmentVariable($name, $settings[$name], 'Process') }
 }
 Write-Host '현재 세션에 로컬 JDK·PostgreSQL 경로와 DB 설정을 적용했습니다.'
+. (Join-Path $PSScriptRoot 'use-auth-env.ps1')

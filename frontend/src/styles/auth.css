@@ -1,0 +1,22 @@
+@font-face { font-family: "Google Sans"; src: url("/fonts/google-sans-medium.woff2") format("woff2"); font-style: normal; font-weight: 500; font-display: swap; unicode-range: U+47, U+65, U+67, U+6c, U+6f; }
+.login-panel { width: 100%; max-width: 344px; margin: clamp(48px, 10vh, 88px) auto auto; padding: 0 0 40px; }
+.login-heading { margin-bottom: 28px; text-align: center; }
+.login-heading h1 { margin-bottom: 12px; font-size: 28px; line-height: 1.35; letter-spacing: -.5px; }
+.login-heading p { color: var(--muted); font-size: 14px; }
+.social-buttons { display: grid; gap: 12px; }
+.social-button { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 56px; padding: 0 12px; border: 1px solid transparent; border-radius: 12px; font-size: 16px; font-weight: 500; line-height: 20px; }
+.social-button > img { flex-shrink: 0; }
+.social-kakao { background: #fee500; color: rgba(0, 0, 0, .85); }
+.social-naver { background: #03a94d; color: #fff; padding: 0; border: 0; }
+.social-google { background: #fff; color: #1f1f1f; border-color: #747775; font-family: "Google Sans", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; font-size: 14px; }
+.social-kakao:disabled { background: #fee500; color: rgba(0, 0, 0, .85); border-color: transparent; }
+.social-naver:disabled { background: #03a94d; color: #fff; border-color: transparent; }
+.social-google:disabled { background: #fff; color: #1f1f1f; border-color: #747775; }
+.naver-login-original { width: 230px; height: 56px; }
+.login-consent { display: flex; align-items: flex-start; gap: 8px; margin-top: 24px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.login-consent input { flex: 0 0 16px; width: 16px; height: 16px; min-height: 16px; margin: 2px 0 0; accent-color: var(--action); }
+.auth-message { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.login-panel .auth-message { margin-top: 16px; text-align: center; }
+.login-browse { display: block; width: fit-content; margin: 28px auto 0; padding: 10px 0; font-size: 14px; color: var(--muted); text-decoration: none; }
+.login-browse:hover { text-decoration: underline; }
+.login-member { display: grid; justify-items: center; gap: 16px; text-align: center; }

@@ -18,7 +18,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const style: DialogStyle = {};
   for (const [key, value] of Object.entries(brandPalette))
     style[`--${key}`] = value;
-  const myPageArea = pathname === "/mypage" || pathname === "/faq" || pathname === "/notices" || pathname.startsWith("/notices/") || pathname.startsWith("/policy/");
+  const myPageArea = pathname === "/mypage" || pathname === "/settings" || pathname === "/faq" || pathname === "/notices" || pathname.startsWith("/notices/") || pathname.startsWith("/policy/");
   const navigation = [[homeUrl, "home", "홈"], ["/mypage", "user", "내정보"]] as const;
   return (
     <div
@@ -99,7 +99,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                     <button className="icon-button" onClick={() => setMenuOpen(true)} aria-label="보조 메뉴 열기" aria-haspopup="dialog">
                       <Icon name="menu" />
                     </button>
-                    <button className="button primary login-placeholder" disabled title="로그인 기능 준비 중">로그인</button>
+                    <NavigationLink href="/login" className="button primary login-placeholder">로그인</NavigationLink>
                   </div>
                 </header>
               </>

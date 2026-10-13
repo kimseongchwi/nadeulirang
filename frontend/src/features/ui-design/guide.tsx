@@ -94,6 +94,7 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
     { label: "홈", src: `/?previewDays=${upcomingDays}` },
     { label: "검색", src: "/search" },
     { label: "내정보", src: "/mypage" },
+    { label: "로그인", src: "/login" },
     { label: "FAQ", src: "/faq" },
     { label: "공지사항", src: "/notices" },
     { label: "찾을 수 없는 페이지", src: "/notices/missing" },
@@ -271,11 +272,12 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 <div><dt>상단</dt><dd>로고 · 검색 · 햄버거 · 로그인</dd></div>
                 <div><dt>하단</dt><dd>홈 · 북마크 · 내정보</dd></div>
                 <div><dt>햄버거 메뉴</dt><dd>홈 · 내정보</dd></div>
-                <div><dt>내정보</dt><dd>자주 묻는 질문 · 공지사항 · 설정(준비 중)</dd></div>
+                <div><dt>내정보</dt><dd>로그인하러 가기 · 공지사항 · 자주 묻는 질문 · 설정(항상 마지막)</dd></div>
+                <div><dt>설정</dt><dd>개인정보처리방침 · 이용약관 · 서비스·데이터 출처</dd></div>
                 <div><dt>홈 필터</dt><dd>지역 · 종류를 바텀시트에서 선택</dd></div>
-                <div><dt>정책·출처</dt><dd>서비스 푸터</dd></div>
+                <div><dt>정책·출처</dt><dd>설정 · 서비스 푸터</dd></div>
               </dl>
-              <p className="hint">로그인·북마크·설정은 준비 중인 자리만 유지해요. 계정·저장·설정 기능과 AI 추천은 아직 제공하지 않아요.</p>
+              <p className="hint">로그인은 카카오·네이버·구글 계정으로 진행해요. 외부 설정과 정책 확인 후 사용할 수 있으며 북마크·AI 추천과 사용자 환경 설정은 준비 중이에요.</p>
             </div>
             <div className="sample">
               <h3>후속 구성 예시 · 구현 보류</h3>
@@ -285,7 +287,7 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                   <Icon name="search" />
                 </span>
                 <span><Icon name="menu" /></span>
-                <button className="button primary login-placeholder" disabled title="로그인 기능 준비 중">로그인</button>
+                <NavigationLink href="/login" className="button primary login-placeholder">로그인</NavigationLink>
               </div>
               <div className="future-nav">
                 {(
@@ -315,11 +317,11 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 rows={[
                   [
                     "현재 구성",
-                    "상단 검색·햄버거·로그인 자리를 유지하고 하단은 홈·북마크·내정보입니다. 내정보에는 FAQ·공지사항·설정 자리가 있어요.",
+                    "상단 검색·햄버거·로그인 자리를 유지하고 하단은 홈·북마크·내정보입니다. 내정보 목록은 공지사항·FAQ·설정 순서이며 설정은 항상 마지막에 두고 정책·출처를 확인해요.",
                   ],
                   [
                     "후속 확장",
-                    "북마크 저장·AI 추천은 후속이며 설정의 실제 기능은 필요가 정해지면 구현해요.",
+                    "북마크 저장·AI 추천은 후속이며 사용자 환경 설정은 필요가 정해지면 구현해요.",
                   ],
                   [
                     "햄버거 중심",
@@ -328,7 +330,7 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 ]}
               />
               <p className="hint">
-                내정보·FAQ·공지사항·정책 페이지에서는 하단 내정보를 선택 상태로 표시해요.
+                내정보·설정·FAQ·공지사항·정책 페이지에서는 하단 내정보를 선택 상태로 표시해요.
               </p>
             </div>
           </section>
@@ -612,6 +614,7 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 ["포커스", "입력 1px 링 · 버튼 2px 외곽선, 2px 간격"],
                 ["레이아웃", "중앙 여백 200px · 안내 320px · PC 서비스 최대 480px"],
                 ["스크롤", "PC는 서비스 본문 안에서 이동 · 모바일은 화면 전체 너비 사용"],
+                ["하단 메뉴·푸터", "하단 메뉴 흰 배경 · 기존 1px 구분선 · 미선택 아이콘 #9EABBC/글자 #68778B · 선택 #13543D/700 · 안내 푸터 #F3F6F2 배경"],
                 [
                   "하단 안전 영역",
                   "76px + safe-area-inset-bottom, 본문 끝 여백",
@@ -714,7 +717,7 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 ],
                 [
                   "후속 보류",
-                  "P29 북마크·P30 로그인은 미연결 자리 유지 · P31 AI 추천은 실제 메뉴에서 제외. 설정 자리만 표시하고 기능은 실제 필요를 정한 뒤 추가",
+                  "P29 북마크·P31 AI 추천은 후속. P30 소셜 로그인은 연결했으며 실제 외부 연동은 미확인. 설정은 정책·출처 조회를 제공하고 사용자 환경 설정은 실제 필요를 정한 뒤 추가",
                 ],
                 [
                   "필요할 때 재검토",

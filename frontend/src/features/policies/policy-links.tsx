@@ -8,13 +8,13 @@ import { Icon } from "@/components/ui/icons";
 export function PolicyLinks({
   variant = "inline",
 }: {
-  variant?: "inline" | "buttons" | "footer";
+  variant?: "inline" | "buttons" | "footer" | "list";
 }) {
   const { openSheet, pathname } = useNavigation();
   const query = useSearchParams();
   const samplePhoto = pathname === "/ui-design" || pathname === "/policy/about" && query.get("sample") === "clayarch";
   return (
-    <div className={variant === "buttons" ? "row wrap" : "policy-links"}>
+    <div className={variant === "buttons" ? "row wrap" : variant === "list" ? "support-links settings-links" : "policy-links"}>
       {Object.entries(policyTitles).map(([type, title]) => (
         <a
           key={type}

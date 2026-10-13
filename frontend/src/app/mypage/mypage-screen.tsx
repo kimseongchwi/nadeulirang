@@ -6,10 +6,14 @@ export function MyPageScreen() {
     <div className="intro">
       <h1 className="mypage-title" aria-label="내정보">내정<span>보</span></h1>
     </div>
-    <nav className="support-links" aria-label="내정보 메뉴">
-      <NavigationLink href="/faq"><span>자주 묻는 질문</span><Icon name="next" /></NavigationLink>
-      <NavigationLink href="/notices"><span>공지사항</span><Icon name="next" /></NavigationLink>
-      <button type="button" disabled title="설정 기능 준비 중"><span>설정</span><span className="support-pending">준비 중</span></button>
+    <nav className="support-links mypage-links" aria-label="내정보 메뉴">
+      <NavigationLink href="/login" className="mypage-profile">
+        <span className="mypage-avatar"><Icon name="user" /></span>
+        <span className="mypage-profile-label">로그인하러 가기</span>
+      </NavigationLink>
+      <NavigationLink href="/notices">공지사항</NavigationLink>
+      <NavigationLink href="/faq">자주 묻는 질문</NavigationLink>
+      <NavigationLink href="/settings">설정</NavigationLink>
     </nav>
   </>;
 }
