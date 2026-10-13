@@ -5,6 +5,8 @@ Spring Boot·Java 21·Spring Data JPA·Hibernate·PostgreSQL을 사용합니다.
 ## 구조
 
 - collection/: 원천 HTTP 클라이언트·수동 실행기, 호출/원천/커서 JPA 모델과 Repository, 근거·충돌을 조율하는 CollectionStore.
+
+CollectionRunner는 실행 방식을 조율하고 일반 상세/보완의 응답 저장을 공유합니다. CollectionStore의 자료 연결 변경은 양쪽 날짜/요금 요약도 같은 트랜잭션에서 갱신합니다. 원문·연결 이력은 보존하며 호출·커서·행 저장의 트랜잭션을 합치지 않습니다. 개념과 실제 흐름은 [LEARNING](../docs/LEARNING.md#데이터-모델과-수집-코드)을 참고합니다.
 - outing/: 요청 조건·컨트롤러·SQL 조회·응답 record·오류 처리. 엔티티는 외부에 노출하지 않습니다.
 - auth/: 회원·소셜 OAuth2/OIDC·최근 재인증·DB 세션/권한 경계와 동일 출처 중계용 API.
 - resources/db/migration/: Flyway V1~V8. 기존 적용 파일은 수정하지 않습니다. Hibernate ddl-auto=validate·open-in-view=false로 자동 DDL·요청 밖 추가 조회를 막습니다.

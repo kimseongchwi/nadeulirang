@@ -98,6 +98,10 @@ outing은 서비스 내부 ID·검토/표출·분류·요금/일정 요약, sour
 
 TourAPI는 contentid를 사용한다. 표준 원천의 연결 후보는 이름·기관·정규화 주소이며 축제는 기간·장소까지 포함한다. 페이지/행 순번·이름만으로 합치지 않는다. ingest의 ON CONFLICT는 실제 유일 제약을 기준으로 같은 호출/행의 재처리를 멱등하게 처리한다. 새 호출의 원문은 이력으로 남는다.
 
+`CollectionStore.relink`는 연결 근거를 기록한 뒤 이전/대상 항목의 날짜·요금 요약을 같은 트랜잭션에서 재계산한다. 날짜 쌍이 하나면 사용하고 서로 다르면 미확인으로 둔다. 유효 근거가 아예 없는 경우 기존 요약을 지우지 않는 보존 규칙도 유지한다. `CollectionRunner.storeTourDetail`은 일반 상세와 보완의 실패/빈 응답·식별자 확인·행 저장을 공유한다. 호출 예약/HTTP는 밖에서, 행별 트랜잭션은 Store에서 처리하므로 네트워크를 큰 저장 트랜잭션으로 감싸지 않는다.
+
+`OutingStore`의 `evidence` 메서드는 두 SQL 결과에서 같은 응답 record를 만드는 부분만 공유한다. 원문 근거 조회와 필드별 유효 근거 선택 SQL은 목적이 다르므로 분리한 채 유지한다. 과거 행 전체 선택 함수는 실제 호출이 없어 제거했으며 현재 선택은 V5의 `effective_field_evidence`와 실제 API 회귀로 확인한다.
+
 ### JPA 저장과 트랜잭션
 
 JPA는 객체를 DB에 저장·조회하는 표준 API, Hibernate는 그 표준을 실행해 SQL·객체 변경 추적을 처리하는 구현체, Spring Data JPA는 Repository 인터페이스로 반복 조회/저장 구현을 제공하는 Spring 도구다. [Spring Data JPA](https://spring.io/projects/spring-data-jpa/)

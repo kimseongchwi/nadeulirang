@@ -690,6 +690,8 @@ public class CollectionStore {
                             target,
                             Timestamp.from(now),
                             reason);
+                    recalculateDates(previous, now);
+                    recalculateDates(target, now);
                     recalculateFee(previous);
                     recalculateFee(target);
                 });

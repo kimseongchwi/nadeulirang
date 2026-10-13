@@ -9,27 +9,6 @@ import java.util.Map;
 final class OutingInformation {
     private OutingInformation() {}
 
-    static List<OutingResponse.Evidence> latestStandardRows(List<OutingResponse.Evidence> values) {
-        Map<String, LocalDate> latest = new LinkedHashMap<>();
-        for (var value : values) {
-            var date = referenceDate(value);
-            if (standard(value) && date != null)
-                latest.merge(
-                        sourceKey(value),
-                        date,
-                        (previous, next) -> next.isAfter(previous) ? next : previous);
-        }
-        // 행 전체를 먼저 선택해 최신 행의 빈 값을 과거 행의 값으로 채우지 않는다.
-        return values.stream()
-                .filter(
-                        value ->
-                                !standard(value)
-                                        || !latest.containsKey(sourceKey(value))
-                                        || latest.get(sourceKey(value))
-                                                .equals(referenceDate(value)))
-                .toList();
-    }
-
     static List<OutingResponse.Evidence> preferStandard(List<OutingResponse.Evidence> values) {
         var preferred =
                 values.stream()
@@ -40,10 +19,6 @@ final class OutingInformation {
 
     private static boolean standard(OutingResponse.Evidence value) {
         return value.source().equals("MUSEUM") || value.source().equals("FESTIVAL");
-    }
-
-    private static String sourceKey(OutingResponse.Evidence value) {
-        return value.source() + ":" + value.sourceKey();
     }
 
     private static LocalDate referenceDate(OutingResponse.Evidence value) {

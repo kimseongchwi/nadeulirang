@@ -212,6 +212,60 @@ class CollectionStoreTests {
     }
 
     @Test
+    @DisplayName("연결 변경은 양쪽 일정 충돌을 재계산하고 원문·이력과 근거 없는 이전 요약을 보존한다")
+    void recalculatesDatesAfterRelink() {
+        save(
+                Source.TOUR,
+                json.readTree(
+                        """
+                {"contentid":"first","title":"행사","eventstartdate":"20261001","eventenddate":"20261010"}
+                """),
+                "TOUR:first",
+                now);
+        save(
+                Source.TOUR,
+                json.readTree(
+                        """
+                {"contentid":"second","title":"행사","eventstartdate":"20261005","eventenddate":"20261020"}
+                """),
+                "TOUR:second",
+                now.plusSeconds(2));
+        store.relink(Source.TOUR, "second", "TOUR:first", "기관·회차 대조 테스트", now.plusSeconds(4));
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT event_start FROM outing WHERE review_key='TOUR:first'",
+                                java.time.LocalDate.class))
+                .isNull();
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT lifecycle FROM outing WHERE review_key='TOUR:first'",
+                                String.class))
+                .isEqualTo("UNKNOWN");
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT event_start FROM outing WHERE review_key='TOUR:second'",
+                                java.time.LocalDate.class))
+                .isEqualTo(java.time.LocalDate.of(2026, 10, 5));
+        store.relink(Source.TOUR, "second", "TOUR:second", "연결 원복 대조 테스트", now.plusSeconds(6));
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT event_start FROM outing WHERE review_key='TOUR:first'",
+                                java.time.LocalDate.class))
+                .isEqualTo(java.time.LocalDate.of(2026, 10, 1));
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT event_end FROM outing WHERE review_key='TOUR:second'",
+                                java.time.LocalDate.class))
+                .isEqualTo(java.time.LocalDate.of(2026, 10, 20));
+        assertThat(count("source_observation")).isEqualTo(2);
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT count(*) FROM source_link_history WHERE from_outing_id IS NOT NULL",
+                                Integer.class))
+                .isEqualTo(2);
+    }
+
+    @Test
     @DisplayName("호출 예산은 오류·실행 중 요청을 포함하고 24시간 경계와 원천 중단을 적용한다")
     void enforcesDurableBudget() {
         var query = json.createObjectNode();

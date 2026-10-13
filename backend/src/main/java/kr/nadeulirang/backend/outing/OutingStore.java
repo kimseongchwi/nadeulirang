@@ -274,19 +274,7 @@ public class OutingStore {
             WHERE r.outing_id = ? AND r.license IN ('KOGL1_DATA', 'TOUR_DATA')
             ORDER BY r.source, r.source_key, f.field_name, f.checked_at, b.row_hash, f.id
             """,
-                        (rs, n) ->
-                                new OutingResponse.Evidence(
-                                        rs.getString("field_name"),
-                                        rs.getString("value"),
-                                        rs.getString("source"),
-                                        rs.getString("source_key"),
-                                        rs.getString("source_url"),
-                                        rs.getString("source_reference"),
-                                        instant(rs, "collected_at"),
-                                        instant(rs, "checked_at"),
-                                        CollectionPolicy.stale(
-                                                event, instant(rs, "checked_at"), now),
-                                        rs.getObject("observation_id", UUID.class)),
+                        (rs, n) -> evidence(rs, event, now),
                         id);
         Map<String, List<OutingResponse.Evidence>> information = new LinkedHashMap<>();
         var selectedEvidence =
@@ -309,19 +297,7 @@ public class OutingStore {
                 CASE WHEN b.raw_row->>'serialnum' ~ '^[0-9]+$' THEN lpad(b.raw_row->>'serialnum',20,'0') ELSE '' END,
                 f.observation_id,f.field_name
             """,
-                        (rs, n) ->
-                                new OutingResponse.Evidence(
-                                        rs.getString("field_name"),
-                                        rs.getString("value"),
-                                        rs.getString("source"),
-                                        rs.getString("source_key"),
-                                        rs.getString("source_url"),
-                                        rs.getString("source_reference"),
-                                        instant(rs, "collected_at"),
-                                        instant(rs, "checked_at"),
-                                        CollectionPolicy.stale(
-                                                event, instant(rs, "checked_at"), now),
-                                        rs.getObject("observation_id", UUID.class)),
+                        (rs, n) -> evidence(rs, event, now),
                         id);
         List<String> unconfirmed = new ArrayList<>();
         for (String group : GROUPS) {
@@ -442,5 +418,20 @@ public class OutingStore {
     private static Instant instant(ResultSet rs, String column) throws SQLException {
         Timestamp value = rs.getTimestamp(column);
         return value == null ? null : value.toInstant();
+    }
+
+    private static OutingResponse.Evidence evidence(ResultSet rs, boolean event, Instant now)
+            throws SQLException {
+        return new OutingResponse.Evidence(
+                rs.getString("field_name"),
+                rs.getString("value"),
+                rs.getString("source"),
+                rs.getString("source_key"),
+                rs.getString("source_url"),
+                rs.getString("source_reference"),
+                instant(rs, "collected_at"),
+                instant(rs, "checked_at"),
+                CollectionPolicy.stale(event, instant(rs, "checked_at"), now),
+                rs.getObject("observation_id", UUID.class));
     }
 }

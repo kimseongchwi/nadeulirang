@@ -264,26 +264,33 @@ public class CollectionRunner implements ApplicationRunner {
                                     .put("contentId", id)
                                     .put("contentTypeId", item.path("type").asText()),
                             keys);
-            if (detail.response().outcome().equals("FAILED"))
-                store.failedRecord(
-                        Source.TOUR, id, operation, detail.response().code(), detail.checkedAt());
-            if (detail.response().outcome().equals("EMPTY"))
-                store.emptyOperation(Source.TOUR, id, operation, detail.checkedAt());
-            for (JsonNode data : detail.response().rows()) {
-                if (!CollectionStore.text(data, "contentid").equals(id))
-                    throw new IllegalStateException("요청과 다른 상세 식별자입니다.");
-                store.ingest(
-                        Source.TOUR,
-                        detail.call(),
-                        data,
-                        operation,
-                        "TOUR:" + id,
-                        null,
-                        null,
-                        null,
-                        null,
-                        detail.checkedAt());
-            }
+            storeTourDetail(id, operation, detail, false);
+        }
+    }
+
+    private void storeTourDetail(
+            String id, String operation, SourceClient.Result reply, boolean supplement) {
+        if (reply.response().outcome().equals("FAILED"))
+            store.failedRecord(
+                    Source.TOUR, id, operation, reply.response().code(), reply.checkedAt());
+        if (reply.response().outcome().equals("EMPTY"))
+            store.emptyOperation(Source.TOUR, id, operation, reply.checkedAt());
+        for (JsonNode row : reply.response().rows()) {
+            if (!id.equals(CollectionStore.text(row, "contentid")))
+                throw new IllegalStateException(
+                        "요청과 다른 " + (supplement ? "보완" : "상세") + " 식별자입니다.");
+            store.ingest(
+                    Source.TOUR,
+                    reply.call(),
+                    row,
+                    operation,
+                    supplement ? null : "TOUR:" + id,
+                    null,
+                    null,
+                    null,
+                    null,
+                    reply.checkedAt());
+            if (supplement) candidates++;
         }
     }
 
@@ -372,27 +379,7 @@ public class CollectionRunner implements ApplicationRunner {
                             operation,
                             json.createObjectNode().put("contentId", id).put("contentTypeId", type),
                             keys);
-            if (reply.response().outcome().equals("FAILED"))
-                store.failedRecord(
-                        Source.TOUR, id, operation, reply.response().code(), reply.checkedAt());
-            if (reply.response().outcome().equals("EMPTY"))
-                store.emptyOperation(Source.TOUR, id, operation, reply.checkedAt());
-            for (JsonNode row : reply.response().rows()) {
-                if (!id.equals(CollectionStore.text(row, "contentid")))
-                    throw new IllegalStateException("요청과 다른 보완 식별자입니다.");
-                store.ingest(
-                        Source.TOUR,
-                        reply.call(),
-                        row,
-                        operation,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        reply.checkedAt());
-                candidates++;
-            }
+            storeTourDetail(id, operation, reply, true);
         }
     }
 

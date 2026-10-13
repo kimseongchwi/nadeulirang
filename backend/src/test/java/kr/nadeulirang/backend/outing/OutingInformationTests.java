@@ -10,67 +10,26 @@ import org.junit.jupiter.api.Test;
 
 class OutingInformationTests {
     @Test
-    @DisplayName("표준 기준일로 행 전체를 선택하고 빈 최신 값·동일 기준일 차이와 다른 원천을 보존한다")
-    void selectsStandardRowsByReferenceDate() {
-        var old = entry("adultChrge", "3000", "2025-12-10", 9);
-        var oldChild = entry("childChrge", "1000", "2025-12-10", 9);
-        var recent = entry("adultChrge", "0", "2026-06-24", 0);
-        var missing = entry("childChrge", null, "2026-06-24", 0);
-        var sameDate = entry("adultChrge", "2000", "2026-06-24", 1);
+    @DisplayName("유효 표준 기준일을 우선하며 잘못된 기준일은 관광 보완을 막지 않는다")
+    void prefersValidStandardAndKeepsFallback() {
+        var standard = entry("adultChrge", "3000", "2026-06-24", 0);
+        var invalid = entry("adultChrge", "1000", "2026-02-30", 1);
         var tour =
                 new OutingResponse.Evidence(
                         "usefee",
-                        "3000",
+                        "5000",
                         "TOUR",
                         "관광자료",
-                        old.url(),
+                        standard.url(),
                         null,
-                        old.collectedAt(),
-                        old.checkedAt(),
+                        standard.collectedAt(),
+                        standard.checkedAt(),
                         false,
                         UUID.randomUUID());
-        var other =
-                new OutingResponse.Evidence(
-                        "adultChrge",
-                        "1000",
-                        "MUSEUM",
-                        "별도 시설",
-                        old.url(),
-                        "2024-01-01",
-                        old.collectedAt(),
-                        old.checkedAt(),
-                        false,
-                        UUID.randomUUID());
-        var values = List.of(old, oldChild, recent, missing, sameDate, tour, other);
-        var selected = OutingInformation.latestStandardRows(values);
-        assertThat(selected).containsExactly(recent, missing, sameDate, tour, other);
-        assertThat(OutingInformation.preferStandard(selected))
-                .containsExactly(recent, missing, sameDate, other);
-        assertThat(values).hasSize(7);
-    }
-
-    @Test
-    @DisplayName("표준 기준일이 없거나 잘못된 경우 임의로 최신 행을 고르지 않고 관광 정보로 보완한다")
-    void preservesUnrankedRowsAndFallback() {
-        var missing = entry("rstdeInfo", "월요일", "", 0);
-        var invalid = entry("rstdeInfo", "화요일", "2026-02-30", 1);
-        var tour =
-                new OutingResponse.Evidence(
-                        "restdateculture",
-                        "월요일(공휴일이면 다음 평일)",
-                        "TOUR",
-                        "관광자료",
-                        missing.url(),
-                        null,
-                        missing.collectedAt(),
-                        missing.checkedAt(),
-                        false,
-                        UUID.randomUUID());
-        var values = List.of(missing, invalid, tour);
-        assertThat(OutingInformation.latestStandardRows(values))
-                .containsExactly(missing, invalid, tour);
-        assertThat(OutingInformation.preferStandard(values))
-                .containsExactly(missing, invalid, tour);
+        assertThat(OutingInformation.preferStandard(List.of(standard, tour)))
+                .containsExactly(standard);
+        assertThat(OutingInformation.preferStandard(List.of(invalid, tour)))
+                .containsExactly(invalid, tour);
     }
 
     @Test
