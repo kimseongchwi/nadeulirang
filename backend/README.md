@@ -14,7 +14,7 @@ JPA는 원천 상태·호출 기록·커서의 단순 저장/조회를 담당합
 
 ## 회원 인증 API — P30
 
-브라우저는 Next.js의 /api/auth/*로 Spring 인증을 중계합니다. 로그인은 /login, 로그인 후 관리는 /account이고 검색/상세는 익명 이용을 유지합니다. 오류는 code·한국어 message·retryable, 인증 응답은 no-store입니다.
+브라우저는 Next.js의 /api/auth/*로 Spring 인증을 중계합니다. 로그인 화면은 /login이며 검색/상세는 익명 이용을 유지합니다. 별도 계정 관리 화면은 제공하지 않습니다. 오류는 code·한국어 message·retryable, 인증 응답은 no-store입니다.
 
 | 메서드·/api/auth/ 뒤 경로 | 요청·동작 |
 |---|---|

@@ -99,7 +99,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                     <button className="icon-button" onClick={() => setMenuOpen(true)} aria-label="보조 메뉴 열기" aria-haspopup="dialog">
                       <Icon name="menu" />
                     </button>
-                    <NavigationLink href="/account" className="button primary login-placeholder">로그인</NavigationLink>
+                    <NavigationLink href="/login" className="button primary login-placeholder">로그인</NavigationLink>
                   </div>
                 </header>
               </>

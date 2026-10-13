@@ -94,6 +94,7 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
     { label: "홈", src: `/?previewDays=${upcomingDays}` },
     { label: "검색", src: "/search" },
     { label: "내정보", src: "/mypage" },
+    { label: "로그인", src: "/login" },
     { label: "FAQ", src: "/faq" },
     { label: "공지사항", src: "/notices" },
     { label: "찾을 수 없는 페이지", src: "/notices/missing" },
@@ -271,11 +272,11 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 <div><dt>상단</dt><dd>로고 · 검색 · 햄버거 · 로그인</dd></div>
                 <div><dt>하단</dt><dd>홈 · 북마크 · 내정보</dd></div>
                 <div><dt>햄버거 메뉴</dt><dd>홈 · 내정보</dd></div>
-                <div><dt>내정보</dt><dd>로그인·계정 관리 · 자주 묻는 질문 · 공지사항 · 설정(준비 중)</dd></div>
+                <div><dt>내정보</dt><dd>로그인하러 가기 · 자주 묻는 질문 · 공지사항 · 설정(준비 중)</dd></div>
                 <div><dt>홈 필터</dt><dd>지역 · 종류를 바텀시트에서 선택</dd></div>
                 <div><dt>정책·출처</dt><dd>서비스 푸터</dd></div>
               </dl>
-              <p className="hint">로그인은 계정 관리로 연결해요. 가입·소셜 로그인은 외부 설정과 정책 확인 후 사용할 수 있으며 북마크·설정·AI 추천은 준비 중이에요.</p>
+              <p className="hint">로그인은 카카오·네이버·구글 계정으로 진행해요. 외부 설정과 정책 확인 후 사용할 수 있으며 북마크·설정·AI 추천은 준비 중이에요.</p>
             </div>
             <div className="sample">
               <h3>후속 구성 예시 · 구현 보류</h3>
@@ -285,7 +286,7 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                   <Icon name="search" />
                 </span>
                 <span><Icon name="menu" /></span>
-                <button className="button primary login-placeholder" disabled title="로그인 기능 준비 중">로그인</button>
+                <NavigationLink href="/login" className="button primary login-placeholder">로그인</NavigationLink>
               </div>
               <div className="future-nav">
                 {(
@@ -714,7 +715,7 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 ],
                 [
                   "후속 보류",
-                  "P29 북마크·P30 로그인은 미연결 자리 유지 · P31 AI 추천은 실제 메뉴에서 제외. 설정 자리만 표시하고 기능은 실제 필요를 정한 뒤 추가",
+                  "P29 북마크·P31 AI 추천은 후속. P30 소셜 로그인은 연결했으며 실제 외부 연동은 미확인. 설정 자리만 표시하고 기능은 실제 필요를 정한 뒤 추가",
                 ],
                 [
                   "필요할 때 재검토",

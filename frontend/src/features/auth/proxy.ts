@@ -1,20 +1,18 @@
 const sessionCookie = "NADEULIRANG_SESSION";
-const fixedPaths = new Set([
-  "csrf", "options", "register", "login", "me", "email/resend", "password/reset-request",
-  "token/consume", "reauthenticate", "password/change", "local/link", "logout", "sessions/end-all",
-]);
+const fixedPaths = new Set(["csrf", "options", "me", "logout", "sessions/end-all"]);
 
 export function allowedAuthPath(path: string): boolean {
-  return fixedPaths.has(path) || /^(?:oauth\/(?:kakao|naver)\/start|oauth2\/authorization\/(?:kakao|naver)|login\/oauth2\/code\/(?:kakao|naver)|methods\/local\/unlink|admin\/users\/[0-9a-f-]{36})$/.test(path);
+  return fixedPaths.has(path) || /^(?:oauth\/(?:kakao|naver|google)\/start|oauth2\/authorization\/(?:kakao|naver|google)|login\/oauth2\/code\/(?:kakao|naver|google)|admin\/users\/[0-9a-f-]{36})$/.test(path);
 }
 
 export function allowedAuthRedirect(location: string): boolean {
-  if (location === "/account#completed" || location === "/account#error") return true;
+  if (location === "/login#completed" || location === "/login#error") return true;
   try {
     const url = new URL(location);
     return url.protocol === "https:" && !url.username && !url.password && !url.port &&
       ((url.hostname === "kauth.kakao.com" && url.pathname === "/oauth/authorize") ||
-        (url.hostname === "nid.naver.com" && url.pathname === "/oauth2.0/authorize"));
+        (url.hostname === "nid.naver.com" && url.pathname === "/oauth2.0/authorize") ||
+        (url.hostname === "accounts.google.com" && url.pathname === "/o/oauth2/v2/auth"));
   } catch { return false; }
 }
 

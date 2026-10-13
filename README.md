@@ -26,7 +26,7 @@ npm --prefix frontend run dev
 
 [Spring health](http://localhost:8080/actuator/health)는 DB 연결 정상 시 200·UP, 장애 시 503을 반환하며 환경 상세는 공개하지 않습니다. Next.js의 /api/health는 제공하지 않습니다. API 사용법·응답/오류 계약은 [백엔드 README](backend/README.md#목록상세-조회-api)를 참고합니다.
 
-P30의 [로그인·계정 관리](http://localhost:3000/account)는 동일 출처 `/api/auth/*`로 Spring 인증을 중계합니다. 작업 폴더 `.env`의 인증 항목은 `use-local-env.ps1`이 현재 실행 프로세스에만 적용하고 홈 공통 설정으로 복사하지 않습니다. 프론트 `AUTH_PUBLIC_ORIGIN`은 백엔드와 같아야 합니다. 외부 제공자/SMTP·실제 가입 정책이 없는 항목은 활성화되지 않으며 준비 절차·API·검증 구분은 [회원 인증 안내](backend/README.md#회원-인증-api--p30)를 따릅니다. health는 DB 실행 확인이며 메일 도달·제공자 인증 확인을 대신하지 않습니다.
+P30의 [소셜 로그인](http://localhost:3000/login)는 동일 출처 `/api/auth/*`로 Spring 인증을 중계합니다. 작업 폴더 `.env`의 인증 항목은 `use-local-env.ps1`이 현재 실행 프로세스에만 적용하고 홈 공통 설정으로 복사하지 않습니다. 프론트 `AUTH_PUBLIC_ORIGIN`은 백엔드와 같아야 합니다. 외부 제공자·실제 가입 정책이 없는 항목은 활성화되지 않으며 준비 절차·API·검증 구분은 [회원 인증 안내](backend/README.md#회원-인증-api--p30)를 따릅니다. health는 DB 실행 확인이며 제공자 인증 확인을 대신하지 않습니다.
 
 ## UI 디자인 가이드 확인
 
