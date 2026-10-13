@@ -146,18 +146,19 @@ node scripts/verify-standard-data.mjs festival '{"numOfRows":1}' xml
 
 ## 문서 안내
 
-| 문서 | 역할 |
-|---|---|
-| [PLAN](PLAN.md) | 범위·완료 기준·현재 상태 |
-| [PRD](docs/PRD.md) | 제품 기준·공개 범위 |
-| [DESIGN](DESIGN.md) | 현재 적용·미정 디자인 |
-| [DATA_SOURCES](docs/DATA_SOURCES.md) | 원천·근거·이용 조건·수집/갱신 기준 |
-| [LEARNING](docs/LEARNING.md) | 현재 코드의 개념·파일·호출 흐름·선택 이유 |
-| [frontend/README](frontend/README.md) | 프론트 구조·UI 가이드 |
-| [backend/README](backend/README.md) | 백엔드 구조·API·응답/오류 계약 |
-| [AGENTS](AGENTS.md)·[프론트 추가 지침](frontend/AGENTS.md) | 공통·영역 개발 규칙 |
+| 문서 | 역할 | 갱신 조건 |
+|---|---|---|
+| [PLAN](PLAN.md) | 범위·선행 조건·완료 기준·현재 상태 | 목적·순서·상태·남은 문제가 달라질 때 |
+| [PRD](docs/PRD.md) | 사용자 관점의 제품 기준·공개 범위 | 기능 범위·제품 정책이 바뀔 때 |
+| [DESIGN](DESIGN.md) | 현재 적용·미정 디자인 | 채택한 화면 기준·주요 미정 사항이 바뀔 때 |
+| [DATA_SOURCES](docs/DATA_SOURCES.md) | 원천·근거·이용 조건·수집/갱신 기준 | 원천 조건·데이터 보존/선택 기준이 바뀔 때 |
+| [LEARNING](docs/LEARNING.md) | 현재 코드의 개념·파일·호출 흐름·선택 이유 | 핵심 개념·구조가 바뀔 때 기존 설명 수정 |
+| [README](README.md) | 소개·실행·검증·문서 안내 | 실행·검증 방법·문서 구성이 바뀔 때 |
+| [frontend/README](frontend/README.md) | 프론트 구조·UI 가이드 | 해당 구조·설정·가이드 사용법이 바뀔 때 |
+| [backend/README](backend/README.md) | 백엔드 구조·API·응답/오류 계약 | 해당 구조·API 계약·설정이 바뀔 때 |
+| [AGENTS](AGENTS.md)·[프론트 추가 지침](frontend/AGENTS.md) | 공통·영역 개발 규칙 | 지속적으로 적용할 작업 원칙이 바뀔 때 |
 
-로컬 docs/WORKLOG.md는 실제 결과, docs/ERRORS.md는 오류 요약이며 Git 추적에서 제외합니다.
+로컬 docs/WORKLOG.md는 날짜별 실제 결과·수행한 검증·남은 문제·자체 리뷰를 짧게 기록합니다. docs/ERRORS.md는 실제 오류의 증상·확인된 원인·해결 상태를 관리합니다. 두 파일은 Git 추적에서 제외하며 기존 기록은 보존합니다. 계획을 세운 사실을 기능 구현 완료로 기록하거나, 실행 기록을 LEARNING에 복사하지 않습니다.
 
 ### 저장 사진 재처리·제한 보완
 
