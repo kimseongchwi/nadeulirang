@@ -156,7 +156,7 @@ detail-content·detail-information·fee-blocks는 표시용 배열만 만든다.
 
 `routeFeeBlocks`는 명시된 할인·무료 대상과 내국인 예약을 이용 정보 행으로 연결한다. 사용자 선택에 따라 ‘화장실’ 제목의 관측 행 전체는 표시 배열에서 생략하며 다른 항목에 섞인 문구와 원본 Evidence는 유지한다. `hoursParts`는 완결된 기간/시간/입장 마감, `contactParts`는 명확한 기관/전화 관계만 좌우 행으로 반환한다. `displayFeeParts`는 상세 제목과 반복되는 첫 시설명만 정리한다. `AdmissionInformation`은 실제 상세와 가이드가 공유하며 `feeDisplayGroups`의 사용자 선택에 따라 대상별 요금표를 표시하고 허용된 별도 전부 무료 자료는 화면에서 생략한다. 원본 Evidence 배열은 유지한다. 이는 표시 선택이며 `feeAlternatives`의 출처별 충돌 근거·API의 요금 선택을 바꾸거나 무료 대상을 추정하는 동작이 아니다.
 
-ExpandableDetailText는 소개·프로그램의 긴 본문만 펼친다. program-text는 확실한 소제목 접두부만 반환해 strong으로 감싸고 본문을 보존한다. 연속 번호 제목의 첫 항목도 같은 제목으로 처리하고 명시된 주간 일정의 날짜·시간은 본문으로 남긴다. ※로 시작하는 줄은 note로 반환해 evidence-note 스타일로 감싸며 원문 기호·조건·줄바꿈은 유지한다. 시간 표시에서는 text-boundaries가 명확한 회차 뒤 대시를 시간과 연결하고 information-parts가 회차/시간 쌍을 만든다. 상세는 최근 자료 확인 날짜를 한 번 표시하며 API의 stale·실패·확인 시각 계약과 조회 오류 처리를 유지한다.
+ExpandableDetailText는 소개·프로그램의 긴 본문만 펼친다. program-text는 확실한 소제목 접두부만 반환해 strong으로 감싼다. 주요 프로그램 항목은 앞의 목록 대시만 표시에서 생략하고 콜론까지 headingText로 반환하며 본문·일정·원본 Evidence/API는 보존한다. 연속 번호 제목의 첫 항목도 같은 제목으로 처리하고 명시된 주간 일정의 날짜·시간은 본문으로 남긴다. ※로 시작하는 줄은 note로 반환해 evidence-note 스타일로 감싸며 원문 기호·조건·줄바꿈은 유지한다. 시간 표시에서는 text-boundaries가 명확한 회차 뒤 대시를 시간과 연결하고 information-parts가 회차/시간 쌍을 만든다. 상세는 최근 자료 확인 날짜를 한 번 표시하며 API의 stale·실패·확인 시각 계약과 조회 오류 처리를 유지한다.
 
 file_asset은 사진 URL·출처·유형·관측/시각만 보존한다. PhotoPolicy와 API 검사는 허용 호스트/유형을 제한한다. OutingArtwork는 누락·실패 때 아이콘을 사용한다. 브랜드 팔레트는 SiteShell CSS 변수와 icon.ts가 공유한다. 가이드 카드·달력·개발 표시는 features/ui-design에 있으며 실제 서비스와 공유 UI를 사용한다.
 
