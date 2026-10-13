@@ -2,8 +2,7 @@
 $authRoot = Split-Path -Parent $PSScriptRoot
 $authFile = Join-Path $authRoot '.env'
 $authNames = @('AUTH_PUBLIC_ORIGIN', 'AUTH_SECURE_COOKIE', 'AUTH_TERMS_VERSION', 'AUTH_PRIVACY_VERSION',
-    'AUTH_MAIL_FROM', 'AUTH_SMTP_HOST', 'AUTH_SMTP_PORT', 'AUTH_SMTP_USERNAME', 'AUTH_SMTP_PASSWORD',
-    'KAKAO_CLIENT_ID', 'KAKAO_CLIENT_SECRET', 'NAVER_CLIENT_ID', 'NAVER_CLIENT_SECRET')
+    'KAKAO_CLIENT_ID', 'KAKAO_CLIENT_SECRET', 'NAVER_CLIENT_ID', 'NAVER_CLIENT_SECRET', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET')
 if (Test-Path -LiteralPath $authFile -PathType Leaf) {
     foreach ($authLine in [System.IO.File]::ReadAllLines($authFile)) {
         if ($authLine -notmatch '^\s*([A-Z_]+)\s*=(.*)$' -or $Matches[1] -notin $authNames) { continue }

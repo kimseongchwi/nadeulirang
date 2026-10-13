@@ -6,58 +6,47 @@ Spring Boot·Java 21·Spring Data JPA·Hibernate·PostgreSQL을 사용합니다.
 
 - collection/: 원천 HTTP 클라이언트·수동 실행기, 호출/원천/커서 JPA 모델과 Repository, 근거·충돌을 조율하는 CollectionStore.
 - outing/: 요청 조건·컨트롤러·SQL 조회·응답 record·오류 처리. 엔티티는 외부에 노출하지 않습니다.
-- auth/: 회원·인증/복구·OAuth2·최근 재인증·DB 세션/권한 경계와 동일 출처 중계용 API.
-- resources/db/migration/: Flyway V1~V7. 기존 적용 파일은 수정하지 않습니다. Hibernate ddl-auto=validate·open-in-view=false로 자동 DDL·요청 밖 추가 조회를 막습니다.
+- auth/: 회원·소셜 OAuth2/OIDC·최근 재인증·DB 세션/권한 경계와 동일 출처 중계용 API.
+- resources/db/migration/: Flyway V1~V8. 기존 적용 파일은 수정하지 않습니다. Hibernate ddl-auto=validate·open-in-view=false로 자동 DDL·요청 밖 추가 조회를 막습니다.
 - src/test/: UUID 격리 PostgreSQL의 API·수집·JPA/SQL 공동 트랜잭션 회귀와 순수 정책 테스트.
 
 JPA는 원천 상태·호출 기록·커서의 단순 저장/조회를 담당합니다. 커서 최초 생성의 ON CONFLICT, 원문/근거 upsert·최신 선택·충돌과 공개 조회는 SQL을 유지합니다. FK는 ID로 연결해 연쇄 조회·삭제를 추가하지 않습니다. 역할과 어노테이션 설명은 [LEARNING](../docs/LEARNING.md#jpa-저장과-트랜잭션)을 참고합니다. 수집 원천·예산·보존/갱신 기준은 [DATA_SOURCES](../docs/DATA_SOURCES.md#p11-수집-기준)에 있습니다.
 
 ## 회원 인증 API — P30
 
-브라우저는 Next.js의 `/api/auth/*`만 호출합니다. Spring 경로도 같으며 공통 HTTP 검증은 루트 README를 따릅니다. 계정 화면은 `/account`이고 검색/상세는 계속 익명으로 조회할 수 있습니다. JSON 요청과 실패 응답의 `code`·한국어 `message`·`retryable`을 사용합니다. 인증 응답은 `no-store`이며 내부 예외·제공자 응답 원문은 전달하지 않습니다.
+브라우저는 Next.js의 /api/auth/*로 Spring 인증을 중계합니다. 로그인은 /login, 로그인 후 관리는 /account이고 검색/상세는 익명 이용을 유지합니다. 오류는 code·한국어 message·retryable, 인증 응답은 no-store입니다.
 
-| 메서드·`/api/auth/` 뒤 경로 | 요청·동작 |
+| 메서드·/api/auth/ 뒤 경로 | 요청·동작 |
 |---|---|
-| GET `csrf` / `options` | 세션 CSRF `token`·`headerName` / 실제 설정된 제공자와 가입 정책 버전 |
-| POST `register` | `email,password,nickname,termsVersion,privacyVersion`; 이메일 인증 전 로그인 불가 |
-| POST `login` | `email,password`; 세션 ID 교체·CSRF 재발급 |
-| GET `me` | UUID·닉네임·역할·상태·연결 수단. 비밀번호/제공자 식별자/인증 토큰은 제외 |
-| POST `email/resend` / `password/reset-request` | `email`; 존재·인증 여부를 성공 응답에 포함하지 않음 |
-| POST `token/consume` | `token,purpose,password?`; `EMAIL_VERIFY`·`PASSWORD_RESET`·`LOCAL_LINK` |
-| POST `reauthenticate` | `password`; 기존 자체 수단을 인증하고 5분 동안 계정 변경 허용 |
-| POST `password/change` | `currentPassword,password`; 전체 세션·미사용 토큰 종료 |
-| POST `local/link` | 최근 재인증 + `email,password`; 이메일 인증 후 수단 추가 |
-| POST `methods/local/unlink` | 최근 재인증·다른 인증 수단 확인 후 자체 수단 제거·전체 로그아웃 |
-| POST `oauth/{kakao\|naver}/start` | `mode,termsVersion?,privacyVersion?`; `login/link/reauth/unlink/withdraw`, 반환된 동일 출처 `redirect`로 전체 페이지 이동 |
-| GET `oauth2/authorization/{provider}` / `login/oauth2/code/{provider}` | 시작 세션·5분 제한·OAuth state를 검증하는 제공자 왕복 경로 |
-| POST `logout` / `sessions/end-all` | 현재 세션 / 모든 기기 세션 종료 |
-| DELETE `me` | 최근 재인증·소셜 해제 확인 후 회원·수단·토큰·동의 삭제 |
-| PATCH `admin/users/{UUID}` | ADMIN 최근 재인증 + `role,status`; 기존 세션 회수. 관리자 화면은 후속 |
+| GET csrf / options | CSRF 토큰 / 설정된 제공자·정책 버전 |
+| GET me | UUID·닉네임·역할·상태·소셜 수단. 제공자 ID/토큰/이메일 제외 |
+| POST oauth/{provider}/start | kakao/naver/google·mode,termsVersion?,privacyVersion?; login/link/reauth/unlink/withdraw. 반환된 동일 출처 redirect로 이동 |
+| GET oauth2/authorization/{provider} / login/oauth2/code/{provider} | 시작 세션·5분·state 검증, 구글 OIDC의 서명·issuer·audience·nonce 검증 |
+| POST logout / sessions/end-all | 현재 / 전체 기기 세션 종료 |
+| PATCH admin/users/{UUID} | ADMIN 최근 재인증 + role/status; 기존 세션 회수. 관리자 화면은 후속 |
 
-모든 변경 요청은 먼저 GET `csrf`에서 세션 쿠키와 토큰을 받은 뒤 `X-CSRF-TOKEN`과 JSON 본문을 보냅니다. 가입·로그인·복구·로그아웃도 예외가 아닙니다. 로그인 후 CSRF를 다시 받습니다. Next 중계는 설정된 `AUTH_PUBLIC_ORIGIN`과 요청 Origin 일치, 경로·제공자 리다이렉트 허용 목록, 16KiB 본문 한도, 세션 쿠키만 전달, 수동 redirect를 사용합니다. 외부 서비스로 리다이렉트하는 fetch를 자동 추적하지 않습니다. 세션은 HttpOnly·SameSite=Lax·Path=/이고 HTTPS 원점이면 Secure를 강제합니다. 유휴 30분/최대 12시간이며 매 요청마다 DB 상태·역할·auth_version을 확인합니다.
+이메일 가입/로그인·인증/재발급·비밀번호 변경/복구·자체 수단 연결/해제 API와 직접 DELETE me는 제공하지 않습니다. Next 중계는 기존 자체 경로를 404로 차단하고 Spring은 denyAll로 차단합니다(익명 401·인증 회원 403). 탈퇴는 소셜 인증 콜백으로만 수행합니다. V1~V7·기존 local_credential/auth_token 행은 보존하고 V8은 oauth_account 제공자 제약에 google만 추가합니다. 이전 자체 계정은 자동 소셜 연결/로그인하지 않습니다.
 
-자체 이메일은 소문자로 정규화하고 UNIQUE, 소셜은 `(provider,subject)` UNIQUE와 회원별 제공자 UNIQUE입니다. 회원 행 잠금으로 마지막 수단 해제·동시 소비·변경을 직렬화합니다. 이메일/복구 토큰은 32바이트 난수의 SHA-256 해시만 저장하고 메일 fragment에서 POST 본문으로 소비합니다. 비밀번호는 BCrypt 비용 12, 최소 12자/UTF-8 최대 72바이트입니다. 로그인은 이메일 10회/15분·백엔드 접속 주소 50회/15분, 재인증은 회원 10회/15분, 메일은 이메일 3회/시간으로 제한합니다. 중계 환경에서 접속 주소 한도는 중계 서버 공유 한도이며 실제 사용자 IP/WAF 운영 제한은 P15에서 준비합니다.
+변경은 먼저 GET csrf에서 세션 쿠키/토큰을 받고 X-CSRF-TOKEN과 JSON을 보냅니다. Next는 AUTH_PUBLIC_ORIGIN과 요청 Origin 일치·허용 경로/제공자 이동·16KiB·세션 쿠키만 전달·수동 redirect를 검사합니다. 세션은 HttpOnly·SameSite=Lax·Path=/이며 HTTPS에서 Secure, 유휴 30분·최대 12시간입니다. 매 요청 회원 상태/역할/auth_version을 검사합니다. 소셜 시작은 백엔드 접속 주소 50회/15분으로 제한하며 중계 주소 공유 한도이고 실제 사용자 IP/WAF는 P15입니다.
 
-소셜 연결/해제는 기존 수단의 최근 인증과 제공자 인증을 요구합니다. 카카오는 `prompt=login`, 네이버는 `auth_type=reauthenticate`를 보내고 네이버 코드 교환에는 state도 전달합니다. 제공자 ID만 사용하고 이메일로 합치지 않습니다. 제공자 access/refresh token은 DB/세션에 보관하지 않으며 콜백 요청 안에서만 사용합니다. 해제/탈퇴 때 카카오 unlink·네이버 revoke 성공을 확인한 다음 로컬 수단을 제거합니다. 다른 소셜 연결이 남은 탈퇴는 `OAUTH_DISCONNECT_REQUIRED`입니다. 원격 호출 실패면 로컬 수단은 남지만 원격 성공 뒤 DB 장애는 두 시스템 간 자동 롤백이 불가능하므로 재인증/재시도와 연결 상태 확인이 필요합니다.
+소셜 수단은 (provider,subject)·회원별 provider UNIQUE와 회원 행 잠금으로 중복/마지막 수단/동시 변경을 보호합니다. 연결/해제에는 기존 수단의 최근 인증과 제공자 인증을 요구합니다. 카카오는 prompt=login, 네이버는 auth_type=reauthenticate와 토큰 교환 state, 구글은 openid scope·select_account를 사용합니다. 이메일로 합치지 않으며 제공자 access/refresh/ID token은 DB 세션에 보관하지 않습니다. 원격 해제는 카카오 unlink·네이버 revoke·구글 revoke 성공 후 로컬 수단을 제거합니다. 여러 수단이 남은 탈퇴는 OAUTH_DISCONNECT_REQUIRED이며 원격 실패는 로컬 자료를 보존합니다. 원격 성공 뒤 DB 실패는 자동 롤백할 수 없어 재인증/재시도와 연결 상태 확인이 필요합니다.
 
-주요 실패는 400 `INVALID_REQUEST/CONSENT_REQUIRED/INVALID_TOKEN`, 401 인증 실패·세션 만료, 403 정지·권한/CSRF·재인증 필요, 409 중복·마지막 수단·소셜 해제 필요, 429 한도, 503 제공자/메일/정책/DB 준비 실패입니다. OAuth 실패는 원문 없는 `/account#error`로 돌아옵니다. 최초 ADMIN은 공개 가입으로 만들지 않습니다. 운영자 확인 뒤 해당 UUID의 role을 DB에서 ADMIN으로 지정하고 auth_version을 증가시키는 관리 절차를 사용하며 운영자 자동 생성·기본 비밀번호는 없습니다.
+주요 실패는 400 입력/동의, 401 인증/세션, 403 정지/권한/CSRF/최근 인증, 409 중복/마지막 수단/소셜 해제 필요, 429 한도, 503 제공자/정책/DB입니다. OAuth는 원문 없는 /login#error로 돌아옵니다. 최초 ADMIN은 운영자 확인 후 UUID의 role과 auth_version을 DB에서 변경하며 자동 관리자/기본 비밀번호는 없습니다.
 
 ### 외부 설정과 공식 조건
 
-2026-10-11 공식 문서 확인. 실제 계정 생성·앱 설정·심사 신청·SMTP 발송은 수행하지 않았습니다. 작업 폴더 `.env`의 빈 양식에 필요한 값을 준비한 뒤 README의 서버 실행 절차를 사용합니다. 홈 `.nadeulirang/.env`는 인증 설정 보관 대상으로 확장하지 않습니다.
+카카오/네이버 공식 조건은 2026-10-11, 구글은 2026-10-13 확인했습니다. 실제 앱 생성·키 등록·심사·실제 제공자 로그인/해제는 미실행입니다. 작업 폴더 .env 양식과 루트 실행 절차를 사용하고 홈 .nadeulirang/.env는 수정하지 않습니다. SMTP·메일 환경은 사용하지 않습니다.
 
-| 대상 | 필요한 설정·확인 | 코드와 실제 상태 |
+| 대상 | 필요한 설정·확인 | 현재 상태 |
 |---|---|---|
-| 공통 | 양쪽 `AUTH_PUBLIC_ORIGIN` 일치, 실제 정책 검토 후 `AUTH_TERMS_VERSION/AUTH_PRIVACY_VERSION`, HTTPS 쿠키 | 설정 검증·버전 동의 구현; 운영 정책 미확정·미설정 가입 차단 |
-| 카카오 | 앱 등록·카카오 로그인 활성화·REST API client ID/secret, 정확한 `/api/auth/login/oauth2/code/kakao` Redirect URI. 불필요한 프로필/이메일 동의는 요청하지 않음 | OAuth 코드·프로필·연결/해제 구현; 실제 계정 연동 미실행 |
-| 네이버 | 앱·웹 서비스/Callback URL·client ID/secret·테스터 등록, 공개 전 사전 검수 | 코드 교환/프로필/재인증/revoke 구현; 실제 테스터 연동·검수 미실행 |
-| 메일 | SMTP host/port/username/password·발신 주소, 도메인 인증·TLS·도달/반송 확인 | Spring Mail 구현·대체 메일 회귀; 실제 SMTP 발송/도달 미실행 |
+| 공통 | 양쪽 AUTH_PUBLIC_ORIGIN 일치, 실제 정책 검토 후 AUTH_TERMS_VERSION/AUTH_PRIVACY_VERSION·HTTPS 쿠키 | 운영 정책 미확정, 미설정 신규 가입 차단 |
+| 카카오 | KAKAO_CLIENT_ID/SECRET·로그인 활성화·정확한 /api/auth/login/oauth2/code/kakao Redirect URI | 코드/대체 제공자 검증, 실연동 미실행 |
+| 네이버 | NAVER_CLIENT_ID/SECRET·Callback URL·테스터·공개 전 검수 | 코드/state 검증, 실제 테스터/검수 미실행 |
+| 구글 | GOOGLE_CLIENT_ID/SECRET·웹 OAuth 클라이언트·정확한 /api/auth/login/oauth2/code/google Redirect URI·동의 화면/테스트 사용자 설정 | openid만 요청, 코드/대체 OIDC 검증과 실연동 구분 |
 
-[카카오 설정](https://developers.kakao.com/docs/ko/kakaologin/prerequisite)·[REST 명세](https://developers.kakao.com/docs/ko/kakaologin/rest-api)는 앱/리다이렉트와 사용자 동의·연결 해제를 안내합니다. [네이버 사전 검수](https://developers.naver.com/docs/login/verify/verify.md)는 공개 전 검수를 요구하고 미검수 앱은 등록자·관리자·테스터만 이용합니다. 소셜 가입 시 별도 서비스 비밀번호를 요구하면 반려되고, 선택한 추가 프로필 정보에는 활용 근거가 필요합니다. 신청 결과 안내는 통상 2~3영업일이며 실제 승인 일정/결과를 보장하지 않습니다. 네이버의 [현재 API](https://developers.naver.com/docs/login/api/api.md)·[개발 안내](https://developers.naver.com/docs/login/devguide/devguide.md)는 revoke 200 빈 본문으로 연결 해제, 서비스 밖 네이버 계정 로그아웃 미지원과 state/재인증을 설명합니다.
+[카카오 설정](https://developers.kakao.com/docs/ko/kakaologin/prerequisite)·[REST 명세](https://developers.kakao.com/docs/ko/kakaologin/rest-api), [네이버 검수](https://developers.naver.com/docs/login/verify/verify.md)·[API](https://developers.naver.com/docs/login/api/api.md), [구글 서버 OAuth](https://developers.google.com/identity/protocols/oauth2/web-server)·[OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect)를 따릅니다. 구글의 이메일/profile 권한은 요청하지 않고 검증한 sub로 회원을 식별합니다.
 
-메일 후보로 SES SMTP를 사용할 수 있으나 운영 서비스 선택은 미확정입니다. [공식 요금](https://aws.amazon.com/ses/pricing/)의 기본 발송 단가는 US$0.10/1,000통·첨부 데이터 US$0.12/GB이며 추가 기능·세금·환율은 별도입니다. [발송 한도](https://docs.aws.amazon.com/ses/latest/dg/manage-sending-quotas.html)는 리전별이고 샌드박스는 24시간 200통·초당 1통입니다. [샌드박스 해제](https://docs.aws.amazon.com/ses/latest/dg/request-production-access.html) 전에는 인증한 수신자/도메인 또는 메일 시뮬레이터로 제한됩니다. SMTP 인증과 발신 도메인 확인·샌드박스 해제·반송/불만 처리는 실제 계정에서 확인해야 합니다. 비용이나 무료 혜택을 실제 계정 조건으로 확정하지 않습니다.
-
-인증 회귀는 실제 PostgreSQL의 실행별 UUID 스키마와 대체 메일/로컬 OAuth 제공자로 수행합니다. 실제 제공자의 코드 교환·동의·해제·메일 도달을 완료했다고 해석하지 않습니다. Spring 보안 근거는 [CSRF](https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html)·[세션](https://docs.spring.io/spring-security/reference/servlet/authentication/session-management.html)·[JDBC 세션](https://docs.spring.io/spring-session/reference/configuration/jdbc.html)을 따릅니다.
+인증 회귀는 실제 PostgreSQL의 UUID 격리 스키마와 대체 OAuth/OIDC 서버로 수행하며 실제 제공자 연동을 완료했다고 간주하지 않습니다. Spring 보안 근거는 [CSRF](https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html)·[세션](https://docs.spring.io/spring-security/reference/servlet/authentication/session-management.html)·[JDBC 세션](https://docs.spring.io/spring-session/reference/configuration/jdbc.html)입니다.
 
 ## 목록·상세 조회 API
 

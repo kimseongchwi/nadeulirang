@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 @org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication(type = org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type.SERVLET)
 class SecurityConfiguration {
     @Bean org.springframework.security.core.userdetails.UserDetailsService noDefaultUser() {
-        return username -> { throw new org.springframework.security.core.userdetails.UsernameNotFoundException("자체 인증 API를 사용하세요."); };
+        return username -> { throw new org.springframework.security.core.userdetails.UsernameNotFoundException("소셜 로그인을 사용하세요."); };
     }
     @Bean DefaultCookieSerializer sessionCookie(@Value("${auth.secure-cookie:false}") boolean secure,
                                                @Value("${auth.public-origin:http://localhost:3000}") String origin) {
@@ -37,6 +37,8 @@ class SecurityConfiguration {
         var factory = new org.springframework.http.client.JdkClientHttpRequestFactory(java.net.http.HttpClient.newBuilder().connectTimeout(java.time.Duration.ofSeconds(5)).build());
         factory.setReadTimeout(java.time.Duration.ofSeconds(10));
         users.setRestOperations(new org.springframework.web.client.RestTemplate(factory));
+        var oidcUsers = new org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService();
+        oidcUsers.setOauth2UserService(users);
         var tokens = new org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient();
         tokens.setRestClient(org.springframework.web.client.RestClient.builder().requestFactory(factory)
             .messageConverters(converters -> {
@@ -54,7 +56,9 @@ class SecurityConfiguration {
             .formLogin(form -> form.disable()).httpBasic(basic -> basic.disable()).logout(logout -> logout.disable())
             .csrf(csrf -> csrf.csrfTokenRepository(sessions.csrf).csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/csrf", "/api/auth/options", "/api/auth/register", "/api/auth/login", "/api/auth/email/resend", "/api/auth/password/reset-request", "/api/auth/token/consume", "/api/auth/oauth/*/start", "/api/auth/oauth2/**", "/api/auth/login/oauth2/**", "/api/auth/logout").permitAll()
+                .requestMatchers("/api/auth/csrf", "/api/auth/options", "/api/auth/oauth/*/start", "/api/auth/oauth2/**", "/api/auth/login/oauth2/**", "/api/auth/logout").permitAll()
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/email/**", "/api/auth/password/**", "/api/auth/token/**", "/api/auth/reauthenticate", "/api/auth/local/**", "/api/auth/methods/**").denyAll()
+                .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/auth/me").denyAll()
                 .requestMatchers("/api/auth/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/auth/**").authenticated()
                 .anyRequest().permitAll())
@@ -66,9 +70,9 @@ class SecurityConfiguration {
                 .tokenEndpoint(endpoint -> endpoint.accessTokenResponseClient(tokens))
                 .authorizationEndpoint(endpoint -> endpoint.authorizationRequestResolver(resolver))
                 .redirectionEndpoint(endpoint -> endpoint.baseUri("/api/auth/login/oauth2/code/*"))
-                .userInfoEndpoint(endpoint -> endpoint.userService(request -> OAuthConfiguration.identity(request.getClientRegistration().getRegistrationId(), users.loadUser(request).getAttributes())))
+                .userInfoEndpoint(endpoint -> endpoint.oidcUserService(oidcUsers).userService(request -> OAuthConfiguration.identity(request.getClientRegistration().getRegistrationId(), users.loadUser(request).getAttributes())))
                 .successHandler((req, res, auth) -> OAuthConfiguration.complete(service, sessions, req, res, auth))
-                .failureHandler((req, res, failure) -> { sessions.logout(req); OAuthConfiguration.redirect(res, "/account#error"); }))
+                .failureHandler((req, res, failure) -> { sessions.logout(req); OAuthConfiguration.redirect(res, "/login#error"); }))
             .addFilterBefore(new MemberSessionFilter(service, sessions), AuthorizationFilter.class);
         return http.build();
     }

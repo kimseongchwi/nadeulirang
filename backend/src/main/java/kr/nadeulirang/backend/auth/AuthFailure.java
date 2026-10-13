@@ -11,5 +11,4 @@ final class AuthFailure extends RuntimeException {
     static AuthFailure invalid() { return new AuthFailure(400, "INVALID_REQUEST", "입력값을 확인하세요."); }
     static AuthFailure denied() { return new AuthFailure(401, "AUTHENTICATION_FAILED", "인증 정보를 확인하세요."); }
     static AuthFailure conflict() { return new AuthFailure(409, "ACCOUNT_CONFLICT", "이미 사용 중인 로그인 수단입니다."); }
-    static AuthFailure token() { return new AuthFailure(400, "INVALID_TOKEN", "만료되었거나 사용할 수 없는 인증입니다."); }
 }

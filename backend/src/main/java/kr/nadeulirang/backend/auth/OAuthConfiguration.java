@@ -31,10 +31,22 @@ class OAuthConfiguration {
     @Bean
     ClientRegistrationRepository registrations(Environment env) {
         var registrations = new java.util.HashMap<String, ClientRegistration>();
-        for (String provider : List.of("kakao", "naver")) {
+        for (String provider : List.of("kakao", "naver", "google")) {
             String id = env.getProperty("auth.oauth." + provider + ".client-id", "");
             String secret = env.getProperty("auth.oauth." + provider + ".client-secret", "");
             if (id.isBlank() || secret.isBlank()) continue;
+            if (provider.equals("google")) {
+                registrations.put(provider, ClientRegistration.withRegistrationId(provider)
+                    .clientId(id).clientSecret(secret).clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+                    .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE).scope("openid")
+                    .redirectUri(env.getProperty("auth.public-origin", "http://localhost:3000") + "/api/auth/login/oauth2/code/google")
+                    .authorizationUri("https://accounts.google.com/o/oauth2/v2/auth")
+                    .tokenUri("https://oauth2.googleapis.com/token")
+                    .jwkSetUri("https://www.googleapis.com/oauth2/v3/certs").issuerUri("https://accounts.google.com")
+                    .userInfoUri("https://openidconnect.googleapis.com/v1/userinfo").userNameAttributeName("sub")
+                    .clientName(provider).build());
+                continue;
+            }
             boolean kakao = provider.equals("kakao");
             registrations.put(provider, ClientRegistration.withRegistrationId(provider)
                     .clientId(id).clientSecret(secret).clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
@@ -65,7 +77,8 @@ class OAuthConfiguration {
                 return OAuth2AuthorizationRequest.from(authorization).additionalParameters(parameters -> {
                     // 새 수단 인증과 소셜 재인증에서 제공자의 기존 자동 로그인만으로 끝나지 않게 한다.
                     if (provider.equals("kakao")) parameters.put("prompt", "login");
-                    else parameters.put("auth_type", "reauthenticate");
+                    else if (provider.equals("naver")) parameters.put("auth_type", "reauthenticate");
+                    else parameters.put("prompt", "select_account");
                 }).build();
             }
         };
@@ -102,7 +115,7 @@ class OAuthConfiguration {
             if (session == null || !(session.getAttribute("OAUTH_CREATED") instanceof Long created)
                     || created < Instant.now().minusSeconds(300).getEpochSecond()) throw AuthFailure.denied();
             OAuth2User identity = (OAuth2User) authentication.getPrincipal();
-            String provider = identity.getAttribute("provider");
+            String provider = ((org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken) authentication).getAuthorizedClientRegistrationId();
             if (!provider.equals(session.getAttribute("OAUTH_PROVIDER"))) throw AuthFailure.denied();
             String mode = (String) session.getAttribute("OAUTH_MODE");
             String target = (String) session.getAttribute("OAUTH_TARGET");
@@ -119,9 +132,9 @@ class OAuthConfiguration {
                 for (String key : List.of("OAUTH_MODE", "OAUTH_PROVIDER", "OAUTH_CREATED", "OAUTH_TARGET", "OAUTH_VERSION", "OAUTH_TERMS", "OAUTH_PRIVACY")) session.removeAttribute(key);
                 sessions.login(member, request, response);
             }
-            redirect(response, "/account#completed");
+            redirect(response, "/login#completed");
         } catch (RuntimeException failure) {
-            sessions.logout(request); redirect(response, "/account#error");
+            sessions.logout(request); redirect(response, "/login#error");
         }
     }
 
@@ -139,6 +152,11 @@ class OAuthConfiguration {
         if (provider.equals("kakao")) {
             rest.post().uri("https://kapi.kakao.com/v1/user/unlink")
                 .header("Authorization", "Bearer " + client.getAccessToken().getTokenValue()).retrieve().toBodilessEntity();
+        } else if (provider.equals("google")) {
+            var form = new org.springframework.util.LinkedMultiValueMap<String, String>();
+            form.add("token", client.getAccessToken().getTokenValue());
+            rest.post().uri("https://oauth2.googleapis.com/revoke")
+                .contentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED).body(form).retrieve().toBodilessEntity();
         } else {
             var form = new org.springframework.util.LinkedMultiValueMap<String, String>();
             form.add("client_id", client.getClientRegistration().getClientId());
