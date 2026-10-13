@@ -44,7 +44,7 @@ export function StateExamples({ onMessage }: { onMessage: (message: string) => v
               description="다른 지역이나 종류로 찾아볼까요?"
             >
               <button
-                className="button secondary"
+                className="button primary"
                 onClick={() => onMessage("초기화 버튼의 스타일 예시예요.")}
               >
                 초기화

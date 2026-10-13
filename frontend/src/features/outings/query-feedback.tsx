@@ -12,7 +12,7 @@ export function QueryFeedback({ status, message }: { status: number; message: st
       >
         <NavigationLink
           href="/search"
-          className="button secondary"
+          className="button primary"
         >
           초기화
         </NavigationLink>

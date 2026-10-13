@@ -55,7 +55,7 @@ function HomeSection({
         >
           <NavigationLink
             href="/search"
-            className="button secondary"
+            className="button primary"
           >
             전체 검색
           </NavigationLink>

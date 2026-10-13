@@ -186,7 +186,7 @@ export function SearchScreen({
           >
             <NavigationLink
               href={data.total ? pageUrl(1) : "/search"}
-              className="button secondary"
+              className="button primary"
             >
               {data.total ? "첫 페이지" : "초기화"}
             </NavigationLink>

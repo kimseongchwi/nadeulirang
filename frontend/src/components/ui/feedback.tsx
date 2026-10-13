@@ -109,7 +109,7 @@ export function ErrorState({
         <strong className="state-title">나들이를 불러오지 못했어요.</strong>
         <p>잠시 후 다시 시도해 주세요.</p>
         <button
-          className="button secondary"
+          className="button primary"
           onClick={onRetry}
         >
           다시 시도
