@@ -9,7 +9,8 @@ import type { Options } from "./api-types";
 export function HomeFilter({ open, options }: { open: boolean; options: Options }) {
   const { params, closeSheet, replaceSheet } = useNavigation();
   const region = params.get("region") || "";
-  const regionCode = options?.regions.find((r) => r.code === region || r.name === region)?.code || region;
+  const regionCode =
+    options?.regions.find((r) => r.code === region || r.name === region)?.code || region;
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (open) formRef.current?.reset();
@@ -37,9 +38,7 @@ export function HomeFilter({ open, options }: { open: boolean; options: Options 
           if (kind) query.set("kind", kind);
           replaceSheet(`/${query.size ? `?${query}` : ""}`);
           requestAnimationFrame(() =>
-            document
-              .getElementById("homeFilterOpen")
-              ?.focus({ preventScroll: true }),
+            document.getElementById("homeFilterOpen")?.focus({ preventScroll: true }),
           );
         }}
       >
@@ -52,8 +51,17 @@ export function HomeFilter({ open, options }: { open: boolean; options: Options 
               defaultValue={regionCode}
             >
               <option value="">전체 지역</option>
-              {regionCode && !options?.regions.some((r) => r.code === regionCode) && <option value={regionCode}>{region} · 확보한 자료 없음</option>}
-              {options?.regions.map((r) => <option key={r.code} value={r.code}>{r.name}</option>)}
+              {regionCode && !options?.regions.some((r) => r.code === regionCode) && (
+                <option value={regionCode}>{region} · 확보한 자료 없음</option>
+              )}
+              {options?.regions.map((r) => (
+                <option
+                  key={r.code}
+                  value={r.code}
+                >
+                  {r.name}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -65,11 +73,12 @@ export function HomeFilter({ open, options }: { open: boolean; options: Options 
             >
               <option value="">전체 종류</option>
               {Object.entries(kindNames).map(([value, label]) => (
-                <option key={value} value={value}>
+                <option
+                  key={value}
+                  value={value}
+                >
                   {label}
-                  {options?.kinds.some((item) => item.code === value)
-                    ? ""
-                    : " · 자료 확보 중"}
+                  {options?.kinds.some((item) => item.code === value) ? "" : " · 자료 확보 중"}
                 </option>
               ))}
             </select>
@@ -81,18 +90,24 @@ export function HomeFilter({ open, options }: { open: boolean; options: Options 
             className="text-button"
             onClick={() => {
               if (formRef.current) {
-                for (const select of formRef.current.querySelectorAll("select"))
-                  select.value = "";
+                for (const select of formRef.current.querySelectorAll("select")) select.value = "";
               }
             }}
           >
             초기화
           </button>
           <div className="row">
-            <button type="button" className="text-button" onClick={closeSheet}>
+            <button
+              type="button"
+              className="text-button"
+              onClick={closeSheet}
+            >
               취소
             </button>
-            <button className="button primary" type="submit">
+            <button
+              className="button primary"
+              type="submit"
+            >
               적용
             </button>
           </div>

@@ -8,17 +8,31 @@ export const kindNames: Readonly<Record<string, string>> = {
   CULTURAL_SITE: "문화관광지",
 };
 export type Outing = {
-  id: string; name: string; kind: string; region_name: string; district_name: string | null;
-  event_start: string | null; event_end: string | null; lifecycle: string;
-  fee_status: string; apiPeriod?: string;
+  id: string;
+  name: string;
+  kind: string;
+  region_name: string;
+  district_name: string | null;
+  event_start: string | null;
+  event_end: string | null;
+  lifecycle: string;
+  fee_status: string;
+  apiPeriod?: string;
   photo?: Photo | null;
 };
 export function outingSummary(item: Summary): Outing {
   return {
-    id: item.id, name: item.name, kind: item.kind, region_name: item.regionName,
-    district_name: item.districtName, event_start: item.eventStart, event_end: item.eventEnd,
-    lifecycle: item.period, fee_status: item.feeStatus,
-    apiPeriod: item.period, photo: item.photo,
+    id: item.id,
+    name: item.name,
+    kind: item.kind,
+    region_name: item.regionName,
+    district_name: item.districtName,
+    event_start: item.eventStart,
+    event_end: item.eventEnd,
+    lifecycle: item.period,
+    fee_status: item.feeStatus,
+    apiPeriod: item.period,
+    photo: item.photo,
   };
 }
 export function regionLabel(region: string, district: string | null) {
@@ -44,16 +58,11 @@ export function addDays(value: string, days: number) {
 export function validDate(value: string, today: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value < today) return false;
   const date = new Date(`${value}T12:00:00Z`);
-  return (
-    Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value
-  );
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 export function ongoing(item: Outing, today: string) {
   return (
-    !!item.event_start &&
-    !!item.event_end &&
-    item.event_start <= today &&
-    item.event_end >= today
+    !!item.event_start && !!item.event_end && item.event_start <= today && item.event_end >= today
   );
 }
 export function upcoming(item: Outing, today: string, days: number) {
@@ -65,11 +74,7 @@ export function upcoming(item: Outing, today: string, days: number) {
   );
 }
 export function permanent(item: Outing) {
-  return (
-    ["MUSEUM", "CULTURAL_SITE"].includes(item.kind) &&
-    !item.event_start &&
-    !item.event_end
-  );
+  return ["MUSEUM", "CULTURAL_SITE"].includes(item.kind) && !item.event_start && !item.event_end;
 }
 export function period(item: Outing) {
   return item.event_start && item.event_end

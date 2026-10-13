@@ -9,18 +9,43 @@ const shapes = {
   ),
   search: (
     <>
-      <circle cx="10.5" cy="10.5" r="7" />
+      <circle
+        cx="10.5"
+        cy="10.5"
+        r="7"
+      />
       <path d="m16 16 5 5" />
     </>
   ),
-  user: <><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" /></>,
+  user: (
+    <>
+      <circle
+        cx="12"
+        cy="8"
+        r="4"
+      />
+      <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
+    </>
+  ),
   menu: <path d="M4 6h16M4 12h16M4 18h16" />,
   filter: (
     <>
       <path d="M3 6h6m4 0h8M3 12h12m4 0h2M3 18h2m4 0h12" />
-      <circle cx="11" cy="6" r="2" />
-      <circle cx="17" cy="12" r="2" />
-      <circle cx="7" cy="18" r="2" />
+      <circle
+        cx="11"
+        cy="6"
+        r="2"
+      />
+      <circle
+        cx="17"
+        cy="12"
+        r="2"
+      />
+      <circle
+        cx="7"
+        cy="18"
+        r="2"
+      />
     </>
   ),
   back: <path d="m15 6-6 6 6 6" />,
@@ -29,16 +54,40 @@ const shapes = {
   close: <path d="m6 6 12 12M18 6 6 18" />,
   calendar: (
     <>
-      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <rect
+        x="3"
+        y="5"
+        width="18"
+        height="16"
+        rx="2"
+      />
       <path d="M16 3v4M8 3v4M3 11h18" />
     </>
   ),
   check: <path d="m5 12 4 4 10-10" />,
   bookmark: <path d="M6 3h12v18l-6-4-6 4Z" />,
   spark: <path d="m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" />,
-  pin: <><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></>,
-  landmark: <><path d="m3 8 9-5 9 5H3ZM5 10v8m5-8v8m4-8v8m5-8v8M3 21h18" /></>,
-  ticket: <><path d="M3 6h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4V6Z" /><path d="M15 6v3m0 3v2m0 3v1" /></>,
+  pin: (
+    <>
+      <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" />
+      <circle
+        cx="12"
+        cy="10"
+        r="2.5"
+      />
+    </>
+  ),
+  landmark: (
+    <>
+      <path d="m3 8 9-5 9 5H3ZM5 10v8m5-8v8m4-8v8m5-8v8M3 21h18" />
+    </>
+  ),
+  ticket: (
+    <>
+      <path d="M3 6h18v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4V6Z" />
+      <path d="M15 6v3m0 3v2m0 3v1" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 export type IconName = keyof typeof shapes;
 export function Icon({ name }: { name: IconName }) {

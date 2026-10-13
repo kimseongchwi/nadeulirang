@@ -36,15 +36,10 @@ export function Dialog({
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog || !open) return;
-    const origin =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
+    const origin = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     function position() {
       if (!dialog || dialog.dataset.dragging) return;
-      const service = document
-        .querySelector(".service")
-        ?.getBoundingClientRect();
+      const service = document.querySelector(".service")?.getBoundingClientRect();
       const guide = !!document.querySelector(".service-root.guide-mode");
       const left = guide ? 0 : Math.max(0, service?.left || 0);
       const right = guide
@@ -155,9 +150,21 @@ export function Dialog({
         }
       }}
     >
-      {sheet && open && <SheetHandle dialogRef={dialogRef} boundsRef={boundsRef} onClose={onClose} title={title} />}
+      {sheet && open && (
+        <SheetHandle
+          dialogRef={dialogRef}
+          boundsRef={boundsRef}
+          onClose={onClose}
+          title={title}
+        />
+      )}
       <div className={sheet ? "policy-sheet-head" : "dialog-head"}>
-        <h2 id={`${id}Title`} className="dialog-title">{title}</h2>
+        <h2
+          id={`${id}Title`}
+          className="dialog-title"
+        >
+          {title}
+        </h2>
         <button
           type="button"
           className="icon-button"

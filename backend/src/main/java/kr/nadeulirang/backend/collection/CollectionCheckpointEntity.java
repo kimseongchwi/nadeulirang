@@ -46,7 +46,7 @@ class CollectionCheckpointEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
-    protected CollectionCheckpointEntity() { }
+    protected CollectionCheckpointEntity() {}
 
     CollectionCheckpointStore.Cursor cursor() {
         return new CollectionCheckpointStore.Cursor(page, row, call, completed);

@@ -42,6 +42,18 @@ P30의 [소셜 로그인](http://localhost:3000/login)는 동일 출처 `/api/au
 
 ## 필수 검증
 
+### 코드 포맷
+
+프론트는 Prettier(100열·JSX 속성별 줄바꿈), Java는 Spotless의 Google Java Format AOSP(4칸)를 사용합니다. 포맷 변경은 로직 변경과 별도 커밋으로 묶습니다. 대상은 frontend/src의 TS·TSX·CSS와 backend/src의 Java뿐이며 문서·Flyway·원문/표본·공식 리소스는 제외합니다.
+
+~~~powershell
+npm --prefix frontend run format        # 적용, 검사만 할 때 format:check
+. ./scripts/use-local-env.ps1
+$env:MAVEN_USER_HOME = Join-Path $PWD '.local/maven'
+./backend/mvnw.cmd -B -ntp -f backend/pom.xml "-Dmaven.repo.local=$PWD/.local/maven/repository" spotless:apply
+# Java 검사만 할 때 spotless:check
+~~~
+
 DB를 시작한 뒤 루트에서 실행합니다. 프론트만 변경했으면 프론트 검사만 수행합니다.
 
 ~~~powershell

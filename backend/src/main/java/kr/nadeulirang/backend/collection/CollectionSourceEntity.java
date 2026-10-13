@@ -23,10 +23,21 @@ class CollectionSourceEntity {
     @Column(name = "last_started_at")
     private Instant lastStartedAt;
 
-    protected CollectionSourceEntity() { }
+    protected CollectionSourceEntity() {}
 
-    boolean blocked() { return blockedReason != null; }
-    Instant lastStartedAt() { return lastStartedAt; }
-    void started(Instant now) { lastStartedAt = now; }
-    void block(String reason) { blockedReason = reason; }
+    boolean blocked() {
+        return blockedReason != null;
+    }
+
+    Instant lastStartedAt() {
+        return lastStartedAt;
+    }
+
+    void started(Instant now) {
+        lastStartedAt = now;
+    }
+
+    void block(String reason) {
+        blockedReason = reason;
+    }
 }

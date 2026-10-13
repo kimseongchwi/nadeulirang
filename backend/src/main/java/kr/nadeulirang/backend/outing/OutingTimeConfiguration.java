@@ -7,5 +7,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OutingTimeConfiguration {
     @Bean
-    public Clock outingClock() { return Clock.systemUTC(); }
+    public Clock outingClock() {
+        return Clock.systemUTC();
+    }
 }

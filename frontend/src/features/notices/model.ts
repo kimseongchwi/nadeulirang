@@ -20,8 +20,8 @@ export const notices: readonly Notice[] = [
 ];
 
 export function latestNotices(items: readonly Notice[] = notices): Notice[] {
-  return [...items].sort((left, right) =>
-    right.publishedOn.localeCompare(left.publishedOn) || right.id - left.id,
+  return [...items].sort(
+    (left, right) => right.publishedOn.localeCompare(left.publishedOn) || right.id - left.id,
   );
 }
 

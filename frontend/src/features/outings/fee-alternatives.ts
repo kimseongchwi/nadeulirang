@@ -1,7 +1,14 @@
 import type { Detail, Evidence } from "./api-types";
 import { feeParts } from "./fee-presentation.ts";
 
-const admissionFields = new Set(["usefee", "usetimefestival", "adultChrge", "yngbgsChrge", "childChrge", "admissionAdult"]);
+const admissionFields = new Set([
+  "usefee",
+  "usetimefestival",
+  "adultChrge",
+  "yngbgsChrge",
+  "childChrge",
+  "admissionAdult",
+]);
 export function feeAlternatives(data: Detail): Evidence[][] {
   if (!data.item.feeConflict) return [];
   const groups = new Map<string, Evidence[]>();
@@ -15,19 +22,33 @@ export function feeAlternatives(data: Detail): Evidence[][] {
     if (!admissionFields.has(entry.field) || !entry.value?.trim()) continue;
     const key = `${entry.source}:${entry.sourceKey}`;
     const values = groups.get(key) || [];
-    if (!values.some((previous) => previous.field === entry.field)) values.push({ ...entry, value: entry.value });
+    if (!values.some((previous) => previous.field === entry.field))
+      values.push({ ...entry, value: entry.value });
     groups.set(key, values);
   }
   return groups.size > 1 ? [...groups.values()] : [];
 }
 
 export function feeDisplayGroups(alternatives: Evidence[][], discount: Evidence[]) {
-  const allFree = (values: Evidence[]) => new Set(values.map((entry) => entry.field)).size === 3 && values.length === 3 && values.every((entry) =>
-    ["adultChrge", "childChrge", "yngbgsChrge"].includes(entry.field) && /^0(?:원)?$/.test(entry.value.trim()));
-  const detailed = (values: Evidence[]) => values.flatMap(feeParts).filter((part) => part.kind === "pair" && /^\d[\d,]*원$/.test(part.price)).length >= 3;
+  const allFree = (values: Evidence[]) =>
+    new Set(values.map((entry) => entry.field)).size === 3 &&
+    values.length === 3 &&
+    values.every(
+      (entry) =>
+        ["adultChrge", "childChrge", "yngbgsChrge"].includes(entry.field) &&
+        /^0(?:원)?$/.test(entry.value.trim()),
+    );
+  const detailed = (values: Evidence[]) =>
+    values
+      .flatMap(feeParts)
+      .filter((part) => part.kind === "pair" && /^\d[\d,]*원$/.test(part.price)).length >= 3;
   // 사용자 요청으로 상세 요금표만 표시한다. 별도 무료 자료는 DB/API에 남기며 조건부 무료로 해석하지 않는다.
-  if (alternatives.length === 2 && alternatives.some(allFree) && alternatives.some(detailed)
-    && discount.some((entry) => /무료\s*입장/.test(entry.value)))
+  if (
+    alternatives.length === 2 &&
+    alternatives.some(allFree) &&
+    alternatives.some(detailed) &&
+    discount.some((entry) => /무료\s*입장/.test(entry.value))
+  )
     return alternatives.filter((values) => !allFree(values));
   return alternatives;
 }

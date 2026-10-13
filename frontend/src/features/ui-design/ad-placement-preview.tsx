@@ -13,15 +13,30 @@ export function AdPlacementPreview({ result }: { result: ApiResult<Page> }) {
   const items = result.data.items.map(outingSummary);
   if (!items.length) return <EmptyState title="미리 볼 나들이가 아직 없어요." />;
   return (
-    <div className="guide-ad-frame" role="region" aria-label="광고 위치가 포함된 실제 목록 미리보기" tabIndex={0}>
-      <p className="guide-ad-count">전체 {result.data.total}곳 · 첫 페이지 {items.length}곳</p>
+    <div
+      className="guide-ad-frame"
+      role="region"
+      aria-label="광고 위치가 포함된 실제 목록 미리보기"
+      tabIndex={0}
+    >
+      <p className="guide-ad-count">
+        전체 {result.data.total}곳 · 첫 페이지 {items.length}곳
+      </p>
       <ol className="guide-ad-list">
         {items.map((item, index) => (
           <Fragment key={item.id}>
-            <li><OutingCard item={item} previewId={`ad-placement-${item.id}`} /></li>
+            <li>
+              <OutingCard
+                item={item}
+                previewId={`ad-placement-${item.id}`}
+              />
+            </li>
             {(index === 5 || index === 13) && index + 1 < items.length && (
               <li>
-                <aside className="guide-ad-placeholder" aria-label="광고 위치 미리보기">
+                <aside
+                  className="guide-ad-placeholder"
+                  aria-label="광고 위치 미리보기"
+                >
                   <span>광고</span>
                   <strong>광고 영역</strong>
                   <p>실제 광고가 표시될 자리</p>

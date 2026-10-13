@@ -16,24 +16,45 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const guide = pathname === "/ui-design";
   const style: DialogStyle = {};
-  for (const [key, value] of Object.entries(brandPalette))
-    style[`--${key}`] = value;
-  const myPageArea = pathname === "/mypage" || pathname === "/settings" || pathname === "/faq" || pathname === "/notices" || pathname.startsWith("/notices/") || pathname.startsWith("/policy/");
-  const navigation = [[homeUrl, "home", "홈"], ["/mypage", "user", "내정보"]] as const;
+  for (const [key, value] of Object.entries(brandPalette)) style[`--${key}`] = value;
+  const myPageArea =
+    pathname === "/mypage" ||
+    pathname === "/settings" ||
+    pathname === "/faq" ||
+    pathname === "/notices" ||
+    pathname.startsWith("/notices/") ||
+    pathname.startsWith("/policy/");
+  const navigation = [
+    [homeUrl, "home", "홈"],
+    ["/mypage", "user", "내정보"],
+  ] as const;
   return (
     <div
       className={`service-root${guide ? " guide-mode" : ""}`}
       style={style}
     >
       <GuideDevTools guide={guide} />
-      <a href="#main" className="skip">
+      <a
+        href="#main"
+        className="skip"
+      >
         본문 바로가기
       </a>
       <div className="shell">
         {!guide && (
-          <aside className="pc-intro" aria-label="나들이랑 소개">
-            <NavigationLink href={homeUrl} className="brand">
-              <span className="wordmark" role="img" aria-label="나들이랑" />
+          <aside
+            className="pc-intro"
+            aria-label="나들이랑 소개"
+          >
+            <NavigationLink
+              href={homeUrl}
+              className="brand"
+            >
+              <span
+                className="wordmark"
+                role="img"
+                aria-label="나들이랑"
+              />
             </NavigationLink>
             <p className="eyebrow">가까운 하루, 새로운 발견</p>
             <h2>
@@ -43,24 +64,16 @@ export function SiteShell({ children }: { children: ReactNode }) {
             </h2>
             <p className="lead">
               가까운 곳부터 새로운 곳까지,
-              <br />마음이 가는 나들이를 찾아보세요.
+              <br />
+              마음이 가는 나들이를 찾아보세요.
               <br />
               가고 싶은 곳의 정보를 살펴봐요.
             </p>
             <ol className="steps">
               {[
-                [
-                  "가볍게 둘러봐요",
-                  "진행 중이거나 곧 시작하는 나들이를 만나보세요.",
-                ],
-                [
-                  "마음에 드는 곳을 살펴봐요",
-                  "카드로 간단히 보고, 상세에서 더 알아봐요.",
-                ],
-                [
-                  "방문 정보를 한눈에",
-                  "주소·운영 시간·요금 정보를 살펴봐요.",
-                ],
+                ["가볍게 둘러봐요", "진행 중이거나 곧 시작하는 나들이를 만나보세요."],
+                ["마음에 드는 곳을 살펴봐요", "카드로 간단히 보고, 상세에서 더 알아봐요."],
+                ["방문 정보를 한눈에", "주소·운영 시간·요금 정보를 살펴봐요."],
               ].map(([title, text]) => (
                 <li key={title}>
                   <strong>{title}</strong>
@@ -69,7 +82,13 @@ export function SiteShell({ children }: { children: ReactNode }) {
               ))}
             </ol>
             {process.env.NODE_ENV === "development" && (
-              <a href="/ui-design" className="local-guide-link" target="_blank" rel="noopener noreferrer" aria-label="UI 가이드 보기, 새 탭">
+              <a
+                href="/ui-design"
+                className="local-guide-link"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="UI 가이드 보기, 새 탭"
+              >
                 UI 가이드 보기 <Icon name="next" />
               </a>
             )}
@@ -78,35 +97,52 @@ export function SiteShell({ children }: { children: ReactNode }) {
         <div className="service">
           <div className="service-scroll">
             <div className="service-content">
-            {!guide && (
-              <>
-                <header className="service-header">
-                  <NavigationLink href={homeUrl} className="brand">
-                    <span
-                      className="wordmark"
-                      role="img"
-                      aria-label="나들이랑 홈"
-                    />
-                  </NavigationLink>
-                  <div className="header-actions">
+              {!guide && (
+                <>
+                  <header className="service-header">
                     <NavigationLink
-                      href={pathname === "/" ? searchUrl : "/search"}
-                      className="icon-button"
-                      aria-label="검색 페이지 열기"
+                      href={homeUrl}
+                      className="brand"
                     >
-                      <Icon name="search" />
+                      <span
+                        className="wordmark"
+                        role="img"
+                        aria-label="나들이랑 홈"
+                      />
                     </NavigationLink>
-                    <button className="icon-button" onClick={() => setMenuOpen(true)} aria-label="보조 메뉴 열기" aria-haspopup="dialog">
-                      <Icon name="menu" />
-                    </button>
-                    <NavigationLink href="/login" className="button primary login-placeholder">로그인</NavigationLink>
-                  </div>
-                </header>
-              </>
-            )}
-            <main id="main" tabIndex={-1} aria-busy={pending}>
-              {children}
-            </main>
+                    <div className="header-actions">
+                      <NavigationLink
+                        href={pathname === "/" ? searchUrl : "/search"}
+                        className="icon-button"
+                        aria-label="검색 페이지 열기"
+                      >
+                        <Icon name="search" />
+                      </NavigationLink>
+                      <button
+                        className="icon-button"
+                        onClick={() => setMenuOpen(true)}
+                        aria-label="보조 메뉴 열기"
+                        aria-haspopup="dialog"
+                      >
+                        <Icon name="menu" />
+                      </button>
+                      <NavigationLink
+                        href="/login"
+                        className="button primary login-placeholder"
+                      >
+                        로그인
+                      </NavigationLink>
+                    </div>
+                  </header>
+                </>
+              )}
+              <main
+                id="main"
+                tabIndex={-1}
+                aria-busy={pending}
+              >
+                {children}
+              </main>
             </div>
             {!guide && (
               <footer className="service-footer">
@@ -116,15 +152,23 @@ export function SiteShell({ children }: { children: ReactNode }) {
                     className="brand"
                     aria-label="나들이랑 홈으로 이동"
                   >
-                    <span className="wordmark" role="img" aria-label="나들이랑" />
+                    <span
+                      className="wordmark"
+                      role="img"
+                      aria-label="나들이랑"
+                    />
                   </NavigationLink>
                   <p className="footer-tagline">가까운 하루, 새로운 발견</p>
                   <p className="footer-description">
                     마음이 가는 곳을 발견하고,
-                    <br />가고 싶은 곳의 정보를 살펴봐요.
+                    <br />
+                    가고 싶은 곳의 정보를 살펴봐요.
                   </p>
                 </div>
-                <nav className="footer-policy-nav" aria-label="서비스 안내">
+                <nav
+                  className="footer-policy-nav"
+                  aria-label="서비스 안내"
+                >
                   <PolicyLinks variant="footer" />
                 </nav>
                 <div className="footer-meta">
@@ -148,13 +192,22 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 </span>
                 홈
               </NavigationLink>
-              <button type="button" disabled title="북마크 기능 준비 중" aria-label="북마크, 준비 중">
-                <span className="nav-icon"><Icon name="bookmark" /></span>
+              <button
+                type="button"
+                disabled
+                title="북마크 기능 준비 중"
+                aria-label="북마크, 준비 중"
+              >
+                <span className="nav-icon">
+                  <Icon name="bookmark" />
+                </span>
                 북마크
               </button>
               <NavigationLink
                 href="/mypage"
-                aria-current={myPageArea ? pathname === "/mypage" ? "page" : "location" : undefined}
+                aria-current={
+                  myPageArea ? (pathname === "/mypage" ? "page" : "location") : undefined
+                }
               >
                 <span className="nav-icon">
                   <Icon name="user" />
@@ -166,15 +219,35 @@ export function SiteShell({ children }: { children: ReactNode }) {
         </div>
       </div>
       {pending && <NavigationProgress />}
-      <Dialog open={menuOpen} id="menuDialog" title="메뉴" className="menu-dialog" onClose={() => setMenuOpen(false)}>
+      <Dialog
+        open={menuOpen}
+        id="menuDialog"
+        title="메뉴"
+        className="menu-dialog"
+        onClose={() => setMenuOpen(false)}
+      >
         <nav aria-label="전체 메뉴">
-          {navigation.map(([href, name, label]) => <NavigationLink key={name} href={href} onClick={() => setMenuOpen(false)}>
-            <Icon name={name} /><span>{label}</span><span className="menu-chevron"><Icon name="next" /></span>
-          </NavigationLink>)}
+          {navigation.map(([href, name, label]) => (
+            <NavigationLink
+              key={name}
+              href={href}
+              onClick={() => setMenuOpen(false)}
+            >
+              <Icon name={name} />
+              <span>{label}</span>
+              <span className="menu-chevron">
+                <Icon name="next" />
+              </span>
+            </NavigationLink>
+          ))}
         </nav>
       </Dialog>
       {(Object.keys(policyTitles) as PolicyType[]).map((type) => (
-        <PolicySheet key={type} type={type} open={hash === `#policy-${type}`} />
+        <PolicySheet
+          key={type}
+          type={type}
+          open={hash === `#policy-${type}`}
+        />
       ))}
     </div>
   );

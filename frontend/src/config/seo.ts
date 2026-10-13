@@ -6,22 +6,46 @@ type SeoEnvironment = { SITE_URL?: string; SITE_INDEXABLE?: string; NODE_ENV?: s
 export function siteOrigin(environment: SeoEnvironment = process.env): string | undefined {
   try {
     const url = new URL(environment.SITE_URL || "");
-    if (url.protocol !== "https:" || url.username || url.password || url.port ||
-      url.pathname !== "/" || url.search || url.hash || !url.hostname.includes(".") ||
-      url.hostname.endsWith(".") || url.hostname.endsWith(".localhost") || url.hostname.endsWith(".local") ||
-      /^[\d.]+$/.test(url.hostname) || url.hostname.includes(":")) return undefined;
+    if (
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      url.port ||
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash ||
+      !url.hostname.includes(".") ||
+      url.hostname.endsWith(".") ||
+      url.hostname.endsWith(".localhost") ||
+      url.hostname.endsWith(".local") ||
+      /^[\d.]+$/.test(url.hostname) ||
+      url.hostname.includes(":")
+    )
+      return undefined;
     return url.origin;
-  } catch { return undefined; }
+  } catch {
+    return undefined;
+  }
 }
 
 export function isPublicSite(environment: SeoEnvironment = process.env) {
-  return environment.NODE_ENV === "production" && environment.SITE_INDEXABLE === "true" && !!siteOrigin(environment);
+  return (
+    environment.NODE_ENV === "production" &&
+    environment.SITE_INDEXABLE === "true" &&
+    !!siteOrigin(environment)
+  );
 }
 
-export function pageMetadata(path: string | undefined, title: string, description: string, indexable = true): Metadata {
+export function pageMetadata(
+  path: string | undefined,
+  title: string,
+  description: string,
+  indexable = true,
+): Metadata {
   const origin = siteOrigin();
   return {
-    title, description,
+    title,
+    description,
     alternates: { canonical: origin && path ? `${origin}${path}` : null },
     robots: { index: isPublicSite() && indexable, follow: isPublicSite() },
   };

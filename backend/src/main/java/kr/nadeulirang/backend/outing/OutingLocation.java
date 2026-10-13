@@ -3,7 +3,7 @@ package kr.nadeulirang.backend.outing;
 import java.util.HashSet;
 
 final class OutingLocation {
-    private OutingLocation() { }
+    private OutingLocation() {}
 
     static String confirmedDistrict(String region, String[] addresses) {
         if (region == null || addresses == null) return null;

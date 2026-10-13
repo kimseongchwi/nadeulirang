@@ -6,7 +6,13 @@ import { EvidenceList } from "./evidence";
 import { programTextLines } from "./program-text";
 import { Icon } from "@/components/ui/icons";
 
-export function ExpandableDetailText({ values, emphasizeHeadings = false }: { values: Evidence[]; emphasizeHeadings?: boolean }) {
+export function ExpandableDetailText({
+  values,
+  emphasizeHeadings = false,
+}: {
+  values: Evidence[];
+  emphasizeHeadings?: boolean;
+}) {
   const id = useId();
   const body = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState(false);
@@ -21,18 +27,61 @@ export function ExpandableDetailText({ values, emphasizeHeadings = false }: { va
     observer.observe(element);
     return () => observer.disconnect();
   }, [values]);
-  return <>
-    <div id={id} ref={body} className={`detail-text${expanded ? " is-expanded" : ""}`}>
-      {emphasizeHeadings && values.length ? <div className="evidence-list">{values.map((entry, index) =>
-        <div className="evidence-entry" key={`${entry.observationId}-${entry.field}-${index}`}>
-          <p className="evidence-value">{programTextLines(entry.value).map((line, lineIndex) => line.heading
-            ? <span key={lineIndex}><strong className="program-subheading">{line.headingText}</strong>{line.text.slice(line.headingText!.length)}</span>
-            : line.note ? <span className="evidence-note" key={lineIndex}>{line.text}</span> : line.text)}</p>
-        </div>)}
-      </div> : <EvidenceList values={values} showLabels={false} />}
-    </div>
-    {overflows && <button type="button" className="detail-text-toggle" aria-expanded={expanded} aria-controls={id} onClick={() => setExpanded((value) => !value)}>
-      <span>{expanded ? "접기" : "더 보기"}</span><Icon name="down" />
-    </button>}
-  </>;
+  return (
+    <>
+      <div
+        id={id}
+        ref={body}
+        className={`detail-text${expanded ? " is-expanded" : ""}`}
+      >
+        {emphasizeHeadings && values.length ? (
+          <div className="evidence-list">
+            {values.map((entry, index) => (
+              <div
+                className="evidence-entry"
+                key={`${entry.observationId}-${entry.field}-${index}`}
+              >
+                <p className="evidence-value">
+                  {programTextLines(entry.value).map((line, lineIndex) =>
+                    line.heading ? (
+                      <span key={lineIndex}>
+                        <strong className="program-subheading">{line.headingText}</strong>
+                        {line.text.slice(line.headingText!.length)}
+                      </span>
+                    ) : line.note ? (
+                      <span
+                        className="evidence-note"
+                        key={lineIndex}
+                      >
+                        {line.text}
+                      </span>
+                    ) : (
+                      line.text
+                    ),
+                  )}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EvidenceList
+            values={values}
+            showLabels={false}
+          />
+        )}
+      </div>
+      {overflows && (
+        <button
+          type="button"
+          className="detail-text-toggle"
+          aria-expanded={expanded}
+          aria-controls={id}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          <span>{expanded ? "접기" : "더 보기"}</span>
+          <Icon name="down" />
+        </button>
+      )}
+    </>
+  );
 }

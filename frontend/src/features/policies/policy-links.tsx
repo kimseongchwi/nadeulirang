@@ -12,14 +12,26 @@ export function PolicyLinks({
 }) {
   const { openSheet, pathname } = useNavigation();
   const query = useSearchParams();
-  const samplePhoto = pathname === "/ui-design" || pathname === "/policy/about" && query.get("sample") === "clayarch";
+  const samplePhoto =
+    pathname === "/ui-design" ||
+    (pathname === "/policy/about" && query.get("sample") === "clayarch");
   return (
-    <div className={variant === "buttons" ? "row wrap" : variant === "list" ? "support-links settings-links" : "policy-links"}>
+    <div
+      className={
+        variant === "buttons"
+          ? "row wrap"
+          : variant === "list"
+            ? "support-links settings-links"
+            : "policy-links"
+      }
+    >
       {Object.entries(policyTitles).map(([type, title]) => (
         <a
           key={type}
           className={variant === "buttons" ? "button secondary" : undefined}
-          href={type === "about" && samplePhoto ? "/policy/about?sample=clayarch" : `/policy/${type}`}
+          href={
+            type === "about" && samplePhoto ? "/policy/about?sample=clayarch" : `/policy/${type}`
+          }
           onClick={(event) => {
             if (
               event.button !== 0 ||

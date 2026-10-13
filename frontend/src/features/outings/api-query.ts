@@ -2,7 +2,11 @@ import type { Detail, Evidence, Options } from "./api-types";
 import { regionLabel } from "./model.ts";
 
 const kinds = ["FESTIVAL", "EVENT", "EXHIBITION", "MUSEUM", "CULTURAL_SITE"];
-const scopes: Record<string, string> = { ongoing: "ONGOING", upcoming: "UPCOMING", permanent: "PERMANENT" };
+const scopes: Record<string, string> = {
+  ongoing: "ONGOING",
+  upcoming: "UPCOMING",
+  permanent: "PERMANENT",
+};
 export type SearchParameters = Record<string, string | string[] | undefined>;
 export function parameters(input: SearchParameters) {
   const result = new URLSearchParams();
@@ -28,7 +32,11 @@ export function queryParameters(input: URLSearchParams, options: Options | null,
     if (scope && !Object.hasOwn(scopes, scope)) throw new Error("기간 검색 조건을 확인해 주세요.");
     if (scope) result.set("scope", scope);
     const page = input.get("page") || "1";
-    if (!/^[1-9]\d*$/.test(page) || !Number.isSafeInteger(Number(page)) || Number(page) > 2147483647)
+    if (
+      !/^[1-9]\d*$/.test(page) ||
+      !Number.isSafeInteger(Number(page)) ||
+      Number(page) > 2147483647
+    )
       throw new Error("페이지 번호를 확인해 주세요.");
     if (page !== "1") result.set("page", page);
     const sort = input.get("sort") || "";
@@ -59,19 +67,29 @@ export function searchFormQuery(form: URLSearchParams) {
 export function backendQuery(query: URLSearchParams) {
   const result = new URLSearchParams();
   for (const key of ["region", "kind", "page", "sort"]) {
-    const value = query.get(key); if (value) result.set(key, value);
+    const value = query.get(key);
+    if (value) result.set(key, value);
   }
   if (query.get("q")) result.set("keyword", query.get("q")!);
   const scope = query.get("scope");
   if (scope) result.set("period", scopes[scope]);
-  if (scope === "upcoming") { result.set("days", query.get("days") || "14"); if (!result.has("sort")) result.set("sort", "START_DATE"); }
+  if (scope === "upcoming") {
+    result.set("days", query.get("days") || "14");
+    if (!result.has("sort")) result.set("sort", "START_DATE");
+  }
   if (scope === "ongoing" && !result.has("sort")) result.set("sort", "END_DATE");
   if (scope === "permanent" && !result.has("sort")) result.set("sort", "NAME");
   return result;
 }
 export function safeUrl(value: string) {
-  try { const url = new URL(value); return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password ? url.href : null; }
-  catch { return null; }
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password
+      ? url.href
+      : null;
+  } catch {
+    return null;
+  }
 }
 export function previewLocation(data: Detail) {
   return regionLabel(data.item.regionName, data.item.districtName);
@@ -80,12 +98,23 @@ function orderedEvidence(values: Evidence[], fields: readonly string[]) {
   const rows = new Map<string, Evidence[]>();
   for (const entry of values) {
     const row = rows.get(entry.observationId) || [];
-    row.push(entry); rows.set(entry.observationId, row);
+    row.push(entry);
+    rows.set(entry.observationId, row);
   }
-  const rank = (field: string) => { const index = fields.indexOf(field); return index < 0 ? fields.length : index; };
+  const rank = (field: string) => {
+    const index = fields.indexOf(field);
+    return index < 0 ? fields.length : index;
+  };
   return [...rows.values()].flatMap((row) => row.toSorted((a, b) => rank(a.field) - rank(b.field)));
 }
-export function orderedNotes(values: Evidence[]) { return orderedEvidence(values, ["infoname", "infotext"]); }
+export function orderedNotes(values: Evidence[]) {
+  return orderedEvidence(values, ["infoname", "infotext"]);
+}
 export function orderedHours(values: Evidence[]) {
-  return orderedEvidence(values, ["weekdayOperOpenHhmm", "weekdayOperColseHhmm", "holidayOperOpenHhmm", "holidayCloseOpenHhmm"]);
+  return orderedEvidence(values, [
+    "weekdayOperOpenHhmm",
+    "weekdayOperColseHhmm",
+    "holidayOperOpenHhmm",
+    "holidayCloseOpenHhmm",
+  ]);
 }

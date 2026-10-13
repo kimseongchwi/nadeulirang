@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import {
-  kindNames,
-  outingSummary,
-  type Outing,
-} from "@/features/outings/model";
+import { kindNames, outingSummary, type Outing } from "@/features/outings/model";
 import type { Home, Options } from "@/features/outings/api-types";
 import { EmptyState } from "@/components/ui/feedback";
 import { OutingCard } from "@/features/outings/outing-card";
@@ -37,18 +33,30 @@ function HomeSection({
     <section className="outing-section">
       <div className="section-head">
         <h2>{title}</h2>
-        <NavigationLink href={`/search?${search}`} className="more">
+        <NavigationLink
+          href={`/search?${search}`}
+          className="more"
+        >
           더 보기 <Icon name="next" />
         </NavigationLink>
       </div>
       <p className="section-description">{description}</p>
       {items.length ? (
-        items
-          .slice(0, 3)
-          .map((item) => <OutingCard key={item.id} item={item} />)
+        items.slice(0, 3).map((item) => (
+          <OutingCard
+            key={item.id}
+            item={item}
+          />
+        ))
       ) : (
-        <EmptyState title="확인한 항목이 아직 없어요." description={emptyText}>
-          <NavigationLink href="/search" className="button secondary">
+        <EmptyState
+          title="확인한 항목이 아직 없어요."
+          description={emptyText}
+        >
+          <NavigationLink
+            href="/search"
+            className="button secondary"
+          >
             전체 검색
           </NavigationLink>
         </EmptyState>
@@ -56,15 +64,22 @@ function HomeSection({
     </section>
   );
 }
-export function HomeScreen({ data, options, query }: { data: Home; options: Options; query: string }) {
+export function HomeScreen({
+  data,
+  options,
+  query,
+}: {
+  data: Home;
+  options: Options;
+  query: string;
+}) {
   const chipDrag = useRef<{
     pointerId: number;
     startX: number;
     startScroll: number;
     dragged: boolean;
   } | null>(null);
-  const { setHomeQuery, openSheet, hash } =
-    useNavigation();
+  const { setHomeQuery, openSheet, hash } = useNavigation();
   const filters = new URLSearchParams(query);
   const region = filters.get("region") || "";
   const kind = filters.get("kind") || "";
@@ -75,7 +90,10 @@ export function HomeScreen({ data, options, query }: { data: Home; options: Opti
   const regionName = options.regions.find((r) => r.code === region)?.name || region;
   return (
     <div className="outing-home">
-      <HomeFilter open={hash === "#filters"} options={options} />
+      <HomeFilter
+        open={hash === "#filters"}
+        options={options}
+      />
       <div className="hero">
         <span
           className="hero-mark people-mask"
@@ -89,9 +107,16 @@ export function HomeScreen({ data, options, query }: { data: Home; options: Opti
           나들이 갈까요?
         </h1>
         <p>
-          가볍게 떠나고 싶은 날,<br />마음이 가는 곳을 발견해요
+          가볍게 떠나고 싶은 날,
+          <br />
+          마음이 가는 곳을 발견해요
         </p>
-        <NavigationLink className="hero-link" href={query ? `/search?${query}` : "/search"}>나들이 찾아보기 <Icon name="next" /></NavigationLink>
+        <NavigationLink
+          className="hero-link"
+          href={query ? `/search?${query}` : "/search"}
+        >
+          나들이 찾아보기 <Icon name="next" />
+        </NavigationLink>
       </div>
       <div className="home-filter-bar">
         <button
@@ -108,7 +133,10 @@ export function HomeScreen({ data, options, query }: { data: Home; options: Opti
           <Icon name="down" />
         </button>
         {query && (
-          <NavigationLink href="/" className="text-button">
+          <NavigationLink
+            href="/"
+            className="text-button"
+          >
             초기화
           </NavigationLink>
         )}
@@ -144,7 +172,9 @@ export function HomeScreen({ data, options, query }: { data: Home; options: Opti
           if (event.currentTarget.hasPointerCapture(event.pointerId))
             event.currentTarget.releasePointerCapture(event.pointerId);
         }}
-        onPointerCancel={() => { chipDrag.current = null; }}
+        onPointerCancel={() => {
+          chipDrag.current = null;
+        }}
         onPointerLeave={() => {
           if (!chipDrag.current?.dragged) chipDrag.current = null;
         }}
@@ -165,19 +195,33 @@ export function HomeScreen({ data, options, query }: { data: Home; options: Opti
       >
         {[["", "전체"], ...Object.entries(kindNames)].map(([value, label]) => {
           const next = new URLSearchParams(filters);
-          if (value) next.set("kind", value); else next.delete("kind");
-          return <NavigationLink key={value} href={`/${next.size ? `?${next}` : ""}`} draggable={false} aria-current={kind === value ? "true" : undefined}>{label}</NavigationLink>;
+          if (value) next.set("kind", value);
+          else next.delete("kind");
+          return (
+            <NavigationLink
+              key={value}
+              href={`/${next.size ? `?${next}` : ""}`}
+              draggable={false}
+              aria-current={kind === value ? "true" : undefined}
+            >
+              {label}
+            </NavigationLink>
+          );
         })}
       </nav>
-      <p id="kind-scroll-help" className="sr-only">좌우로 밀거나 방향키로 종류 목록을 이동할 수 있어요.</p>
-      {query && (
-        <p className="hint">선택한 조건으로 홈에서 둘러볼 나들이 {data.total}곳</p>
-      )}
+      <p
+        id="kind-scroll-help"
+        className="sr-only"
+      >
+        좌우로 밀거나 방향키로 종류 목록을 이동할 수 있어요.
+      </p>
+      {query && <p className="hint">선택한 조건으로 홈에서 둘러볼 나들이 {data.total}곳</p>}
       <HomeSection
         title="지금 만나는 나들이"
         description="오늘의 즐거움을 발견해보세요"
         items={data.ongoing.map(outingSummary)}
-        query={query} days={days}
+        query={query}
+        days={days}
         scope="ongoing"
         emptyText="확인한 진행 중 기간 행사가 아직 없어요."
       />
@@ -185,7 +229,8 @@ export function HomeScreen({ data, options, query }: { data: Home; options: Opti
         title="곧 시작하는 나들이"
         description={`내일부터 ${days}일 안에 시작해요`}
         items={data.upcoming.map(outingSummary)}
-        query={query} days={days}
+        query={query}
+        days={days}
         scope="upcoming"
         emptyText="이 기간에 시작하는 행사 자료가 아직 없어요."
       />
@@ -193,7 +238,8 @@ export function HomeScreen({ data, options, query }: { data: Home; options: Opti
         title="일상에서 만나는 나들이"
         description="일상에 작은 쉼표를 더해보세요"
         items={data.permanent.map(outingSummary)}
-        query={query} days={days}
+        query={query}
+        days={days}
         scope="permanent"
         emptyText="확인한 상설 시설 자료가 아직 없어요."
       />

@@ -12,12 +12,18 @@ export async function sitemapOutingIds(load: (query: URLSearchParams) => Promise
     const data = result.data;
     total ??= data.total;
     asOfDate ??= data.asOfDate;
-    if (total > 49900 || data.total !== total || data.asOfDate !== asOfDate || data.page !== page ||
-      data.items.length !== Math.min(data.pageSize, Math.max(0, total - (page - 1) * data.pageSize)))
+    if (
+      total > 49900 ||
+      data.total !== total ||
+      data.asOfDate !== asOfDate ||
+      data.page !== page ||
+      data.items.length !== Math.min(data.pageSize, Math.max(0, total - (page - 1) * data.pageSize))
+    )
       throw new Error("사이트맵 목록 변경 또는 한도 초과");
     for (const item of data.items) {
       const id = item.id.toLowerCase();
-      if (!isOutingId(id) || !indexableOuting(item) || ids.has(id)) throw new Error("사이트맵 공개 목록 불일치");
+      if (!isOutingId(id) || !indexableOuting(item) || ids.has(id))
+        throw new Error("사이트맵 공개 목록 불일치");
       ids.add(id);
     }
     if (ids.size === total) return [...ids];
