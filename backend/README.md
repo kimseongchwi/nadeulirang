@@ -37,6 +37,17 @@ JPA는 원천 상태·호출 기록·커서의 단순 저장/조회를 담당합
 
 카카오/네이버 공식 조건은 2026-10-11, 구글은 2026-10-13 확인했습니다. 실제 앱 생성·키 등록·심사·실제 제공자 로그인/해제는 미실행입니다. 작업 폴더 .env 양식과 루트 실행 절차를 사용하고 홈 .nadeulirang/.env는 수정하지 않습니다. SMTP·메일 환경은 사용하지 않습니다.
 
+인증 변수는 로컬 .env에 이름만 추가해 두고 필요한 값만 입력할 수 있습니다. 빈 값은 use-auth-env.ps1이 현재 프로세스에 적용하지 않습니다. 별도로 설정한 프로세스 환경 변수가 없으면 코드 기본값을 사용합니다. 실제 값이 적용되는 시점은 README의 서버 실행 절차로 새 프로세스를 시작할 때입니다. 프론트/백엔드의 로컬 기본 주소는 같으므로 기본 포트에서는 별도 frontend/.env.local 생성이 필요하지 않습니다.
+
+| 변수 | 역할·로컬 필요성 |
+|---|---|
+| AUTH_PUBLIC_ORIGIN | OAuth 콜백과 요청 Origin 검사의 기준 웹 주소. 기본 http://localhost:3000이므로 로컬 기본 포트에서는 생략 가능. 공개 환경은 양쪽 서버에 같은 HTTPS 원점을 명시 |
+| AUTH_SECURE_COOKIE | Secure 쿠키의 추가 강제 옵션. 기본 false이고 HTTPS 원점은 자동으로 Secure를 강제하므로 일반 로컬 HTTP에서는 생략 가능 |
+| AUTH_TERMS_VERSION | 나들이랑 이용약관의 동의 버전. 소셜 최초 가입 시 user_consent에 기록하며 현재 구현은 빈 버전의 신규 가입을 차단 |
+| AUTH_PRIVACY_VERSION | 나들이랑 개인정보 고지의 동의 버전. 제공자 키/제공자 약관 버전과 별개이며 실제 검토한 서비스 문서의 버전을 설정 |
+
+소셜 전용 전환은 DB의 회원/수단 분리 구조를 유지합니다. app_user는 회원, oauth_account는 제공자 연결, user_consent는 버전별 동의, spring_session/attributes는 서버 세션, auth_rate_limit은 현재 소셜 시작 한도입니다. 이전 local_credential과 auth_token은 현재 코드에서 조회/생성하지 않지만 적용된 V7과 기존 자료 보존을 위해 남아 있습니다. 서버 코드를 제거해도 Flyway가 테이블을 자동 삭제하지 않으며, 이번 V8은 구글 제공자 제약만 추가했습니다.
+
 | 대상 | 필요한 설정·확인 | 현재 상태 |
 |---|---|---|
 | 공통 | 양쪽 AUTH_PUBLIC_ORIGIN 일치, 실제 정책 검토 후 AUTH_TERMS_VERSION/AUTH_PRIVACY_VERSION·HTTPS 쿠키 | 운영 정책 미확정, 미설정 신규 가입 차단 |
