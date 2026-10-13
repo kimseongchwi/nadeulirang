@@ -614,6 +614,7 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 ["포커스", "입력 1px 링 · 버튼 2px 외곽선, 2px 간격"],
                 ["레이아웃", "중앙 여백 200px · 안내 320px · PC 서비스 최대 480px"],
                 ["스크롤", "PC는 서비스 본문 안에서 이동 · 모바일은 화면 전체 너비 사용"],
+                ["하단 메뉴·푸터", "하단 메뉴 흰 배경 · 기존 1px 구분선 · 미선택 아이콘 #9EABBC/글자 #68778B · 선택 #13543D/700 · 안내 푸터 #F3F6F2 배경"],
                 [
                   "하단 안전 영역",
                   "76px + safe-area-inset-bottom, 본문 끝 여백",

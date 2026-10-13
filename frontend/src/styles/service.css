@@ -588,7 +588,7 @@ input[aria-invalid="true"] {
   z-index: 5;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  background: #fff;
+  background: var(--surface);
   border-top: 1px solid var(--line);
   height: calc(var(--nav-height) + env(safe-area-inset-bottom));
   padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
@@ -599,7 +599,7 @@ input[aria-invalid="true"] {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--muted);
+  color: #68778b;
   font-size: 12px;
   text-decoration: none;
   border-radius: 8px;
@@ -612,6 +612,7 @@ input[aria-invalid="true"] {
   height: 28px;
   font-size: 22px;
   line-height: 28px;
+  color: #9eabbc;
 }
 .bottom-nav a[aria-current="page"] {
   color: var(--action);
@@ -623,7 +624,7 @@ input[aria-invalid="true"] {
     calc(var(--nav-height) + 32px + env(safe-area-inset-bottom));
   margin-top: 48px;
   border-top: 1px solid var(--line);
-  background: var(--background);
+  background: var(--subtle-background);
 }
 .footer-intro .wordmark {
   width: 120px;
@@ -2570,6 +2571,7 @@ dialog[open]::backdrop { opacity: 1; }
 .detail-checked p { margin: 4px 0; }
 .evidence-options > .evidence-entry + .evidence-entry { margin-top: 20px; }
 .bottom-nav a[aria-current], .future-nav > button[aria-pressed="true"] { color: #13543d; font-weight: 700; }
+.bottom-nav a[aria-current] .nav-icon { color: inherit; }
 .bottom-nav a[aria-current] svg, .future-nav > button[aria-pressed="true"] svg { stroke-width: 2.2; }
 .fee-content { font-weight: 400; }
 .fee-heading, .information-heading { margin: 18px 0 8px; font-size: 14px; font-weight: 600; }
