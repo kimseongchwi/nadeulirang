@@ -5,12 +5,12 @@ Spring Boot·Java 21·Spring Data JPA·Hibernate·PostgreSQL을 사용합니다.
 ## 구조
 
 - collection/: 원천 HTTP 클라이언트·수동 실행기, 호출/원천/커서 JPA 모델과 Repository, 근거·충돌을 조율하는 CollectionStore.
-
-CollectionRunner는 실행 방식을 조율하고 일반 상세/보완의 응답 저장을 공유합니다. CollectionStore의 자료 연결 변경은 양쪽 날짜/요금 요약도 같은 트랜잭션에서 갱신합니다. 원문·연결 이력은 보존하며 호출·커서·행 저장의 트랜잭션을 합치지 않습니다. 개념과 실제 흐름은 [LEARNING](../docs/LEARNING.md#데이터-모델과-수집-코드)을 참고합니다.
 - outing/: 요청 조건·컨트롤러·SQL 조회·응답 record·오류 처리. 엔티티는 외부에 노출하지 않습니다.
 - auth/: 회원·소셜 OAuth2/OIDC·최근 재인증·DB 세션/권한 경계와 동일 출처 중계용 API.
 - resources/db/migration/: Flyway V1~V8. 기존 적용 파일은 수정하지 않습니다. Hibernate ddl-auto=validate·open-in-view=false로 자동 DDL·요청 밖 추가 조회를 막습니다.
 - src/test/: UUID 격리 PostgreSQL의 API·수집·JPA/SQL 공동 트랜잭션 회귀와 순수 정책 테스트.
+
+CollectionRunner는 실행 방식을 조율하고 일반 상세/보완의 응답 저장을 공유합니다. CollectionStore의 자료 연결 변경은 양쪽 날짜/요금 요약도 같은 트랜잭션에서 갱신합니다. 원문·연결 이력은 보존하며 호출·커서·행 저장의 트랜잭션을 합치지 않습니다. 개념과 실제 흐름은 [LEARNING](../docs/LEARNING.md#데이터-모델과-수집-코드)을 참고합니다.
 
 JPA는 원천 상태·호출 기록·커서의 단순 저장/조회를 담당합니다. 커서 최초 생성의 ON CONFLICT, 원문/근거 upsert·최신 선택·충돌과 공개 조회는 SQL을 유지합니다. FK는 ID로 연결해 연쇄 조회·삭제를 추가하지 않습니다. 역할과 어노테이션 설명은 [LEARNING](../docs/LEARNING.md#jpa-저장과-트랜잭션)을 참고합니다. 수집 원천·예산·보존/갱신 기준은 [DATA_SOURCES](../docs/DATA_SOURCES.md#p11-수집-기준)에 있습니다.
 

@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { checkScopes } from "./check-scopes.mjs";
 
 function git(...args) {
   const result = spawnSync("git", args, { encoding: "utf8", maxBuffer: 32 * 1024 * 1024 });
@@ -9,10 +10,6 @@ function git(...args) {
   return result.stdout;
 }
 const splitPaths = (output) => output.split("\0").filter(Boolean);
-const frontendCode = (file) => file.startsWith("frontend/") && !file.endsWith(".md");
-const backendCode = (file) => file.startsWith("backend/") && !file.endsWith(".md");
-const tooling = (file) => !file.endsWith(".md") && /^(scripts\/|tests\/tooling\/|\.githooks\/|package\.json$|\.github\/workflows\/)/.test(file);
-const backendEnvironment = (file) => ["scripts/check-backend.mjs", "scripts/use-local-env.ps1", "scripts/collect-data.ps1", "scripts/local-settings.ps1", "scripts/save-local-settings.ps1"].includes(file);
 
 function runNpm(args) {
   const npmCli = process.env.npm_execpath || [
@@ -29,7 +26,7 @@ try {
   const branch = git("symbolic-ref", "--short", "HEAD").trim();
   if (["main", "master"].includes(branch)) throw new Error("main 직접 커밋을 중단합니다. 작업 브랜치를 만드세요.");
   const before = git("ls-files", "--stage", "-z");
-  const staged = splitPaths(git("diff", "--cached", "--name-only", "-z"));
+  const staged = splitPaths(git("diff", "--cached", "--no-renames", "--name-only", "-z"));
   const addedOrChanged = splitPaths(git("diff", "--cached", "--name-only", "--diff-filter=ACMR", "-z"));
   for (const file of addedOrChanged) {
     const basename = path.posix.basename(file);
@@ -38,13 +35,12 @@ try {
     }
   }
   git("diff", "--cached", "--check");
-  const needsFrontend = staged.some(frontendCode);
-  const needsTooling = staged.some(tooling);
-  const needsBackend = staged.some((file) => backendCode(file) || backendEnvironment(file));
+  const needs = checkScopes(staged);
+  const { frontend: needsFrontend, tooling: needsTooling, backend: needsBackend } = needs;
   const changed = splitPaths(git("diff", "--name-only", "-z"))
     .concat(splitPaths(git("ls-files", "--others", "--exclude-standard", "-z")));
-  const unstaged = changed.filter((file) => (needsFrontend && frontendCode(file)) || (needsTooling && tooling(file))
-    || (needsBackend && (backendCode(file) || backendEnvironment(file))));
+  const unstaged = changed.filter((file) => Object.entries(checkScopes([file]))
+    .some(([scope, enabled]) => enabled && needs[scope]));
   if (unstaged.length) throw new Error(`검사 대상 코드에 미스테이징 변경이 있습니다: ${unstaged.join(", ")}`);
   if (needsTooling) runNpm(["test"]);
   if (needsFrontend) runNpm(["--prefix", "frontend", "run", "check:quick"]);

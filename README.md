@@ -54,13 +54,14 @@ $env:MAVEN_USER_HOME = Join-Path $PWD '.local/maven'
 # Java 검사만 할 때 spotless:check
 ~~~
 
-DB를 시작한 뒤 루트에서 실행합니다. 프론트만 변경했으면 프론트 검사만 수행합니다.
+루트에서 영향받는 영역의 검사를 실행합니다. DB는 백엔드 DB 검사 때만 실행 상태를 확인하고 필요하면 시작합니다.
 
 ~~~powershell
 npm --prefix frontend run check:quick  # lint·Next 경로 생성·strict 타입
 npm --prefix frontend test            # 프론트 로직·응답 계약 회귀
 npm --prefix frontend run build
 npm test                             # 개발 도구 핵심 검증
+npm run check:docs                    # 직접 작성한 문서·로컬 기록의 파일/앵커
 npm run check:backend                 # 실제 PostgreSQL 기반 Maven test
 ~~~
 
@@ -91,12 +92,13 @@ check:backend는 자식 세션에 로컬 환경을 적용하며 DB 자체는 시
 
 | 변경 | 검사 |
 |---|---|
-| 문서 | 코드 검사 생략, 링크·상태 자체 확인 |
-| 프론트 코드/설정 | check:quick |
-| 백엔드 코드/설정·DB 환경/수집 실행 도구 | check:backend |
-| 공통 도구·훅/CI | 루트 npm test |
+| 문서 | 훅의 코드 검사 생략. check:docs와 상태 자체 확인, CI의 문서 검사 |
+| 프론트 코드/설정 | check:quick(포맷·lint·strict) |
+| 백엔드 코드/설정·DB 환경/수집 실행 도구 | check:backend(Java 포맷·DB 테스트) |
+| 일반 도구 | 루트 npm test |
+| 공통 설정·검사 선택 도구·훅/CI | 프론트·백엔드·도구 검사 모두 |
 
-검사 대상 코드에 미스테이징 변경이 있으면 중단합니다. 전체 빌드는 기능 완료·PR 전 또는 [CI](.github/workflows/ci.yml)에서 확인합니다. CI는 코드 경로 변경 시 실행되므로 문서 전용 PR의 검사 생략과 저장소 필수 조건을 대조해야 합니다. 권한·목적별 커밋·리뷰 규칙은 [AGENTS](AGENTS.md)를 따릅니다.
+검사 대상 코드에 미스테이징 변경이 있으면 중단합니다. 삭제·이동은 이전/현재 경로를 함께 검사합니다. 전체 빌드는 기능 완료·PR 전 또는 [CI](.github/workflows/ci.yml)에서 확인합니다. 훅과 CI는 check-scopes.mjs의 같은 규칙을 사용하며 CI는 영향받는 영역의 전체 검사를 실행합니다. 문서만 변경해도 기존 두 검사 이름은 결과를 반환하고, 경로 판정 실패를 성공으로 처리하지 않습니다. 최초 브랜치 push·수동 CI는 전체 검사입니다. 실제 GitHub 실행과 저장소 필수 조건의 최종 대조는 원격 반영 때 확인합니다. 권한·목적별 커밋·리뷰 규칙은 [AGENTS](AGENTS.md)를 따릅니다.
 
 ## 문서 안내
 

@@ -189,4 +189,6 @@ CollectionRunner는 수동 seed·batch·supplement를 조율한다. 커서는 �
 
 프론트 회귀는 URL 조건·런타임 계약·요금/시간·원문/소제목 보존·시트 경계를 확인한다. 서울 자정·윤년은 date-model.test.mjs에서 확인한다. 로컬 도구 테스트는 인증값 비노출·설정 우선순위·커밋 차단을 검증한다. 훅/CI 명령은 README를 따른다.
 
+변경 영역 선택은 검사를 빠뜨리지 않으면서 피드백 시간을 줄이기 위한 것이다. `check-commit.mjs`는 Git 인덱스의 경로를, `check-ci-paths.mjs`는 push/PR의 비교 경로를 `check-scopes.mjs`에 전달한다. 이동을 삭제+추가로 읽어 원래 영역의 검사도 유지한다. 공통 설정/검사 규칙 변경은 모든 영역을 검사하며 문서 전용 CI도 기존 상태 검사 이름을 반환한다. 프론트 빠른 검사와 Maven validate에는 포맷 검사가 포함되고, DB 테스트/빌드는 계속 별도 의미를 갖는다. `check-docs.mjs`는 직접 작성한 문서의 내부 파일/제목 링크를 검사하며 외부 문서의 최신성까지 검증하지는 않는다.
+
 선택 연습: SourceCallRepository.save 뒤 JDBC로 읽는 시점을 커밋 전/후로 비교하거나 빈 요금과 문자열 0의 차이를 CollectionPolicyTests에서 확인한다. 제품 코드를 학습용으로 변경할 필요는 없다.
