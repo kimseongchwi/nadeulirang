@@ -16,6 +16,11 @@ export function programTextLines(value: string): ProgramTextLine[] {
   const lines = value.match(/[^\r\n]*(?:\r\n|\r|\n|$)/g)?.filter(Boolean) ?? [];
   return lines.map((text, index) => {
     if (isSupplementary(text)) return { text, heading: false, note: true };
+    const mainProgram = text.match(/^([ \t]*)(?:-[ \t]*)?(주요[ \t]*프로그램[ \t]*[:：])/);
+    if (mainProgram) {
+      const headingText = mainProgram[1] + mainProgram[2];
+      return { text: headingText + text.slice(mainProgram[0].length), heading: true, headingText };
+    }
     const colon = text.match(/^(\s*(?:(\d{1,2}[.)]\s+))?([^:：\r\n]+?))(\s*[:：])/);
     if (colon && titleLike(colon[3].trim()) && (colon[2] || namedHeading.test(colon[3].trim())))
       return { text, heading: true, headingText: colon[1] };

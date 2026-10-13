@@ -2192,6 +2192,7 @@ body.filter-open {
   gap: 10px;
   border: 0;
   border-radius: 12px;
+  background: transparent;
   text-align: center;
 }
 .state-feedback .state-title {
@@ -2246,15 +2247,6 @@ body.filter-open {
   background: var(--brand);
   opacity: 0.16;
   animation: outing-ground 1.1s ease-in-out infinite;
-}
-.empty.state-feedback {
-  background: var(--background);
-}
-.feedback-error.state-feedback {
-  background: #fbf6ed;
-}
-.loading.state-feedback {
-  background: transparent;
 }
 .guide-board #states {
   grid-column: 1/-1;

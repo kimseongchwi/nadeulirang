@@ -25,7 +25,7 @@ test("번호 콜론·명확한 항목 이름과 대괄호 제목만 강조하고
   for (const [text, expected] of [
     ["1. 메인프로그램 : 설명", "1. 메인프로그램"],
     ["1. 진남관 : 불멸의 빛으로 재현하다", "1. 진남관"],
-    ["주요프로그램 : 드론 비행 상설 공연 / 특별 공연", "주요프로그램"],
+    ["주요프로그램 : 드론 비행 상설 공연 / 특별 공연", "주요프로그램 :"],
     ["부대행사 : 다시 보고 싶은 베스트컷 투표 이벤트 등", "부대행사"],
     ["[이용요금]\n", "[이용요금]"],
     ["1. 상설전시 2026.06.04.~2026.12.31\n", "1. 상설전시"],
@@ -65,4 +65,18 @@ test("전시 날짜·매주 공연 시간은 그대로 두고 번호와 항목 �
     assert.equal(programTextLines(raw).some(line => line.heading), false);
   const incomplete = "3. 공연 매주 수요일 12:10 (조건 미완결";
   assert.equal(programTextLines(incomplete).map(line => line.text).join(""), incomplete);
+});
+
+test("주요 프로그램의 앞 대시만 생략하고 콜론까지 강조하며 일정과 다른 목록 기호는 보존한다", () => {
+  const raw = "- 주요 프로그램 : 상설전시 / 기획전시 / 공연\r\n\r\n1. 상설전시 2026.06.04.~2026.12.31\r\n2. 기획전시 2026.07.15.~2026.12.31.\r\n3. 공연 매주 수요일 12:10\r\n- 탐방로: 입구→공연장\r\n※ 일정은 변경될 수 있습니다.";
+  const lines = programTextLines(raw);
+  assert.equal(lines[0].headingText, "주요 프로그램 :");
+  assert.equal(lines[0].text.slice(lines[0].headingText.length), " 상설전시 / 기획전시 / 공연\r\n");
+  assert.equal(lines.map(line => line.text).join(""), raw.slice(2));
+  assert.deepEqual(lines.filter(line => line.heading).map(line => line.headingText), ["주요 프로그램 :", "1. 상설전시", "2. 기획전시", "3. 공연"]);
+  for (const text of ["- 주요 프로그램 안내", "- 기타 안내 : 공연", "※ 주요 프로그램 : 변경 안내"])
+    assert.equal(programTextLines(text).map(line => line.text).join(""), text);
+  const fullWidth = programTextLines("  - 주요프로그램： 공연\n")[0];
+  assert.equal(fullWidth.headingText, "  주요프로그램：");
+  assert.equal(fullWidth.text, "  주요프로그램： 공연\n");
 });
