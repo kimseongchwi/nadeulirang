@@ -743,16 +743,6 @@ dialog::backdrop {
   gap: 8px;
   margin-top: 24px;
 }
-.menu-dialog nav {
-  display: grid;
-  margin-bottom: 24px;
-}
-.menu-dialog nav a {
-  padding: 12px 0;
-  min-height: 48px;
-  border-bottom: 1px solid var(--line);
-  text-decoration: none;
-}
 .month-nav {
   display: flex;
   align-items: center;
@@ -1249,45 +1239,6 @@ svg {
   border-radius: 0;
   background: transparent;
 }
-.menu-dialog {
-  max-width: 400px;
-  padding: 20px 24px;
-}
-.menu-dialog nav {
-  margin-bottom: 0;
-}
-.menu-dialog nav a {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-height: 56px;
-  padding: 8px 0;
-  color: var(--text);
-  font-size: 15px;
-}
-.menu-dialog nav a > svg {
-  color: var(--action);
-}
-.menu-dialog nav a:hover {
-  color: var(--action);
-}
-.menu-dialog nav a:nth-child(2) {
-  margin-bottom: 12px;
-}
-.menu-dialog nav a:nth-child(3) {
-  border-top: 1px solid var(--line);
-}
-.menu-dialog nav a:last-child {
-  border-bottom: 0;
-}
-.menu-chevron {
-  margin-left: auto;
-  color: var(--muted);
-}
-.menu-chevron svg {
-  width: 18px;
-  height: 18px;
-}
 input,
 select {
   min-height: 48px;
@@ -1656,13 +1607,7 @@ body.policy-open {
   overflow-wrap: anywhere;
 }
 
-/* P24·P26 메뉴 축소와 목록 썸네일 검토안 */
-.menu-dialog nav a:nth-child(2) {
-  margin-bottom: 0;
-}
-.menu-dialog nav a:last-child {
-  border-bottom: 0;
-}
+/* P24·P26 목록 썸네일 검토안 */
 .card-top {
   display: flex;
   align-items: center;

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { brandPalette } from "@/config/brand";
-import { Dialog, type DialogStyle } from "@/components/ui/dialog";
+import type { DialogStyle } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icons";
 import { policyTitles, type PolicyType } from "@/features/policies/model";
 import { NavigationLink, useNavigation } from "@/providers/navigation-provider";
@@ -13,7 +13,6 @@ import { NavigationProgress } from "./navigation-progress";
 
 export function SiteShell({ children }: { children: ReactNode }) {
   const { pathname, homeUrl, searchUrl, hash, pending } = useNavigation();
-  const [menuOpen, setMenuOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const guide = pathname === "/ui-design";
   useEffect(() => {
@@ -57,10 +56,6 @@ export function SiteShell({ children }: { children: ReactNode }) {
     pathname === "/notices" ||
     pathname.startsWith("/notices/") ||
     pathname.startsWith("/policy/");
-  const navigation = [
-    [homeUrl, "home", "홈"],
-    ["/mypage", "user", "내정보"],
-  ] as const;
   return (
     <div
       className={`service-root${guide ? " guide-mode" : ""}`}
@@ -154,14 +149,6 @@ export function SiteShell({ children }: { children: ReactNode }) {
                       >
                         <Icon name="search" />
                       </NavigationLink>
-                      <button
-                        className="icon-button"
-                        onClick={() => setMenuOpen(true)}
-                        aria-label="보조 메뉴 열기"
-                        aria-haspopup="dialog"
-                      >
-                        <Icon name="menu" />
-                      </button>
                       <NavigationLink
                         href="/login"
                         className="button primary login-placeholder"
@@ -255,29 +242,6 @@ export function SiteShell({ children }: { children: ReactNode }) {
         </div>
       </div>
       {pending && <NavigationProgress />}
-      <Dialog
-        open={menuOpen}
-        id="menuDialog"
-        title="메뉴"
-        className="menu-dialog"
-        onClose={() => setMenuOpen(false)}
-      >
-        <nav aria-label="전체 메뉴">
-          {navigation.map(([href, name, label]) => (
-            <NavigationLink
-              key={name}
-              href={href}
-              onClick={() => setMenuOpen(false)}
-            >
-              <Icon name={name} />
-              <span>{label}</span>
-              <span className="menu-chevron">
-                <Icon name="next" />
-              </span>
-            </NavigationLink>
-          ))}
-        </nav>
-      </Dialog>
       {(Object.keys(policyTitles) as PolicyType[]).map((type) => (
         <PolicySheet
           key={type}

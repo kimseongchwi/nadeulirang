@@ -7,7 +7,7 @@ export function StateExamples({ onMessage }: { onMessage: (message: string) => v
     <section id="states">
       <div className="guide-section-head">
         <div>
-          <h2>로딩·빈 결과·오류</h2>
+          <h3>로딩·빈 결과·오류·404</h3>
           <p className="section-description">
             전체 페이지 안내는 본문 가운데보다 조금 위에, 목록 일부·팝업 안내는 해당 영역 가운데에
             표시합니다. 로딩·빈 결과·실패를 구분하고 다음 동작을 유지합니다.
@@ -29,14 +29,14 @@ export function StateExamples({ onMessage }: { onMessage: (message: string) => v
       </div>
       <div className="state-gallery">
         <article className="state-example">
-          <h3>불러오는 중</h3>
+          <h4>불러오는 중</h4>
           <div className="state-example-stage">
             <LoadingState placement={statePlacement} />
           </div>
           <p className="hint">파비콘과 같은 심볼 · 걷는 듯한 작은 움직임</p>
         </article>
         <article className="state-example">
-          <h3>아직 없는 결과</h3>
+          <h4>아직 없는 결과</h4>
           <div className="state-example-stage">
             <EmptyState
               placement={statePlacement}
@@ -54,7 +54,7 @@ export function StateExamples({ onMessage }: { onMessage: (message: string) => v
           <p className="hint">결과 없음 · 조회 실패와 구분</p>
         </article>
         <article className="state-example">
-          <h3>불러오기 실패</h3>
+          <h4>불러오기 실패</h4>
           <div className="state-example-stage">
             <ErrorState
               placement={statePlacement}
@@ -63,6 +63,24 @@ export function StateExamples({ onMessage }: { onMessage: (message: string) => v
             />
           </div>
           <p className="hint">실패 안내 · 다시 시도할 수 있게</p>
+        </article>
+        <article className="state-example">
+          <h4>찾을 수 없는 페이지</h4>
+          <div className="state-example-stage">
+            <EmptyState
+              placement={statePlacement}
+              title="찾을 수 없는 페이지예요."
+            >
+              <button
+                type="button"
+                className="button primary"
+                onClick={() => onMessage("홈으로 돌아가기 버튼의 스타일 예시예요.")}
+              >
+                홈으로 돌아가기
+              </button>
+            </EmptyState>
+          </div>
+          <p className="hint">404 · 조회 실패와 구분</p>
         </article>
       </div>
       <p className="hint">

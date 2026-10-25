@@ -28,11 +28,12 @@ export function DetailExamples() {
       id="detail-examples"
       className="guide-detail-examples"
     >
-      <h2>상세 요금·빈 자료 예시</h2>
+      <h3>상세 요금·빈 자료 예시</h3>
       <p className="section-description">
-        표시 검토용 표본입니다. 공통 출처·이용 조건은 푸터에서 확인합니다. 서로 다른 요금 자료는 각
-        묶음의 항목·조건과 여백으로 구분합니다. 사용자 선택에 따른 대상별 요금표 사례는 별도 전부
-        무료 자료를 화면에서 생략합니다. 실제 상세 갤러리는 위 미리보기를 사용해요.
+        현재 적용된 상세 UI를 확인하는 가이드 표본입니다. 공통 출처·이용 조건은 푸터에서 확인합니다.
+        서로 다른 요금 자료는 각 묶음의 항목·조건과 여백으로 구분합니다. 사용자 선택에 따른 대상별
+        요금표 사례는 별도 전부 무료 자료를 화면에서 생략합니다. 실제 상세 갤러리는 실제 화면
+        구역에서 확인해요.
       </p>
       <div className="guide-detail-grid">
         <div className="sample">
@@ -519,7 +520,7 @@ export function DetailExamples() {
           </dl>
         </div>
         <div className="sample">
-          <h3>공식 안내</h3>
+          <h4>공식 안내</h4>
           <a
             className="source-link detail-official-link"
             href="https://www.data.go.kr/data/15101578/openapi.do"
