@@ -42,7 +42,6 @@ const guideGroups = [
       ["detail-examples", "상세 요금·빈 자료"],
       ["pagination", "페이지네이션"],
       ["states", "로딩·빈 결과·오류·404"],
-      ["policies", "정책·안내"],
     ],
   },
   {
@@ -552,8 +551,8 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
               <section id="future-navigation">
                 <h3>하단바 스타일</h3>
                 <p className="section-description">
-                  하단 메뉴의 아이콘·이름·선택 표시를 보여줍니다. 아래 버튼으로 선택 모양을 확인할
-                  수 있어요.
+                  하단 메뉴의 아이콘·이름·선택 표시와 정책·출처 안내를 함께 확인합니다. 아래
+                  버튼으로 선택 모양을 확인할 수 있어요.
                 </p>
                 <div className="sample">
                   <h4>아이콘·이름·선택 표시</h4>
@@ -598,6 +597,17 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                     선 아이콘·진한 초록색·라벨 700·조금 굵은 선으로 선택을 구분합니다. 북마크
                     저장·AI 추천 기능은 아직 연결하지 않았어요.
                   </p>
+                </div>
+                <div
+                  id="policies"
+                  className="sample"
+                >
+                  <h4>정책·하단 안내</h4>
+                  <p className="small muted">
+                    정책·출처는 서비스 푸터에서 바텀시트로 열립니다. 뒤로 가기로 닫으면 보던 화면을
+                    유지해요. 열기 UI는 적용됐으며 실제 운영 정책은 공개 전 검토 대상입니다.
+                  </p>
+                  <PolicyLinks variant="buttons" />
                 </div>
                 <div className="sample menu-comparison">
                   <h4>메뉴 연결 상태</h4>
@@ -723,14 +733,6 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 </p>
               </section>
               <StateExamples onMessage={setMessage} />
-              <section id="policies">
-                <h3>정책·하단 안내</h3>
-                <p className="small muted">
-                  정책·출처는 서비스 푸터에서 바텀시트로 열립니다. 뒤로 가기로 닫으면 보던 화면을
-                  유지해요. 열기 UI는 적용됐으며 실제 운영 정책은 공개 전 검토 대상입니다.
-                </p>
-                <PolicyLinks variant="buttons" />
-              </section>
             </div>
           </section>
           <section
