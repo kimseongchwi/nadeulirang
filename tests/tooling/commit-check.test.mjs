@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { chmodSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { chmodSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,7 +18,7 @@ test("잘못된 유형·본문 누락·영문 설명을 차단한다", () => {
   assert.throws(() => validateMessage("chore(repo): 개발 규칙 정리\n\nUpdate workflow."), /본문은 한국어/);
 });
 
-test("프론트·백엔드 검사 실패와 부분 스테이징을 차단하고 문서는 검사를 생략한다", (t) => {
+test("빠른·전체 커밋 검사의 실행 횟수와 실패·부분 스테이징·민감 파일 차단을 확인한다", (t) => {
   const dir = mkdtempSync(path.join(os.tmpdir(), "nadeulirang-check-"));
   t.after(() => {
     const target = path.resolve(dir);
@@ -97,6 +97,54 @@ test("프론트·백엔드 검사 실패와 부분 스테이징을 차단하고 
   write("backend/bad.js", "const value = 3;\n");
   okGit("add", "backend/bad.js");
   okGit("commit", "-m", "chore(collection): 검증용 도구", "-m", "검증: 수집 도구 검사 성공.");
+
+  // 전체 검사는 빠른 검사와 따로 실행하지 않고 같은 필수 훅에서 한 번씩 실행한다.
+  write(".test-hooks/record.mjs", `import { appendFileSync, existsSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+process.chdir(fileURLToPath(new URL("../", import.meta.url)));
+const check = process.argv.slice(2).join(" ");
+appendFileSync(".test-hooks/checks.log", check + "\\n");
+if (existsSync(".test-hooks/fail") && readFileSync(".test-hooks/fail", "utf8") === check) process.exit(1);
+`);
+  write("package.json", JSON.stringify({ scripts: {
+    test: "node .test-hooks/record.mjs tooling",
+    "check:docs": "node .test-hooks/record.mjs docs",
+    "check:backend": "node .test-hooks/record.mjs backend",
+  } }));
+  write("frontend/package.json", JSON.stringify({ scripts: {
+    "check:quick": "node ../.test-hooks/record.mjs frontend-quick",
+    check: "node ../.test-hooks/record.mjs frontend-full",
+  } }));
+  okGit("add", "package.json", "frontend/package.json");
+  const fullCommit = () => git("-c", "nadeulirang.checkMode=full", "commit", "-m",
+    "chore(test): 전체 검사", "-m", "검증: 필수 훅에서 전체 검사와 실패 차단 확인.");
+  const checkLog = path.join(dir, ".test-hooks/checks.log");
+  const fullBaseline = git("rev-parse", "HEAD").stdout.trim();
+  for (const [failure, expected] of [
+    ["frontend-full", ["docs", "tooling", "frontend-full"]],
+    ["backend --verify", ["docs", "tooling", "frontend-full", "backend --verify"]],
+  ]) {
+    write(".test-hooks/checks.log", "");
+    write(".test-hooks/fail", failure);
+    const failed = fullCommit();
+    assert.notEqual(failed.status, 0, failed.stdout + failed.stderr);
+    assert.equal(git("rev-parse", "HEAD").stdout.trim(), fullBaseline);
+    assert.deepEqual(readFileSync(checkLog, "utf8").trim().split("\n"), expected);
+  }
+  rmSync(path.join(dir, ".test-hooks/fail"));
+  write(".test-hooks/checks.log", "");
+  const fullSuccess = fullCommit();
+  assert.equal(fullSuccess.status, 0, fullSuccess.stdout + fullSuccess.stderr);
+  assert.deepEqual(readFileSync(checkLog, "utf8").trim().split("\n"),
+    ["docs", "tooling", "frontend-full", "backend --verify"]);
+  assert.equal(git("config", "--get", "nadeulirang.checkMode").status, 1,
+    "전체 검사 모드를 영구 설정으로 저장하면 안 됩니다.");
+
+  write("README.md", "# 전체 검사 뒤 문서 수정\n");
+  okGit("add", "README.md");
+  write(".test-hooks/checks.log", "");
+  assert.equal(fullCommit().status, 0);
+  assert.equal(readFileSync(checkLog, "utf8"), "docs\n", "문서 전용 전체 검사는 코드 검사를 실행하지 않습니다.");
   write(".env.local", "TEST_ONLY=dummy\n");
   okGit("add", ".env.local");
   const secret = git("commit", "-m", "chore(test): 민감 파일 차단", "-m", "검증: 임시 설정 파일명 차단.");
@@ -110,4 +158,13 @@ test("프론트·백엔드 검사 실패와 부분 스테이징을 차단하고 
   const main = git("commit", "-m", "docs(test): 직접 커밋 차단", "-m", "검증: main 직접 커밋 차단.");
   assert.notEqual(main.status, 0);
   assert.match(main.stderr + main.stdout, /main 직접 커밋을 중단/);
+});
+
+test("백엔드 검사에 테스트 생략 등 임의 Maven 인수를 전달하지 못한다", () => {
+  const script = fileURLToPath(new URL("../../scripts/check-backend.mjs", import.meta.url));
+  for (const options of [["--skipTests"], ["--verify", "-DskipTests"]]) {
+    const result = spawnSync(process.execPath, [script, ...options], { encoding: "utf8" });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /사용법: npm run check:backend/);
+  }
 });

@@ -54,7 +54,7 @@ $env:MAVEN_USER_HOME = Join-Path $PWD '.local/maven'
 # Java 검사만 할 때 spotless:check
 ~~~
 
-루트에서 영향받는 영역의 검사를 실행합니다. DB는 백엔드 DB 검사 때만 실행 상태를 확인하고 필요하면 시작합니다.
+개발 중 필요한 피드백은 루트에서 영향받는 영역의 검사로 확인합니다. 아래 명령을 매번 모두 실행하지 않습니다. 완료 후 바로 커밋할 때는 [커밋 검사](#커밋-검사)의 `commit:checked`로 검사·커밋을 묶어 같은 검사를 수동 실행한 뒤 훅에서 반복하지 않습니다. DB는 백엔드 DB 검사 때만 실행 상태를 확인하고 필요하면 시작합니다.
 
 ~~~powershell
 npm --prefix frontend run check:quick  # lint·Next 경로 생성·strict 타입
@@ -63,11 +63,12 @@ npm --prefix frontend run build
 npm test                             # 개발 도구 핵심 검증
 npm run check:docs                    # 직접 작성한 문서·로컬 기록의 파일/앵커
 npm run check:backend                 # 실제 PostgreSQL 기반 Maven test
+npm run check:backend -- --verify     # 위 test를 포함한 실행 JAR 생성까지 한 번에 확인
 ~~~
 
 ### 백엔드 실행·검증
 
-기능 완료·PR 전에는 테스트와 실행 JAR 생성을 함께 확인합니다.
+기능 완료·PR 전에는 테스트와 실행 JAR 생성을 함께 확인합니다. 커밋과 함께 확인할 때는 `commit:checked`를 사용하고, 커밋 없이 검증할 때는 아래 `verify`를 한 번 실행합니다. `verify`가 포맷·컴파일·테스트·패키징을 포함하므로 같은 내용에 `test`나 `spotless:check`를 먼저 반복하지 않습니다.
 
 ~~~powershell
 . ./scripts/use-local-env.ps1
@@ -89,6 +90,16 @@ check:backend는 자식 세션에 로컬 환경을 적용하며 DB 자체는 시
 ## 커밋 검사
 
 최초 복제 뒤 npm run setup:hooks로 로컬 훅을 연결합니다. 훅은 공백·민감한 파일명·한국어 커밋 형식을 확인하고 변경 코드에 필요한 검사만 실행합니다.
+
+완료한 변경은 목적별 경로를 스테이징하고 diff 자체 리뷰·필요한 화면/실행 확인을 마친 뒤 다음 명령으로 검사와 로컬 커밋을 함께 수행합니다. 메시지 파일은 한국어 제목·본문을 담은 로컬 파일입니다.
+
+~~~powershell
+npm run commit:checked -- --file .local/commit-message.txt
+~~~
+
+이 명령은 해당 Git 프로세스에만 `.githooks`와 전체 검사 모드를 지정합니다. 영구 Git 설정은 바꾸지 않으며 필수 훅을 그대로 실행합니다. 전체 모드는 문서 링크 검사와 변경 영역의 도구 테스트·프론트 `check`(빠른 검사·회귀·빌드)·백엔드 `verify`를 각각 한 번 실행합니다. 실패하면 커밋하지 않으며 재시도 때 다시 검사합니다. 이전 성공을 캐시하거나 DB 검사를 생략하지 않습니다. 검사별 소요 시간도 출력합니다.
+
+일반 `git commit`은 아래 빠른 검사 범위를 유지합니다. `npm run check:commit`은 커밋 없는 진단용이므로 바로 커밋할 때 별도로 먼저 실행하지 않습니다. CI는 별도 환경의 필수 검증이므로 로컬 통과와 관계없이 유지합니다.
 
 | 변경 | 검사 |
 |---|---|

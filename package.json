@@ -6,6 +6,7 @@
     "test": "node --test tests/tooling/*.test.mjs",
     "check:docs": "node scripts/check-docs.mjs",
     "check:commit": "node scripts/check-commit.mjs",
+    "commit:checked": "git -c core.hooksPath=.githooks -c nadeulirang.checkMode=full commit",
     "check:backend": "node scripts/check-backend.mjs",
     "setup:hooks": "git config --local core.hooksPath .githooks"
   }
