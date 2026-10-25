@@ -187,6 +187,8 @@ CollectionRunner는 수동 seed·batch·supplement를 조율한다. 커서는 �
 
 백엔드 테스트는 실행마다 UUID 스키마에서 실제 PostgreSQL의 제약·마이그레이션·잠금·롤백·API를 검증한다. 테스트 초기화는 앱 스키마에 접근하지 않는다. 순수 정책 테스트는 날짜·요금·분류·원천 응답을 빠르게 확인한다.
 
+테스트 컨텍스트 캐시는 테스트가 끝나도 서버·연결 풀·예약 작업을 유지할 수 있다. 웹 DB 테스트인 `AuthApiTests`·`OutingApiTests`·`NadeulirangApplicationTests`는 `@SpringBootTest`의 테스트 전용 `spring.session.jdbc.cleanup-cron=-`로 세션 정리의 예약 실행을 끄고, 임시 스키마 삭제 후 `@DirtiesContext(AFTER_CLASS)`로 컨텍스트를 닫는다. `@SpringBootTest`는 Spring Boot Test가 컨텍스트 준비 때 읽는 클래스 설정이고, `@DirtiesContext`는 Spring TestContext가 클래스 종료 때 읽는 설정이다. 테스트 종료 후 삭제된 테이블을 예약 작업이 조회하는 경합을 막기 위한 것이다. `AuthApiTests.cleansUpOnlyExpiredSessions`는 실제 저장소의 `cleanUpExpiredSessions()`를 직접 호출해 만료 세션·속성 삭제와 정상 세션 보존을 확인한다. 앱의 정리 주기와 기존 로그인 만료 검증은 유지한다.
+
 프론트 회귀는 URL 조건·런타임 계약·요금/시간·원문/소제목 보존·시트 경계를 확인한다. 서울 자정·윤년은 date-model.test.mjs에서 확인한다. 로컬 도구 테스트는 인증값 비노출·설정 우선순위·커밋 차단을 검증한다. 훅/CI 명령은 README를 따른다.
 
 변경 영역 선택은 검사를 빠뜨리지 않으면서 피드백 시간을 줄이기 위한 것이다. `check-commit.mjs`는 Git 인덱스의 경로를, `check-ci-paths.mjs`는 push/PR의 비교 경로를 `check-scopes.mjs`에 전달한다. 이동을 삭제+추가로 읽어 원래 영역의 검사도 유지한다. 공통 설정/검사 규칙 변경은 모든 영역을 검사하며 문서 전용 CI도 기존 상태 검사 이름을 반환한다. 프론트 빠른 검사와 Maven validate에는 포맷 검사가 포함되고, DB 테스트/빌드는 계속 별도 의미를 갖는다. `check-docs.mjs`는 직접 작성한 문서의 내부 파일/제목 링크를 검사하며 외부 문서의 최신성까지 검증하지는 않는다.

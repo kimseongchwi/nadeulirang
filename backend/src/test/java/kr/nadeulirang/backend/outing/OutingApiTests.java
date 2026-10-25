@@ -29,12 +29,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "spring.session.jdbc.cleanup-cron=-")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @Import(OutingApiTests.TimeConfiguration.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class OutingApiTests {
