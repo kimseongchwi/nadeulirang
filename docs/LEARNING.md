@@ -38,13 +38,15 @@ UI 가이드도 실제 공유 UI의 사용처다. 독립 표본을 나누면 요
 
 서버 page → api-server → 공통 requestJson/isHome/isPage/isDetail 검사 → 화면 props 흐름으로 실제 본문을 렌더링한다. 타입은 컴파일 때만 검사하므로 외부 JSON은 unknown으로 읽고 런타임 검사가 필요하다. use client 화면은 상태/클릭·브라우저 API를 사용한다. React props는 부모 입력, state는 컴포넌트가 갱신하는 값이다. 원천 문장은 JSX 텍스트로 표시하고 HTML로 삽입하지 않는다.
 
+화면 너비가 바뀌면 스크롤을 담당하는 요소도 바뀐다. 모바일은 문서 전체, 960px 이상 PC는 오른쪽 `.service-scroll`이 움직이므로 문서 스크롤을 그대로 두면 PC 안내와 서비스 상단이 잘릴 수 있다. [SiteShell](../frontend/src/components/layout/site-shell.tsx)은 React `useEffect`에서 브라우저 `matchMedia`의 경계 변경을 구독하고 두 스크롤 위치를 해당 요소로 옮긴다. 스크롤 이벤트의 위치는 effect 안의 변수로 기억해 매번 React를 다시 렌더링하지 않으며, 가이드 화면은 제외하고 정리 함수에서 이벤트를 해제한다. 페이지 이동·이력 복귀는 기존 NavigationProvider가 계속 담당한다.
+
 간단 보기는 열릴 때 /api/outings/:id의 Next route를 요청한다. 서버 전용 백엔드 주소와 같은 출처·검증/오류 계약을 유지하는 중계다. 공통 [api-request.ts](../frontend/src/features/outings/api-request.ts)는 HTTP/연결/본문 실패를 구분하고 시간 제한·캐시 제외·리다이렉트 차단을 적용한다. 닫기/항목 변경은 AbortController로 취소해 늦은 응답이 화면을 덮지 않게 한다. 가이드 표본은 실제 조회 실패의 대체값으로 사용하지 않는다.
 
 [OutingCard](../frontend/src/features/outings/outing-card.tsx)의 선택 입력 `previewId`는 간단 보기의 URL hash와 Dialog의 DOM ID를 구분한다. 기본값은 자료 ID이며, 같은 자료를 한 가이드에서 여러 번 표시할 때 광고 위치 미리보기만 별도 접두부를 사용해 시트가 동시에 열리거나 HTML ID가 중복되는 것을 막는다. 상세 API 조회와 상세 링크는 원래 자료 ID를 그대로 사용한다.
 
 ### 로그인 없는 안내 페이지
 
-[내정보 화면](../frontend/src/app/mypage/mypage-screen.tsx)은 `/mypage`에서 로그인·공지사항·FAQ·설정을 연결한다. [설정 화면](../frontend/src/app/settings/settings-screen.tsx)은 `PolicyLinks`의 목록 형태로 기존 정책 시트를 열고 직접 접속의 뒤로가기는 내정보로 복귀한다. 로그인이나 개인 계정 조회 없이 서버가 안내 본문을 렌더링하고 링크 이동은 기존 `NavigationLink`를 사용해 포커스·스크롤/조건 복귀를 유지한다. 햄버거는 기존 `Dialog`로 유지하며 검색은 헤더 아이콘에서 이동한다. 로그인은 /login으로 연결하고 북마크는 비활성 자리로 유지한다.
+[내정보 화면](../frontend/src/app/mypage/mypage-screen.tsx)은 `/mypage`에서 로그인·공지사항·FAQ·설정을 연결한다. [설정 화면](../frontend/src/app/settings/settings-screen.tsx)은 `PolicyLinks`의 목록 형태로 기존 정책 시트를 열고 직접 접속의 뒤로가기는 내정보로 복귀한다. 로그인이나 개인 계정 조회 없이 서버가 안내 본문을 렌더링하고 링크 이동은 기존 `NavigationLink`를 사용해 포커스·스크롤/조건 복귀를 유지한다. 햄버거 보조 메뉴는 제거했고 검색은 헤더 아이콘, 홈·내정보는 로고와 하단 메뉴로 이동한다. 정책·출처 시트는 기존 `Dialog`를 계속 사용한다. 로그인은 /login으로 연결하고 북마크는 비활성 자리로 유지한다.
 
 [BackHeading](../frontend/src/components/layout/back-heading.tsx)은 상세와 안내 화면의 화살표·페이지 제목을 하나의 버튼으로 공유해 라벨 클릭과 키보드 조작에도 복귀한다. `compact`는 제목의 의미를 가진 h1을 작은 글씨로 표시하며 공지 상세의 `labelOnly`는 실제 글 제목과 구분되는 보조 문구를 표시한다. `fallbackHref`는 서비스 내 이전 이동 기록이 없는 직접 접속의 복귀 주소다. 이전 기록이 있으면 기존 브라우저 뒤로가기를 사용하고 상세/정책의 기본 검색 복귀는 유지한다. 공지 빈 목록도 기존 `EmptyState`의 페이지 중앙 배치를 사용하고 설명이 없는 경우 보조 문단을 만들지 않는다.
 
@@ -187,8 +189,12 @@ CollectionRunner는 수동 seed·batch·supplement를 조율한다. 커서는 �
 
 백엔드 테스트는 실행마다 UUID 스키마에서 실제 PostgreSQL의 제약·마이그레이션·잠금·롤백·API를 검증한다. 테스트 초기화는 앱 스키마에 접근하지 않는다. 순수 정책 테스트는 날짜·요금·분류·원천 응답을 빠르게 확인한다.
 
+테스트 컨텍스트 캐시는 테스트가 끝나도 서버·연결 풀·예약 작업을 유지할 수 있다. 웹 DB 테스트인 `AuthApiTests`·`OutingApiTests`·`NadeulirangApplicationTests`는 `@SpringBootTest`의 테스트 전용 `spring.session.jdbc.cleanup-cron=-`로 세션 정리의 예약 실행을 끄고, 임시 스키마 삭제 후 `@DirtiesContext(AFTER_CLASS)`로 컨텍스트를 닫는다. `@SpringBootTest`는 Spring Boot Test가 컨텍스트 준비 때 읽는 클래스 설정이고, `@DirtiesContext`는 Spring TestContext가 클래스 종료 때 읽는 설정이다. 테스트 종료 후 삭제된 테이블을 예약 작업이 조회하는 경합을 막기 위한 것이다. `AuthApiTests.cleansUpOnlyExpiredSessions`는 실제 저장소의 `cleanUpExpiredSessions()`를 직접 호출해 만료 세션·속성 삭제와 정상 세션 보존을 확인한다. 앱의 정리 주기와 기존 로그인 만료 검증은 유지한다.
+
 프론트 회귀는 URL 조건·런타임 계약·요금/시간·원문/소제목 보존·시트 경계를 확인한다. 서울 자정·윤년은 date-model.test.mjs에서 확인한다. 로컬 도구 테스트는 인증값 비노출·설정 우선순위·커밋 차단을 검증한다. 훅/CI 명령은 README를 따른다.
 
 변경 영역 선택은 검사를 빠뜨리지 않으면서 피드백 시간을 줄이기 위한 것이다. `check-commit.mjs`는 Git 인덱스의 경로를, `check-ci-paths.mjs`는 push/PR의 비교 경로를 `check-scopes.mjs`에 전달한다. 이동을 삭제+추가로 읽어 원래 영역의 검사도 유지한다. 공통 설정/검사 규칙 변경은 모든 영역을 검사하며 문서 전용 CI도 기존 상태 검사 이름을 반환한다. 프론트 빠른 검사와 Maven validate에는 포맷 검사가 포함되고, DB 테스트/빌드는 계속 별도 의미를 갖는다. `check-docs.mjs`는 직접 작성한 문서의 내부 파일/제목 링크를 검사하며 외부 문서의 최신성까지 검증하지는 않는다.
+
+`commit:checked`는 완료 검사를 커밋 훅 안에서 실행해 수동 검사와 훅의 반복을 줄인다. `git -c`는 해당 프로세스에만 설정을 전달하는 Git 기능이다. npm 명령 → Git의 전체 검사 설정 → pre-commit → check-commit의 영역 선택 → 프론트 check·백엔드 verify → commit-msg 순서로 실행된다. Maven verify는 test 단계를 포함하고 프론트 check도 check:quick을 포함하므로 두 명령을 따로 반복할 필요가 없다. 실패는 커밋을 막고 다음 시도에서 다시 검사하며 CI는 별도 환경을 검증한다.
 
 선택 연습: SourceCallRepository.save 뒤 JDBC로 읽는 시점을 커밋 전/후로 비교하거나 빈 요금과 문자열 0의 차이를 CollectionPolicyTests에서 확인한다. 제품 코드를 학습용으로 변경할 필요는 없다.

@@ -840,7 +840,7 @@ dialog[open]::backdrop {
   border: 1px solid var(--line);
   border-radius: 12px;
 }
-.guide-pagination-example h3 {
+.guide-pagination-example h4 {
   font-size: 14px;
 }
 .guide-pagination-frame {

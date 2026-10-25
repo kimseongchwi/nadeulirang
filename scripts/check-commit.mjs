@@ -17,14 +17,19 @@ function runNpm(args) {
     path.resolve(path.dirname(process.execPath), "../lib/node_modules/npm/bin/npm-cli.js"),
   ].find(existsSync);
   if (!npmCli || !existsSync(npmCli)) throw new Error("npm 경로를 찾지 못했습니다. npm run check:commit으로 실행하세요.");
+  const started = performance.now();
   const result = spawnSync(process.execPath, [npmCli, ...args], { stdio: "inherit" });
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error("검사 실패: 커밋을 중단합니다.");
+  console.log(`검사 완료 (${((performance.now() - started) / 1000).toFixed(1)}초): npm ${args.join(" ")}`);
 }
 
 try {
   const branch = git("symbolic-ref", "--short", "HEAD").trim();
   if (["main", "master"].includes(branch)) throw new Error("main 직접 커밋을 중단합니다. 작업 브랜치를 만드세요.");
+  const mode = git("config", "--default", "quick", "--get", "nadeulirang.checkMode").trim();
+  if (!["quick", "full"].includes(mode)) throw new Error("커밋 검사 모드는 quick 또는 full이어야 합니다.");
+  const full = mode === "full";
   const before = git("ls-files", "--stage", "-z");
   const staged = splitPaths(git("diff", "--cached", "--no-renames", "--name-only", "-z"));
   const addedOrChanged = splitPaths(git("diff", "--cached", "--name-only", "--diff-filter=ACMR", "-z"));
@@ -42,9 +47,10 @@ try {
   const unstaged = changed.filter((file) => Object.entries(checkScopes([file]))
     .some(([scope, enabled]) => enabled && needs[scope]));
   if (unstaged.length) throw new Error(`검사 대상 코드에 미스테이징 변경이 있습니다: ${unstaged.join(", ")}`);
+  if (full) runNpm(["run", "check:docs"]);
   if (needsTooling) runNpm(["test"]);
-  if (needsFrontend) runNpm(["--prefix", "frontend", "run", "check:quick"]);
-  if (needsBackend) runNpm(["run", "check:backend"]);
+  if (needsFrontend) runNpm(["--prefix", "frontend", "run", full ? "check" : "check:quick"]);
+  if (needsBackend) runNpm(full ? ["run", "check:backend", "--", "--verify"] : ["run", "check:backend"]);
   if (git("ls-files", "--stage", "-z") !== before) throw new Error("검사 도중 스테이징 내용이 바뀌었습니다. 다시 검사하세요.");
   console.log(needsFrontend || needsTooling || needsBackend ? "변경 코드 검사 통과" : "코드 변경 없음: 기본 커밋 검사 통과");
 } catch (error) {

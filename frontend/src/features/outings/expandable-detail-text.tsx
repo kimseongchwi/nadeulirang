@@ -7,9 +7,11 @@ import { programTextLines } from "./program-text";
 import { Icon } from "@/components/ui/icons";
 
 export function ExpandableDetailText({
+  label,
   values,
   emphasizeHeadings = false,
 }: {
+  label: string;
   values: Evidence[];
   emphasizeHeadings?: boolean;
 }) {
@@ -74,6 +76,7 @@ export function ExpandableDetailText({
         <button
           type="button"
           className="detail-text-toggle"
+          aria-label={`${label} ${expanded ? "접기" : "더 보기"}`}
           aria-expanded={expanded}
           aria-controls={id}
           onClick={() => setExpanded((value) => !value)}

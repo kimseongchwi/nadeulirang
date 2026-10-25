@@ -19,12 +19,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import tools.jackson.databind.json.JsonMapper;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "spring.session.jdbc.cleanup-cron=-")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AuthApiTests {
     private static final String SCHEMA =
@@ -33,6 +38,7 @@ class AuthApiTests {
     @Autowired JdbcTemplate jdbc;
     @Autowired AuthService service;
     @Autowired AuthRateLimiter limiter;
+    @Autowired JdbcIndexedSessionRepository sessions;
 
     @MockitoBean
     org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
@@ -216,6 +222,43 @@ class AuthApiTests {
                     .isEqualTo(403);
             jdbc.update("UPDATE spring_session SET expiry_time=0,last_access_time=0");
             assertThat(send(browser, "GET", "me", null, false).statusCode()).isEqualTo(401);
+        }
+    }
+
+    @Test
+    @DisplayName("세션 정리는 만료 세션과 속성만 삭제하고 정상 세션은 보존한다")
+    void cleansUpOnlyExpiredSessions() throws Exception {
+        member("member@example.test");
+        try (var expired = browser();
+                var active = browser()) {
+            login(expired, "member@example.test");
+            String expiredId =
+                    jdbc.queryForObject("SELECT primary_id FROM spring_session", String.class);
+            login(active, "member@example.test");
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM spring_session", Integer.class))
+                    .isEqualTo(2);
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT count(*) FROM spring_session_attributes WHERE session_primary_id=?",
+                                    Integer.class,
+                                    expiredId))
+                    .isPositive();
+            jdbc.update(
+                    "UPDATE spring_session SET expiry_time=0,last_access_time=0 WHERE primary_id=?",
+                    expiredId);
+
+            sessions.cleanUpExpiredSessions();
+
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM spring_session", Integer.class))
+                    .isEqualTo(1);
+            assertThat(
+                            jdbc.queryForObject(
+                                    "SELECT count(*) FROM spring_session_attributes WHERE session_primary_id=?",
+                                    Integer.class,
+                                    expiredId))
+                    .isZero();
+            assertThat(send(active, "GET", "me", null, false).statusCode()).isEqualTo(200);
+            assertThat(send(expired, "GET", "me", null, false).statusCode()).isEqualTo(401);
         }
     }
 

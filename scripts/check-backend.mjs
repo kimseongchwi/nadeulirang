@@ -2,10 +2,16 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
+const options = process.argv.slice(2);
+if (options.length > 1 || (options.length === 1 && options[0] !== "--verify")) {
+  throw new Error("사용법: npm run check:backend [-- --verify]");
+}
+const goal = options.length === 1 ? "verify" : "test";
+
 // 훅은 저장소 루트에서 실행한다. Windows 로컬 환경은 자식 프로세스에만 적용한다.
 const root = process.cwd();
 const env = { ...process.env, MAVEN_USER_HOME: path.join(root, ".local", "maven") };
-const args = ["-B", "-ntp", "-f", "backend/pom.xml", `-Dmaven.repo.local=${path.join(root, ".local", "maven", "repository")}`, "test"];
+const args = ["-B", "-ntp", "-f", "backend/pom.xml", `-Dmaven.repo.local=${path.join(root, ".local", "maven", "repository")}`, goal];
 let result;
 if (process.platform === "win32") {
   const localEnvironment = existsSync(path.join(root, ".local", "java"))
