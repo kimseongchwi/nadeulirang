@@ -814,18 +814,6 @@ dialog::backdrop {
   font-size: 14px;
   z-index: 30;
 }
-.comparison-card h2 {
-  margin-bottom: 16px;
-}
-.comparison-card {
-  margin-top: 16px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 16px;
-}
-.comparison-card .info-list {
-  grid-template-columns: 92px minmax(0, 1fr);
-}
 .status-list {
   display: flex;
   gap: 8px;
