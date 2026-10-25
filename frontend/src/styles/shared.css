@@ -1328,7 +1328,7 @@ dialog {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 0 20px;
+  padding: 0 20px 8px;
 }
 .calendar-body > .month-nav,
 .calendar-body > .weekdays,
