@@ -19,7 +19,7 @@ function HomeSection({
   days,
 }: {
   title: string;
-  description: string;
+  description?: string;
   items: Outing[];
   scope: string;
   emptyText: string;
@@ -41,7 +41,7 @@ function HomeSection({
           더 보기 <Icon name="next" />
         </NavigationLink>
       </div>
-      <p className="section-description">{description}</p>
+      {description && <p className="section-description">{description}</p>}
       {items.length ? (
         items.slice(0, 3).map((item) => (
           <OutingCard
@@ -228,7 +228,6 @@ export function HomeScreen({
       />
       <HomeSection
         title="곧 시작하는 나들이"
-        description={`내일부터 ${days}일 안에 시작해요`}
         items={data.upcoming.map(outingSummary)}
         query={query}
         days={days}

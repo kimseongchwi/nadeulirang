@@ -42,6 +42,8 @@ UI 가이드도 실제 공유 UI의 사용처다. 독립 표본을 나누면 요
 
 간단 보기는 열릴 때 /api/outings/:id의 Next route를 요청한다. 서버 전용 백엔드 주소와 같은 출처·검증/오류 계약을 유지하는 중계다. 공통 [api-request.ts](../frontend/src/features/outings/api-request.ts)는 HTTP/연결/본문 실패를 구분하고 시간 제한·캐시 제외·리다이렉트 차단을 적용한다. 닫기/항목 변경은 AbortController로 취소해 늦은 응답이 화면을 덮지 않게 한다. 가이드 표본은 실제 조회 실패의 대체값으로 사용하지 않는다.
 
+다가오는 구간은 화면에 숫자를 반복하지 않고 내부 조회에서 내일부터 14일로 고정한다. [홈 서버 페이지](../frontend/src/app/page.tsx)는 메타데이터와 본문 조회에 같은 값을 보내며, [검색 조건 처리](../frontend/src/features/outings/api-query.ts)는 이전 7/30일 검토 URL과 폼도 14일로 통일하고 이름·지역·종류·페이지·정렬은 보존한다. 잘못된 구간은 기존 오류로 구분한다. 비교 UI를 제거했으므로 NavigationProvider는 기간 값을 관리하지 않고 기존 필터·이력/스크롤 상태만 유지한다.
+
 [OutingCard](../frontend/src/features/outings/outing-card.tsx)의 선택 입력 `previewId`는 간단 보기의 URL hash와 Dialog의 DOM ID를 구분한다. 기본값은 자료 ID이며, 같은 자료를 한 가이드에서 여러 번 표시할 때 광고 위치 미리보기만 별도 접두부를 사용해 시트가 동시에 열리거나 HTML ID가 중복되는 것을 막는다. 상세 API 조회와 상세 링크는 원래 자료 ID를 그대로 사용한다.
 
 ### 로그인 없는 안내 페이지
@@ -69,6 +71,10 @@ HTTP 상태는 HTML 첫 바이트를 보내기 전에 정해진다. 상세 `load
 searchFormQuery는 URLSearchParams를 복사해 제출 조건을 만들고 scope를 period/days로 바꾸며 이전 page를 제거한다. Pagination도 page만 바꿔 나머지 조건을 유지한다. 가이드에서는 URL 이동 대신 onPageChange 상태만 사용한다.
 
 Dialog는 service-scroll의 실제 본문 스크롤 영역을 사용한다. 포인터 핸들 드래그와 내부 본문 스크롤을 분리하고 ResizeObserver로 내용/사진 변화 뒤 기본 높이를 다시 계산한다. 확장 높이·고정 버튼·짧은 화면 경계는 sheet-drag의 계산과 테스트로 확인한다.
+
+[달력](../frontend/src/features/ui-design/calendar.tsx)은 날짜 원의 모양과 누르는 영역을 분리해 7열 각각 최소 44px를 확보한다. [Dialog](../frontend/src/components/ui/dialog.tsx)의 화면 가장자리 여백 `viewportInset`은 기본 16px이며 달력만 0을 전달해 작은 화면의 폭을 사용한다. 제목·이동·하단 버튼을 고정하고 `.calendar-scroll` 안의 날짜/연도만 줄어든 높이에서 스크롤하므로 짧은 화면에서도 취소·완료를 바로 누를 수 있다. 방향키 이동 뒤에는 포커스한 요소와 목록의 사각형을 비교해 해당 목록의 `scrollTop`만 옮기며 배경 페이지 위치는 유지한다. 날짜의 읽는 이름은 요일까지 포함하고 월/연도 변경은 aria-live, 선택/지우기는 role=status로 전달한다.
+
+달력의 오늘은 [calendar-date.ts](../frontend/src/features/ui-design/calendar-date.ts)의 외부 시계를 useSyncExternalStore로 구독한다. 서버가 전달한 서울 날짜는 첫 렌더/수화에 사용하고 브라우저에서는 Asia/Seoul 날짜 문자열을 읽어 날짜가 달라질 때만 화면을 갱신한다. 구독은 다음 서울 자정 타이머와 focus/visibilitychange/pageshow를 등록하고 해제할 때 모두 정리한다. 화면을 다시 보거나 절전에서 돌아오면 자정 예약을 다시 계산한다. 날짜/연도 항목의 포커스는 별도 ref로 기억하고 자정에 해당 DOM이 사라졌을 때 새 유효 항목으로 복구한다. 여전히 유효한 항목과 하단 버튼의 포커스는 빼앗지 않는다. DateField가 갱신한 오늘을 Calendar에 전달하므로 오늘 표시·과거 제한·임시 선택 검증이 같은 기준을 사용한다. 기존 선택은 보존하되 과거가 되면 안내/완료 비활성으로 재선택을 요구하며, 서버에서 조회한 목록의 날짜 기준에는 영향을 주지 않는다.
 
 [OutingPreview](../frontend/src/features/outings/outing-preview.tsx)의 조회 로딩은 본문 위에 `position: absolute`로 겹쳐 표시한다. 로딩 자체를 자연 높이 계산에서 빼므로 대기 중 시트가 크게 열렸다가 줄어들지 않는다. 실제 소개·사진·실패 안내가 바뀌면 기존 ResizeObserver가 내용에 맞는 높이를 계산하고 제목·닫기·하단 상세 버튼은 유지한다.
 

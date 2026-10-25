@@ -9,7 +9,7 @@ const options = { regions: [{ code: "11", name: "서울특별시", count: 2 }], 
 test("검색 범위 변경은 구간·페이지를 정리하고 이름·지역·종류·정렬을 보존한다", () => {
   const form = new URLSearchParams({ q: " 꽃 ", region: "48", kind: "FESTIVAL", sort: "NAME", scope: "upcoming", days: "30", page: "3" });
   const original = form.toString();
-  for (const [scope, period, days] of [["upcoming", "UPCOMING", "14"], ["ongoing", "ONGOING", null], ["permanent", "PERMANENT", null], ["", null, null], ["upcoming:7", "UPCOMING", "7"], ["upcoming:30", "UPCOMING", "30"]]) {
+  for (const [scope, period, days] of [["upcoming", "UPCOMING", "14"], ["ongoing", "ONGOING", null], ["permanent", "PERMANENT", null], ["", null, null], ["upcoming:7", "UPCOMING", "14"], ["upcoming:30", "UPCOMING", "14"]]) {
     const input = new URLSearchParams(form); input.set("scope", scope);
     const query = searchFormQuery(input);
     assert.equal(query.get("q"), "꽃"); assert.equal(query.get("region"), "48"); assert.equal(query.get("kind"), "FESTIVAL"); assert.equal(query.get("sort"), "NAME");
@@ -81,7 +81,16 @@ test("중복 조건·잘못된 구간·페이지·종류·긴 검색어는 정�
   assert.throws(() => parameters({ q: ["첫째", "둘째"] }));
   for (const query of ["page=0", "page=2147483648", "page=1.2", "sort=OTHER", "scope=ended", "kind=OTHER", "scope=upcoming&days=15"]) assert.throws(() => queryParameters(new URLSearchParams(query), options));
   assert.throws(() => queryParameters(new URLSearchParams({ q: "가".repeat(201) }), options));
-  assert.equal(windowDays(null), 14); assert.equal(windowDays("30"), 30);
+  assert.equal(windowDays(null), 14);
+  for (const days of ["7", "14", "30"]) {
+    assert.equal(windowDays(days), 14);
+    const input = new URLSearchParams({ scope: "upcoming", days, region: "11", page: "2" });
+    const query = queryParameters(input, options);
+    assert.equal(query.get("days"), "14");
+    assert.equal(query.get("region"), "11");
+    assert.equal(query.get("page"), "2");
+    assert.equal(input.get("days"), days);
+  }
 });
 test("예약 주소의 위험한 스킴·인증 정보와 잘못된 API 본문을 거부한다", () => {
   for (const url of ["javascript:alert(1)", "data:text/html,x", "https://user:password@example.org", "/relative"]) assert.equal(safeUrl(url), null);

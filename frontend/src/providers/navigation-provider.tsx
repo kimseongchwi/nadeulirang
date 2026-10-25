@@ -78,13 +78,11 @@ function useNavigationState(today: string) {
   }, []);
   const pending = transitionPending || pendingLinks.size > 0;
   const [homeQuery, setHomeQuery] = useSetting("outing-review-home-filters", "");
-  const [days, setDays] = useSetting("outing-review-days", "14");
   const hash = useSyncExternalStore(
     subscribeHash,
     () => window.location.hash,
     () => "",
   );
-  const upcomingDays = [7, 14, 30].includes(Number(days)) ? Number(days) : 14;
   const nextNavigation = useRef(false);
   const renderedUrl = useRef("");
   useEffect(() => {
@@ -197,10 +195,8 @@ function useNavigationState(today: string) {
     pending,
     reportLinkPending,
     refresh: () => startTransition(() => router.refresh()),
-    upcomingDays,
     homeQuery,
     setHomeQuery,
-    setUpcomingDays: (value: number) => setDays(String(value)),
     homeUrl: `/${homeQuery ? `?${homeQuery}` : ""}`,
     searchUrl: `/search${homeQuery ? `?${homeQuery}` : ""}`,
     hash,

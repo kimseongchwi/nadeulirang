@@ -31,11 +31,13 @@ const guideGroups = [
   {
     id: "components",
     title: "공통 UI",
-    status: "적용 UI · 표본",
+    status: "스타일·동작 예시",
     sections: [
       ["buttons", "버튼·뒤로가기"],
       ["inputs", "입력·선택"],
+      ["dates", "달력"],
       ["navigation", "현재 내비게이션"],
+      ["future-navigation", "하단바 스타일"],
       ["cards", "카드·상태"],
       ["detail-examples", "상세 요금·빈 자료"],
       ["pagination", "페이지네이션"],
@@ -46,20 +48,17 @@ const guideGroups = [
   {
     id: "service-screens",
     title: "실제 화면",
-    status: "현재 구현",
-    sections: [["screens", "서비스 미리보기"]],
+    status: "현재 화면",
+    sections: [
+      ["screens", "서비스 미리보기"],
+      ["ad-placement", "광고 배치"],
+    ],
   },
   {
     id: "review",
     title: "검토 중",
     status: "미적용 · 검토·보류",
-    sections: [
-      ["dates", "달력"],
-      ["ad-placement", "광고 위치"],
-      ["future-navigation", "후속 메뉴"],
-      ["home-comparison", "홈 기간 비교"],
-      ["featurePlan", "검토 상태"],
-    ],
+    sections: [["featurePlan", "검토 상태"]],
   },
 ];
 
@@ -121,12 +120,11 @@ function PaginationExample({
 }
 export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
   const { today, homeUrl } = useNavigation();
-  const [upcomingDays, setUpcomingDays] = useState(14);
   const items = publicItems(today);
   const [previewWidth, setPreviewWidth] = useState(390);
   const [message, setMessage] = useState("");
   const [previewScreen, setPreviewScreen] = useState("홈");
-  const [futureSelection, setFutureSelection] = useState("home");
+  const [navigationSelection, setNavigationSelection] = useState("home");
   useEffect(() => {
     if (!message) return;
     const timer = setTimeout(() => setMessage(""), 4500);
@@ -380,12 +378,12 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                   className="guide-status"
                   data-review={false}
                 >
-                  적용 UI · 표본
+                  스타일·동작 예시
                 </span>
               </div>
               <p>
-                서비스에서 사용하는 공유 UI의 모양과 동작을 확인합니다. 카드·요금·상태 예시의 자료는
-                가이드 표본입니다.
+                서비스에 적용한 UI와 하단바·달력 스타일을 확인합니다. 카드·요금·상태 자료와 버튼
+                동작은 가이드 표본입니다.
               </p>
             </header>
             <div className="guide-board">
@@ -494,6 +492,23 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                   </div>
                 </div>
               </section>
+              <section id="dates">
+                <h3>날짜 선택</h3>
+                <div className="sample">
+                  <DateField />
+                  <p className="hint">
+                    연도·월을 눌러 연도를 고릅니다. 오늘은 원형 테두리로 구분하며 날짜를 눌러
+                    선택해요.
+                  </p>
+                  <p className="hint">
+                    지우기는 모달 하단 왼쪽, 취소·완료는 오른쪽에 둡니다. 선택 값이 있을 때 입력
+                    옆의 ×로도 지울 수 있어요.
+                  </p>
+                </div>
+                <p className="hint">
+                  서비스의 날짜 필터 도입과 실기기·스크린리더·웹뷰 확인은 별도 작업입니다.
+                </p>
+              </section>
               <section id="navigation">
                 <h3>상단·하단 내비게이션</h3>
                 <p className="section-description">
@@ -531,6 +546,76 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                   <p className="hint">
                     로그인은 카카오·네이버·구글 계정으로 진행해요. 외부 설정과 정책 확인 후 사용할
                     수 있으며 북마크 저장·AI 추천은 보류 중이고 사용자 환경 설정은 미정이에요.
+                  </p>
+                </div>
+              </section>
+              <section id="future-navigation">
+                <h3>하단바 스타일</h3>
+                <p className="section-description">
+                  하단 메뉴의 아이콘·이름·선택 표시를 보여줍니다. 아래 버튼으로 선택 모양을 확인할
+                  수 있어요.
+                </p>
+                <div className="sample">
+                  <h4>아이콘·이름·선택 표시</h4>
+                  <div className="future-header">
+                    <span
+                      className="wordmark"
+                      role="img"
+                      aria-label="나들이랑"
+                    />
+                    <span>
+                      <Icon name="search" />
+                    </span>
+                    <NavigationLink
+                      href="/login"
+                      className="button primary login-placeholder"
+                    >
+                      로그인
+                    </NavigationLink>
+                  </div>
+                  <div className="future-nav">
+                    {(
+                      [
+                        ["home", "홈"],
+                        ["bookmark", "북마크"],
+                        ["spark", "AI 추천"],
+                        ["user", "내정보"],
+                      ] satisfies [IconName, string][]
+                    ).map(([name, label]) => (
+                      <button
+                        key={name}
+                        type="button"
+                        aria-pressed={navigationSelection === name}
+                        aria-label={`${label} 선택 상태 예시`}
+                        onClick={() => setNavigationSelection(name)}
+                      >
+                        <Icon name={name} />
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="hint">
+                    선 아이콘·진한 초록색·라벨 700·조금 굵은 선으로 선택을 구분합니다. 북마크
+                    저장·AI 추천 기능은 아직 연결하지 않았어요.
+                  </p>
+                </div>
+                <div className="sample menu-comparison">
+                  <h4>메뉴 연결 상태</h4>
+                  <GuideTable
+                    className="guide-table menu-comparison-table"
+                    rows={[
+                      [
+                        "현재 구성",
+                        "상단은 로고·검색·로그인, 하단은 홈·북마크·내정보입니다. 내정보 목록은 공지사항·FAQ·설정 순서이며 설정은 항상 마지막에 두고 정책·출처를 확인해요.",
+                      ],
+                      [
+                        "미연결 기능",
+                        "북마크 저장·AI 추천은 아직 연결되지 않았으며 사용자 환경 설정은 필요가 정해지면 구현해요.",
+                      ],
+                    ]}
+                  />
+                  <p className="hint">
+                    내정보·설정·FAQ·공지사항·정책 페이지에서는 하단 내정보를 선택 상태로 표시해요.
                   </p>
                 </div>
               </section>
@@ -660,7 +745,7 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                   className="guide-status"
                   data-review={false}
                 >
-                  현재 구현
+                  현재 화면
                 </span>
               </div>
               <p>
@@ -677,7 +762,7 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                   <div>
                     <h3>서비스 화면 미리보기</h3>
                     <p className="section-description">
-                      확인할 화면을 선택해 하나씩 봅니다. 화면 안에서 스크롤·검색·필터를 직접 사용할
+                      선택한 서비스 화면과 오른쪽 광고 목록을 함께 봅니다. 각 화면 안에서 스크롤할
                       수 있어요.
                     </p>
                   </div>
@@ -711,32 +796,42 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 </div>
                 <div className="guide-home-notes">
                   <p>진행 중(종료일순) → 곧 시작(시작일순) → 상설(이름순) · 섹션별 최대 3곳</p>
-                  <p>
-                    더 보기는 조건 유지 · 기본 내일부터 14일 · 기간 비교는 검토 중 구역에서 확인
-                  </p>
+                  <p>더 보기는 선택한 조건을 유지합니다.</p>
                 </div>
-                <figure className="guide-screen">
-                  <figcaption>
-                    <strong>{screen.label}</strong>
-                    <a
-                      href={screen.src}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`${screen.label} 새 탭으로 보기`}
-                    >
-                      새 탭으로 보기
-                      <Icon name="next" />
-                    </a>
-                  </figcaption>
-                  <div className="guide-preview-frame">
-                    <iframe
-                      key={screen.src}
-                      src={screen.src}
-                      title={`모바일 ${screen.label} 미리보기`}
-                      loading="lazy"
-                    />
-                  </div>
-                </figure>
+                <div className="guide-screen-pair">
+                  <figure className="guide-screen">
+                    <figcaption>
+                      <strong>{screen.label}</strong>
+                      <a
+                        href={screen.src}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${screen.label} 새 탭으로 보기`}
+                      >
+                        새 탭으로 보기
+                        <Icon name="next" />
+                      </a>
+                    </figcaption>
+                    <div className="guide-preview-frame">
+                      <iframe
+                        key={screen.src}
+                        src={screen.src}
+                        title={`모바일 ${screen.label} 미리보기`}
+                        loading="lazy"
+                      />
+                    </div>
+                  </figure>
+                  <figure
+                    id="ad-placement"
+                    className="guide-screen guide-ad-screen"
+                  >
+                    <figcaption>
+                      <strong>광고</strong>
+                      <span className="small muted">목록 중간 배치</span>
+                    </figcaption>
+                    <AdPlacementPreview result={adPreview} />
+                  </figure>
+                </div>
               </section>
             </div>
           </section>
@@ -755,180 +850,20 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                   미적용 · 검토·보류
                 </span>
               </div>
-              <p>
-                달력·광고 배치·후속 메뉴와 홈 기간 비교를 따로 모았습니다. 예시 조작은 실제 서비스의
-                기능 도입이나 기본값 변경을 뜻하지 않습니다.
-              </p>
+              <p>아직 적용하지 않은 기능과 남은 확인을 정리합니다.</p>
             </header>
             <div className="guide-board">
-              <section id="dates">
-                <h3>날짜 선택 · 검토 중</h3>
-                <div className="sample">
-                  <DateField />
-                  <p className="hint">
-                    연도·월을 눌러 연도를 고릅니다. 오늘은 테두리와 ‘오늘’ 표시로 구분하며 날짜를
-                    눌러 선택해요.
-                  </p>
-                  <p className="hint">
-                    지우기는 모달 하단 왼쪽, 취소·완료는 오른쪽에 둡니다. 선택 값이 있을 때 입력
-                    옆의 ×로도 지울 수 있어요.
-                  </p>
-                </div>
-                <p className="hint">
-                  직접 제어 달력의 검토 시안입니다. 실기기·스크린리더·웹뷰 검증은 제품 적용 때
-                  수행합니다.
-                </p>
-              </section>
-              <section
-                id="ad-placement"
-                className="guide-ad-placement"
-              >
-                <div className="guide-section-head">
-                  <h3>목록 중간 광고 위치 · 검토 중</h3>
-                  <div className="guide-width-control">
-                    <label htmlFor="adPreviewWidth">광고 목록 미리보기 너비</label>
-                    <select
-                      id="adPreviewWidth"
-                      value={previewWidth}
-                      onChange={(event) => setPreviewWidth(Number(event.target.value))}
-                    >
-                      <option value="320">320px · 작은 화면</option>
-                      <option value="390">390px · 기본</option>
-                      <option value="430">430px · 넓은 화면</option>
-                    </select>
-                  </div>
-                </div>
-                <p className="section-description">
-                  실제 목록의 6번째·14번째 카드 뒤에 광고 자리를 표시합니다. 위치·크기는 검토용이며
-                  실제 광고는 불러오지 않습니다.
-                </p>
-                <AdPlacementPreview result={adPreview} />
-              </section>
-              <section id="future-navigation">
-                <h3>후속 메뉴 예시 · 보류</h3>
-                <p className="section-description">
-                  북마크·AI 추천을 포함한 미적용 구성입니다. 아래 버튼은 선택 모양만 바꾸며 실제
-                  기능을 실행하지 않습니다.
-                </p>
-                <div className="sample">
-                  <h4>후속 구성 예시 · 구현 보류</h4>
-                  <div className="future-header">
-                    <span
-                      className="wordmark"
-                      role="img"
-                      aria-label="나들이랑"
-                    />
-                    <span>
-                      <Icon name="search" />
-                    </span>
-                    <NavigationLink
-                      href="/login"
-                      className="button primary login-placeholder"
-                    >
-                      로그인
-                    </NavigationLink>
-                  </div>
-                  <div className="future-nav">
-                    {(
-                      [
-                        ["home", "홈"],
-                        ["bookmark", "북마크"],
-                        ["spark", "AI 추천"],
-                        ["user", "내정보"],
-                      ] satisfies [IconName, string][]
-                    ).map(([name, label]) => (
-                      <button
-                        key={name}
-                        type="button"
-                        aria-pressed={futureSelection === name}
-                        aria-label={`${label} 선택 상태 예시`}
-                        onClick={() => setFutureSelection(name)}
-                      >
-                        <Icon name={name} />
-                        <span>{label}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <p className="hint">
-                    북마크·상황별 AI 추천을 추가했을 때의 가이드 예시입니다. 버튼은 선 아이콘을
-                    유지하고 진한 초록색·라벨 700·조금 굵은 선으로 선택을 구분합니다. 북마크
-                    저장이나 AI 추천을 실행하지 않아요.
-                  </p>
-                </div>
-                <div className="sample menu-comparison">
-                  <h4>메뉴 구성 비교</h4>
-                  <GuideTable
-                    className="guide-table menu-comparison-table"
-                    rows={[
-                      [
-                        "현재 구성",
-                        "상단은 로고·검색·로그인, 하단은 홈·북마크·내정보입니다. 내정보 목록은 공지사항·FAQ·설정 순서이며 설정은 항상 마지막에 두고 정책·출처를 확인해요.",
-                      ],
-                      [
-                        "후속 확장",
-                        "북마크 저장·AI 추천은 후속이며 사용자 환경 설정은 필요가 정해지면 구현해요.",
-                      ],
-                    ]}
-                  />
-                  <p className="hint">
-                    내정보·설정·FAQ·공지사항·정책 페이지에서는 하단 내정보를 선택 상태로 표시해요.
-                  </p>
-                </div>
-              </section>
-              <section id="home-comparison">
-                <div className="guide-section-head">
-                  <div>
-                    <h3>홈 기간 비교</h3>
-                    <p className="section-description">
-                      현재 기본값은 내일부터 14일입니다. 7·30일은 이 예시에서만 비교하며 서비스
-                      기본값을 바꾸지 않습니다.
-                    </p>
-                  </div>
-                  <div className="guide-width-control">
-                    <label htmlFor="upcomingDays">다가오는 기간 비교</label>
-                    <select
-                      id="upcomingDays"
-                      value={upcomingDays}
-                      onChange={(event) => {
-                        const days = Number(event.target.value);
-                        setUpcomingDays(days);
-                        setMessage(`검토용 홈의 다가오는 기간을 ${days}일로 바꿨어요.`);
-                      }}
-                    >
-                      {[7, 14, 30].map((days) => (
-                        <option
-                          key={days}
-                          value={days}
-                        >
-                          내일부터 {days}일 · {days === 14 ? "채택 기준" : "가이드 비교"}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="guide-preview-frame">
-                  <iframe
-                    src={`/?previewDays=${upcomingDays}`}
-                    title="검토용 홈 기간 비교 미리보기"
-                    loading="lazy"
-                  />
-                </div>
-              </section>
               <section id="featurePlan">
                 <h3>검토 상태와 남은 확인</h3>
                 <p className="section-description">
-                  이 구역의 예시는 서비스 채택이나 기능 완료를 의미하지 않습니다. 세부 범위·선행
-                  작업·완료 조건은 저장소 PLAN.md와 DESIGN.md를 따릅니다.
+                  스타일 채택과 기능 도입·운영 검증 완료는 구분합니다. 세부 범위·선행 작업·완료
+                  조건은 저장소 PLAN.md와 DESIGN.md를 따릅니다.
                 </p>
                 <GuideTable
                   rows={[
                     [
-                      "검토 중 · P27",
-                      "날짜 입력·달력은 가이드 전용입니다. 날짜 필터 도입은 P32에서 별도로 판단합니다.",
-                    ],
-                    [
-                      "배치 검토 · P85",
-                      "광고 자리의 위치·간격·크기는 미정이며 실제 광고 연동은 보류합니다.",
+                      "남은 확인 · P27",
+                      "달력 스타일은 공통 UI에서 확인합니다. 실제 낭독·기기 검증은 남아 있으며 날짜 필터와 미래 날짜 범위는 P32에서 판단합니다.",
                     ],
                     [
                       "구현 보류 · P29·P31",

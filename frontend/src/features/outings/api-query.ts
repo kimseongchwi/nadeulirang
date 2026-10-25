@@ -48,9 +48,9 @@ export function queryParameters(input: URLSearchParams, options: Options | null,
   return result;
 }
 export function windowDays(value: string | null) {
-  if (!value) return 14;
-  if (!["7", "14", "30"].includes(value)) throw new Error("기간 구간을 확인해 주세요.");
-  return Number(value);
+  if (value && !["7", "14", "30"].includes(value)) throw new Error("기간 구간을 확인해 주세요.");
+  // 기존 검토 주소도 현재 확정된 구간으로 조회한다.
+  return 14;
 }
 export function searchFormQuery(form: URLSearchParams) {
   const input = new URLSearchParams(form);
@@ -60,7 +60,7 @@ export function searchFormQuery(form: URLSearchParams) {
   if (scope === "upcoming") input.set("days", "14");
   else if (scope === "upcoming:7" || scope === "upcoming:30") {
     input.set("scope", "upcoming");
-    input.set("days", scope.split(":")[1]);
+    input.set("days", "14");
   }
   return queryParameters(input, null);
 }

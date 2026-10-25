@@ -17,6 +17,7 @@ export function Dialog({
   id,
   className = "",
   sheet = false,
+  viewportInset = 16,
   children,
 }: {
   open: boolean;
@@ -25,6 +26,7 @@ export function Dialog({
   id: string;
   className?: string;
   sheet?: boolean;
+  viewportInset?: number;
   children: ReactNode;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -53,14 +55,14 @@ export function Dialog({
         ? guide
           ? Math.min(390, right - left - 32)
           : right - left
-        : right - left - 32;
+        : right - left - viewportInset * 2;
       dialog.style.width = `${width}px`;
       dialog.style.margin = "0";
       dialog.style.left = `${sheet ? left + (right - left - width) / 2 : (left + right) / 2}px`;
       dialog.style.top = sheet ? "auto" : `${(top + bottom) / 2}px`;
       dialog.style.bottom = sheet ? `${window.innerHeight - bottom}px` : "auto";
       dialog.style.transform = sheet ? "none" : "translate(-50%, -50%)";
-      dialog.style.maxHeight = `${sheet ? (bottom - top) * 0.85 : bottom - top - 32}px`;
+      dialog.style.maxHeight = `${sheet ? (bottom - top) * 0.85 : bottom - top - viewportInset * 2}px`;
       if (sheet) {
         dialog.style.removeProperty("height");
         const bounds = sheetBounds(bottom - top, dialog.getBoundingClientRect().height);
@@ -109,7 +111,7 @@ export function Dialog({
         if (origin?.isConnected) origin.focus({ preventScroll: true });
       }
     };
-  }, [open, sheet]);
+  }, [open, sheet, viewportInset]);
   return (
     <dialog
       ref={dialogRef}

@@ -1095,10 +1095,6 @@ dialog[open]::backdrop {
 .guide-width-control select + label {
   margin-top: 12px;
 }
-.guide-ad-placement {
-  grid-column: 1 / -1;
-  min-width: 0;
-}
 .guide-ad-frame {
   width: var(--guide-preview-width);
   max-width: 100%;
