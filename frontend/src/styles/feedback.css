@@ -76,6 +76,17 @@
 .state-error {
   color: var(--warning);
 }
+.loading-caption {
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0;
+  animation: reveal-loading-caption 0s 3s forwards;
+}
+@keyframes reveal-loading-caption {
+  to {
+    opacity: 1;
+  }
+}
 .walking-scene {
   position: relative;
 }

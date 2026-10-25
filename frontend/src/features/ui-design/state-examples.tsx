@@ -33,7 +33,7 @@ export function StateExamples({ onMessage }: { onMessage: (message: string) => v
           <div className="state-example-stage">
             <LoadingState placement={statePlacement} />
           </div>
-          <p className="hint">파비콘과 같은 심볼 · 걷는 듯한 작은 움직임</p>
+          <p className="hint">같은 심볼 · 3초 이상 대기하면 짧은 안내를 표시</p>
         </article>
         <article className="state-example">
           <h4>아직 없는 결과</h4>

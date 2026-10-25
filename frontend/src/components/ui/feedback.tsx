@@ -61,6 +61,12 @@ export function LoadingState({ placement = "area" }: { placement?: StatePlacemen
       >
         <StateArt type="loading" />
         <span className="sr-only">나들이를 불러오고 있어요.</span>
+        <span
+          className="loading-caption"
+          aria-hidden="true"
+        >
+          정보를 불러오고 있어요.
+        </span>
       </div>
     </StateRegion>
   );
