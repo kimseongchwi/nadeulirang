@@ -505,7 +505,8 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                   </p>
                 </div>
                 <p className="hint">
-                  서비스의 날짜 필터 도입과 실기기·스크린리더·웹뷰 확인은 별도 작업입니다.
+                  달력은 공통 UI 예시이며 서비스 날짜 필터 도입 계획은 제거했습니다.
+                  실기기·스크린리더·웹뷰 확인은 남아 있습니다.
                 </p>
               </section>
               <section id="navigation">
