@@ -20,9 +20,7 @@ export function SearchScreen({
 }) {
   const { navigate } = useNavigation();
   const filters = new URLSearchParams(query);
-  const upcomingDays = Number(filters.get("days") || 14);
   const scope = filters.get("scope") || "";
-  const customUpcoming = scope === "upcoming" && upcomingDays !== 14;
   const results = data.items.map(outingSummary);
   const pages = Math.ceil(data.total / data.pageSize);
   const pageUrl = (page: number) => {
@@ -119,15 +117,12 @@ export function SearchScreen({
           <select
             id="scope"
             name="scope"
-            defaultValue={customUpcoming ? `upcoming:${upcomingDays}` : scope}
+            defaultValue={scope}
           >
             <option value="">전체</option>
             <option value="ongoing">행사 기간 진행 중</option>
-            <option value="upcoming">14일 안에 시작</option>
+            <option value="upcoming">곧 시작하는 나들이</option>
             <option value="permanent">상설 시설</option>
-            {customUpcoming && (
-              <option value={`upcoming:${upcomingDays}`}>{upcomingDays}일 안에 시작</option>
-            )}
           </select>
         </div>
         <div className="search-sort">

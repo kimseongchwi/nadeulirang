@@ -226,7 +226,6 @@
 .guide-board #navigation,
 .guide-board #pagination,
 .guide-board #future-navigation,
-.guide-board #home-comparison,
 .guide-board #featurePlan {
   grid-column: 1/-1;
 }
@@ -253,6 +252,21 @@
 }
 .guide-width-control select {
   font-size: 14px;
+}
+.guide-screen-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--guide-preview-width)), 1fr));
+  gap: 24px;
+  align-items: start;
+}
+.guide-ad-screen {
+  scroll-margin-top: 24px;
+}
+.guide-ad-screen figcaption {
+  min-height: 44px;
+}
+.guide-ad-screen .guide-ad-frame {
+  height: 600px;
 }
 .guide-screen {
   margin: 0;
@@ -425,6 +439,9 @@
     width: 100%;
   }
   .guide-preview-frame iframe {
+    height: 560px;
+  }
+  .guide-ad-screen .guide-ad-frame {
     height: 560px;
   }
   .guide-title h1 {
