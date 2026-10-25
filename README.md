@@ -4,7 +4,7 @@
 
 ## 기술 구성
 
-Next.js 16.3.8·React 19.2.8·TypeScript strict / Spring Boot 4.1.1·Java 21·Maven Wrapper 3.9.16 / PostgreSQL 18.6·Spring Data JPA·Hibernate·Flyway를 사용합니다.
+Next.js 16.4.3·React 19.2.8·TypeScript strict / Spring Boot 4.1.1·Java 21·Maven Wrapper 3.9.16 / PostgreSQL 18.6·Spring Data JPA·Hibernate·Flyway를 사용합니다.
 
 ## 빠른 실행
 
