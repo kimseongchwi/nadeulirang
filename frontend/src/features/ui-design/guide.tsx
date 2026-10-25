@@ -506,7 +506,6 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 </div>
                 <p className="hint">
                   달력은 공통 UI 예시이며 서비스 날짜 필터 도입 계획은 제거했습니다.
-                  실기기·스크린리더·웹뷰 확인은 남아 있습니다.
                 </p>
               </section>
               <section id="navigation">
@@ -864,10 +863,6 @@ export function GuideReview({ adPreview }: { adPreview: ApiResult<Page> }) {
                 </p>
                 <GuideTable
                   rows={[
-                    [
-                      "남은 확인 · P27",
-                      "달력은 공통 UI 예시로 유지하며 실제 낭독·기기 검증은 남아 있습니다. 방문 날짜 필터의 도입 계획은 제거했습니다.",
-                    ],
                     [
                       "구현 보류 · P29·P31",
                       "로그인 관련 기능인 북마크 저장·AI 추천은 보류합니다. 사용자 환경 설정은 필요가 정해진 뒤 판단합니다.",
