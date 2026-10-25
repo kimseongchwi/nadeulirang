@@ -74,7 +74,10 @@ export function DetailScreen({ data }: { data: Detail }) {
           key={item.id}
         >
           <h2>소개</h2>
-          <ExpandableDetailText values={content.description} />
+          <ExpandableDetailText
+            label="소개"
+            values={content.description}
+          />
         </section>
       )}
       <section className="detail-section">
@@ -134,6 +137,7 @@ export function DetailScreen({ data }: { data: Detail }) {
               <dd>
                 <ExpandableDetailText
                   key={item.id}
+                  label="행사 내용"
                   values={content.programs.flatMap((note) => note.values)}
                   emphasizeHeadings
                 />

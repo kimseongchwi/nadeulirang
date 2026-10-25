@@ -38,6 +38,8 @@ UI 가이드도 실제 공유 UI의 사용처다. 독립 표본을 나누면 요
 
 서버 page → api-server → 공통 requestJson/isHome/isPage/isDetail 검사 → 화면 props 흐름으로 실제 본문을 렌더링한다. 타입은 컴파일 때만 검사하므로 외부 JSON은 unknown으로 읽고 런타임 검사가 필요하다. use client 화면은 상태/클릭·브라우저 API를 사용한다. React props는 부모 입력, state는 컴포넌트가 갱신하는 값이다. 원천 문장은 JSX 텍스트로 표시하고 HTML로 삽입하지 않는다.
 
+화면 너비가 바뀌면 스크롤을 담당하는 요소도 바뀐다. 모바일은 문서 전체, 960px 이상 PC는 오른쪽 `.service-scroll`이 움직이므로 문서 스크롤을 그대로 두면 PC 안내와 서비스 상단이 잘릴 수 있다. [SiteShell](../frontend/src/components/layout/site-shell.tsx)은 React `useEffect`에서 브라우저 `matchMedia`의 경계 변경을 구독하고 두 스크롤 위치를 해당 요소로 옮긴다. 스크롤 이벤트의 위치는 effect 안의 변수로 기억해 매번 React를 다시 렌더링하지 않으며, 가이드 화면은 제외하고 정리 함수에서 이벤트를 해제한다. 페이지 이동·이력 복귀는 기존 NavigationProvider가 계속 담당한다.
+
 간단 보기는 열릴 때 /api/outings/:id의 Next route를 요청한다. 서버 전용 백엔드 주소와 같은 출처·검증/오류 계약을 유지하는 중계다. 공통 [api-request.ts](../frontend/src/features/outings/api-request.ts)는 HTTP/연결/본문 실패를 구분하고 시간 제한·캐시 제외·리다이렉트 차단을 적용한다. 닫기/항목 변경은 AbortController로 취소해 늦은 응답이 화면을 덮지 않게 한다. 가이드 표본은 실제 조회 실패의 대체값으로 사용하지 않는다.
 
 [OutingCard](../frontend/src/features/outings/outing-card.tsx)의 선택 입력 `previewId`는 간단 보기의 URL hash와 Dialog의 DOM ID를 구분한다. 기본값은 자료 ID이며, 같은 자료를 한 가이드에서 여러 번 표시할 때 광고 위치 미리보기만 별도 접두부를 사용해 시트가 동시에 열리거나 HTML ID가 중복되는 것을 막는다. 상세 API 조회와 상세 링크는 원래 자료 ID를 그대로 사용한다.

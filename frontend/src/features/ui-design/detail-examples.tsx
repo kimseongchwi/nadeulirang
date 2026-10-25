@@ -536,6 +536,7 @@ export function DetailExamples() {
               <dt>행사 내용 · 연속 번호/변경 안내</dt>
               <dd>
                 <ExpandableDetailText
+                  label="행사 내용 · 연속 번호/변경 안내"
                   emphasizeHeadings
                   values={[
                     feeSample(
@@ -554,6 +555,7 @@ export function DetailExamples() {
               <dt>행사 내용 · 전시 기간/매주 공연</dt>
               <dd>
                 <ExpandableDetailText
+                  label="행사 내용 · 전시 기간/매주 공연"
                   emphasizeHeadings
                   values={[
                     feeSample(

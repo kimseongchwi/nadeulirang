@@ -36,6 +36,7 @@ function HomeSection({
         <NavigationLink
           href={`/search?${search}`}
           className="more"
+          aria-label={`${title} 더 보기`}
         >
           더 보기 <Icon name="next" />
         </NavigationLink>

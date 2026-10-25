@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { brandPalette } from "@/config/brand";
 import { Dialog, type DialogStyle } from "@/components/ui/dialog";
 import { Icon } from "@/components/ui/icons";
@@ -14,7 +14,40 @@ import { NavigationProgress } from "./navigation-progress";
 export function SiteShell({ children }: { children: ReactNode }) {
   const { pathname, homeUrl, searchUrl, hash, pending } = useNavigation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const guide = pathname === "/ui-design";
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (guide || !container) return;
+    const desktop = window.matchMedia("(min-width: 960px)");
+    let pageTop = window.scrollY;
+    let contentTop = container.scrollTop;
+    const rememberPageScroll = () => {
+      if (!desktop.matches) pageTop = window.scrollY;
+    };
+    const rememberContentScroll = () => {
+      if (desktop.matches) contentTop = container.scrollTop;
+    };
+    const moveScroll = () => {
+      if (desktop.matches) {
+        window.scrollTo(0, 0);
+        container.scrollTop = pageTop;
+        contentTop = container.scrollTop;
+      } else {
+        window.scrollTo(0, contentTop);
+        pageTop = window.scrollY;
+      }
+    };
+    if (desktop.matches && window.scrollY > 0) moveScroll();
+    window.addEventListener("scroll", rememberPageScroll, { passive: true });
+    container.addEventListener("scroll", rememberContentScroll, { passive: true });
+    desktop.addEventListener("change", moveScroll);
+    return () => {
+      window.removeEventListener("scroll", rememberPageScroll);
+      container.removeEventListener("scroll", rememberContentScroll);
+      desktop.removeEventListener("change", moveScroll);
+    };
+  }, [guide]);
   const style: DialogStyle = {};
   for (const [key, value] of Object.entries(brandPalette)) style[`--${key}`] = value;
   const myPageArea =
@@ -95,7 +128,10 @@ export function SiteShell({ children }: { children: ReactNode }) {
           </aside>
         )}
         <div className="service">
-          <div className="service-scroll">
+          <div
+            className="service-scroll"
+            ref={scrollRef}
+          >
             <div className="service-content">
               {!guide && (
                 <>
