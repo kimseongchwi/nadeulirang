@@ -46,13 +46,13 @@ Hobby 포함량은 데이터 전송 100GB, 원본 전송 10GB, 함수 호출 100
 | Output Directory | Next.js 기본값, 별도 덮어쓰기 없음 |
 | `SITE_INDEXABLE` | Preview·Production 모두 `false` |
 | `SITE_URL` | 검토 중 미설정, 공개 대표 주소를 지정하지 않음 |
-| `BACKEND_URL` | 외부 Spring의 HTTPS 원점을 확보한 뒤 필요한 배포 환경에만 설정 |
+| `BACKEND_URL` | Preview·Production의 서버 전용 `https://nadeulirang-review-api.onrender.com` |
 
 [빌드 설정](https://vercel.com/docs/builds/configure-a-build)을 따르며 Root Directory가 이미 frontend이므로 빌드 명령에 `--prefix frontend`를 추가하지 않습니다. 이 앱은 SSR·동일 출처 API 중계가 필요하므로 정적 export나 `out` 디렉터리를 사용하지 않습니다. Vercel의 Production 표시는 이 검토 프로젝트의 배포 분류이며 서비스의 공개 운영 완료를 뜻하지 않습니다.
 
 검토 주소: [나들이랑 Vercel 검토](https://nadeulirang-review-kimseongchwis-projects.vercel.app/). Vercel Authentication 보호를 유지하므로 소유자의 Vercel 로그인 권한이 필요합니다. noindex는 검색 제외이고 접근 인증을 대신하지 않습니다. 주소를 확인하려고 임시 공유 링크나 보호 우회 토큰을 자동 생성하지 않습니다.
 
-Vercel 함수의 localhost는 Vercel 실행 환경입니다. `BACKEND_URL`을 비우면 현재 코드의 로컬 기본값으로 조회가 실패하며, 로컬 PC의 데이터를 볼 수 없습니다. 이 단계의 성공은 프론트 빌드·HTTPS 주소·실패/재시도 화면·noindex 확인입니다. 외부 백엔드·DB와 실제 데이터가 연결되어야 홈·검색·상세의 정상 조회를 완료했다고 판단합니다. 연결 순서는 [백엔드 검토 환경](../backend/README.md#외부-springpostgresql-검토-환경-p15)을 따릅니다.
+Vercel 함수의 localhost는 Vercel 실행 환경입니다. `BACKEND_URL`을 비우면 로컬 기본값으로 조회가 실패하며, 로컬 PC의 데이터를 볼 수 없습니다. 현재는 Render Spring·Neon의 별도 검토 DB를 연결해 홈·검색 51건/3페이지·간단 보기·상세·사진과 정상 빈 결과·없는 상세 안내·페이지/뒤로가기 복귀를 실제 주소에서 확인했습니다. 프론트 배포 성공·Spring readiness·DB 포함 health·실제 자료 조회 성공을 구분합니다. 무료 조건·이관/복원·절전 설정과 수집 후속은 [백엔드 검토 환경](../backend/README.md#외부-springpostgresql-검토-환경-p15)을 따릅니다.
 
 `BACKEND_URL`은 서버 전용이며 `NEXT_PUBLIC_`로 만들지 않습니다. DB/원천 키·OAuth·로컬 `.env`·홈 공통 설정을 Vercel로 복사하지 않습니다. 로그인은 이번 검토에서 검증하지 않으며 인증 환경변수도 추가하지 않습니다. 서버 주소나 색인 설정을 변경하면 재배포하고 실제 주소에서 다음을 확인합니다.
 
@@ -60,6 +60,8 @@ Vercel 함수의 localhost는 Vercel 실행 환경입니다. `BACKEND_URL`을 �
 2. 정상 0건과 없는 상세 404, 백엔드 장애 시 HTML 200/noindex·재시도와 `/api/outings/:id` 503 구분.
 3. 메타태그·`X-Robots-Tag`의 noindex, 검토 사이트맵의 빈 목록, 비로그인 요청의 Vercel 접근 보호.
 4. 절전 뒤 첫 실패와 백엔드 기동 후 재시도 성공. 느린 기동을 정상 0건으로 표시하지 않음.
+
+2026-10-26 실제 검토 DB의 일시 조회 실패에서 API 503·Vercel 조회 실패/noindex·재시도를 확인했고, 복구 후 같은 재시도 버튼으로 정상 홈을 확인했습니다. 이 검증은 새 검토 DB에서만 수행했으며 로컬 DB·저장 원문은 변경하지 않았습니다. 무료 Spring은 최초 141초·실제 절전 복귀 140초로 8초 요청 제한을 넘었습니다. Render 유휴 종료 뒤 첫 실패 안내와 기동 후 같은 버튼의 정상 홈 회복도 확인했습니다. 첫 접속이 실패하면 기동을 기다린 뒤 재시도하며 상시 깨우기 호출을 등록하지 않습니다.
 
 ## 서버와 브라우저
 

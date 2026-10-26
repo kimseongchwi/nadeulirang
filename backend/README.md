@@ -141,13 +141,15 @@ Render 무료 환경은 운영용 보장이 없고 언제든 재시작될 수 �
 
 | 항목 | 검토 환경 |
 |---|---|
-| Neon 조직·프로젝트 / DB | `nadeulirang-review` / `nadeulirang_review`, PostgreSQL 18·AWS Singapore·Free |
+| Neon 조직·프로젝트 / DB | `nadeulirang-review` / `nadeulirang_review`, 실제 PostgreSQL 18.6·AWS Singapore·Free·0.25 CU 고정 |
 | Render 서비스 | `nadeulirang-review-api`, Web Service·Docker·Singapore·Free |
 | Git / Root Directory | `codex/vercel-review` / `backend` |
 | Dockerfile / Build Context | Root Directory 기준 `./Dockerfile` / `.` |
 | Health Check Path | `/actuator/health/readiness` |
 | Auto-Deploy | Off, 검증한 커밋을 수동 배포 |
 | 비밀 환경변수 | `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`만 Render에 설정. 홈/로컬 설정·OAuth·원천 키를 복사하지 않음 |
+
+Spring 주소는 [검토 API](https://nadeulirang-review-api.onrender.com/actuator/health)이며 Vercel의 실제 화면은 [프론트 검토 주소](https://nadeulirang-review-kimseongchwis-projects.vercel.app/)입니다. 2026-10-26 Render의 Docker 빌드·512MB 무료 인스턴스 기동·Flyway V1~V8·TLS DB health·홈/목록/상세 API와 Vercel 정상 표시를 확인했습니다. 최초 Spring 기동은 141초, 실제 유휴 종료 뒤 재기동은 140초였습니다. 절전 뒤 첫 Vercel 접속의 실패 안내와 기동 후 같은 재시도 버튼의 정상 홈·DB health UP·검색 51건 회복을 확인했으며 문서의 일반적인 약 1분보다 길 수 있습니다.
 
 [Dockerfile](Dockerfile)은 Java 21 JDK에서 Maven Wrapper로 JAR를 만들고 비root Java 21 JRE로 실행합니다. 이미지 빌드에는 DB 값이 필요 없습니다. DB 회귀·패키징은 먼저 루트 `commit:checked`와 CI에서 실행하고 이미지 빌드는 테스트를 반복하지 않습니다. 512MB에서 기동 가능 여부는 실제 Render 결과로 판단합니다. JVM은 heap 256MB·SerialGC·프로세서 1개·제한한 metaspace/code cache/direct memory를 사용하며 전체 RSS는 heap보다 큽니다.
 
@@ -171,6 +173,8 @@ Render의 주기적 readiness는 `readinessState`만 확인하여 DB를 깨우�
 
 SQL의 원문 JSON은 UTF-8 Base64로 전달하고 DB에서 복원하여 편집기의 `E'...'` 문자열 분할 차이를 피합니다. 대용량 편집기 전송은 작은 구간으로 나누되 실행 전 전체 검토본과 정확히 일치하는지 확인합니다. 편집기 오류는 해당 트랜잭션을 ROLLBACK한 뒤 대상이 비었는지 확인하고 재시도합니다.
 
+이번 제한 이관은 공개 후보 72건·원천 연결 74건·원문 관측 359건·근거 6,381건·허락 사진 35건입니다. 회원/세션 0건·원문 지문 일치를 확인했고 이관 직후 DB는 11,730,944바이트(약 11.2MiB)였습니다. 검색 51건과 과거/다른 기간의 공개 후보 수는 구분합니다. 무료 수동 snapshot 1개를 만들고 별도 분기로 복원해 건수·원문 지문·회원 0건을 재확인했으며 원래 연결을 전환하지 않았습니다. 복원 검증 분기는 원본/스냅샷과 함께 보존하고 프로젝트 전체 CU/저장 포함량을 공유하므로 이후 사용량 확인에 포함합니다. snapshot은 그 시점의 복구점이며 이후 수집의 자동 백업을 대신하지 않습니다.
+
 연결 후에는 홈·검색·간단 보기·상세·사진·빈 결과·404·페이지/뒤로가기 복귀, HTML 실패 200/noindex·중계 503·재시도, DB 절전과 Render 15분 절전 후 회복을 실제 주소에서 구분해 검증합니다. Render 재기동 약 1분은 프론트 8초 제한보다 길 수 있으므로 첫 실패를 0건으로 해석하지 않고 기동 후 재시도로 확인합니다. 프론트 timeout 연장이나 절전 방지 호출을 먼저 추가하지 않습니다.
 
 ### 수동 수집·일일 예약의 다음 단계
@@ -182,6 +186,14 @@ SQL의 원문 JSON은 UTF-8 Base64로 전달하고 DB에서 복원하여 편집�
 일일 예약은 이 수동 실행이 반복 가능해진 다음 별도 작업으로 진행합니다. 서울 기준 실행 시각·최대 건수·원천 예산·중복 실행 잠금·실패 시 재개/알림·갱신 후 공개 심사·백업 복원을 정하고 스케줄러의 무료 한도와 비밀 관리부터 확인합니다. Render Free는 cron/one-off 실행을 제공하지 않으며 Render Cron은 [최소 월 $1](https://render.com/articles/how-much-does-cloud-application-hosting-cost-for-small-businesses)이므로 이번 무료 범위에 등록하지 않습니다. 로컬 작업 스케줄러는 PC 기동이 필요하고, GitHub Actions는 저장소 공개 여부·포함 실행량·비밀 사용 범위를 확인한 뒤 별도 선택할 수 있습니다.
 
 장기 무료 용량은 현재 18MB만으로 보장하지 않습니다. 이관 직후와 수동 수집 전후 `SELECT pg_database_size(current_database());` 및 `pg_total_relation_size`로 원문/근거/인덱스별 증가량을 기록하고, Neon Usage의 저장·history·CU-hours·전송과 Render Billing의 시간·빌드·전송을 함께 확인합니다. `최근 증가량 / 경과일`로 일일 증가를 추정해 1GB까지 남은 기간을 계산하되 전체 수집량·사진 메타데이터·인덱스·원문 갱신 누적을 포함합니다. 미사용 브랜치도 저장/연산량에 영향을 줍니다. 한도 접근 시 수집을 멈추고 보존/백업 범위를 검토하며 자동 유료 전환이나 원문 삭제로 대응하지 않습니다.
+
+~~~sql
+SELECT pg_database_size(current_database()) AS database_bytes;
+SELECT relname, pg_total_relation_size(relid) AS total_bytes
+FROM pg_stat_user_tables
+WHERE schemaname = 'nadeulirang'
+ORDER BY total_bytes DESC;
+~~~
 
 계정 생성·약관/권한 동의가 필요한 화면은 사용자가 직접 처리합니다. 도메인·수익화·로그인/회원·북마크·AI·광고·웹뷰·방문 날짜 필터는 이번 연결 시험의 대상이 아닙니다. 프론트 빌드·서버 변수·검토 주소는 [Vercel 검토 배포](../frontend/README.md#vercel-개인-검토-배포-p15)를 따릅니다.
 
