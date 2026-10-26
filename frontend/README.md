@@ -52,6 +52,16 @@ Hobby 포함량은 데이터 전송 100GB, 원본 전송 10GB, 함수 호출 100
 
 검토 주소: [나들이랑 Vercel 검토](https://nadeulirang-review-kimseongchwis-projects.vercel.app/). Vercel Authentication 보호를 유지하므로 소유자의 Vercel 로그인 권한이 필요합니다. noindex는 검색 제외이고 접근 인증을 대신하지 않습니다. 주소를 확인하려고 임시 공유 링크나 보호 우회 토큰을 자동 생성하지 않습니다.
 
+검토할 때는 위 대표 별칭을 사용합니다. 개별 배포 주소는 생성 당시 코드·환경변수를 유지하므로 프로젝트의 환경변수를 바꿔도 예전 배포가 함께 갱신되지 않습니다. 2026-10-26 대조한 연결은 다음과 같습니다.
+
+| 주소 | 배포 구분·코드 | 연결 판단 |
+|---|---|---|
+| 대표 별칭 `nadeulirang-review-kimseongchwis-projects.vercel.app` | 아래 Production 배포를 가리킴 | 앞으로 사용할 개인 검토 주소 |
+| `nadeulirang-review-rbvn13k5l-kimseongchwis-projects.vercel.app` | Production·`b45adae` | `BACKEND_URL` 설정 후 생성된 연결 배포 |
+| `nadeulirang-review-ge67mp1e5-kimseongchwis-projects.vercel.app` | Preview·`676bd92` | `BACKEND_URL` 설정 전 배포. Spring 기동 후에도 실패하므로 검토에 사용하지 않음 |
+
+서버 조회 실패를 모두 절전으로 판단하지 않습니다. 브라우저 URL → 프로젝트/별칭/배포 커밋 → 해당 대상의 서버 환경변수와 변경 후 배포 여부 → Render 기동 로그 → readiness → DB 포함 health → 실제 API/SSR/간단 보기 순서로 대조합니다. 대표 주소도 Render가 절전에서 기동하는 동안 8초 조회 제한으로 실패할 수 있습니다. 이번 재확인에서는 Spring 기동 131.4초 뒤 같은 재시도 버튼으로 정상 홈을 확인했습니다. 이전 주소의 설정 누락과 이 일시 실패는 별개입니다. timeout을 늘리거나 자동 무한 재시도·절전 방지 ping을 추가하지 않습니다.
+
 Vercel 함수의 localhost는 Vercel 실행 환경입니다. `BACKEND_URL`을 비우면 로컬 기본값으로 조회가 실패하며, 로컬 PC의 데이터를 볼 수 없습니다. 현재는 Render Spring·Neon의 별도 검토 DB를 연결해 홈·검색 51건/3페이지·간단 보기·상세·사진과 정상 빈 결과·없는 상세 안내·페이지/뒤로가기 복귀를 실제 주소에서 확인했습니다. 프론트 배포 성공·Spring readiness·DB 포함 health·실제 자료 조회 성공을 구분합니다. 무료 조건·이관/복원·절전 설정과 수집 후속은 [백엔드 검토 환경](../backend/README.md#외부-springpostgresql-검토-환경-p15)을 따릅니다.
 
 `BACKEND_URL`은 서버 전용이며 `NEXT_PUBLIC_`로 만들지 않습니다. DB/원천 키·OAuth·로컬 `.env`·홈 공통 설정을 Vercel로 복사하지 않습니다. 로그인은 이번 검토에서 검증하지 않으며 인증 환경변수도 추가하지 않습니다. 서버 주소나 색인 설정을 변경하면 재배포하고 실제 주소에서 다음을 확인합니다.
