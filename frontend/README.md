@@ -30,6 +30,37 @@ page.tsx는 URL 조건·서버 데이터·제목을 처리하고 옆 화면 파�
 
 상세는 `detail-data.ts`를 layout·메타데이터·page가 공유합니다. layout이 `loading.tsx` 바깥에서 존재 여부를 먼저 확인해 직접 HTTP 요청의 404를 보존합니다. 메타데이터 스트리밍도 비활성화해 브라우저/크롤러의 제목·검색 설정을 응답 전에 결정합니다. 최초 HTML은 공개 조회를 기다리며, 앱 안의 이동에는 기존 공통 로딩을 유지합니다. 같은 서버 렌더의 동일 조회는 React cache로 재사용하고 요청을 넘어 실패 결과를 저장하지 않습니다. HTML 조회 실패 화면은 200/noindex·재시도이며 `/api/outings/:id`와 사이트맵의 조회 실패는 503입니다.
 
+## Vercel 개인 검토 배포 (P15)
+
+2026-10-26 공식 조건 확인 기준입니다. [Hobby](https://vercel.com/docs/plans/hobby)는 개인 비상업 용도에 한정되며 [공정 이용 기준](https://vercel.com/docs/limits/fair-use-guidelines)은 광고도 상업 이용으로 분류합니다. 이번 연결은 광고 없는 개인 검토이며 공개 수익화 환경의 선정이 아닙니다. 유료 전환·Pro 체험·결제수단 등록·도메인 구매·유료 부가 기능을 진행하지 않습니다.
+
+Hobby 포함량은 데이터 전송 100GB, 원본 전송 10GB, 함수 호출 100만 회, Active CPU 4시간, Provisioned Memory 360GB-hours입니다. 한도 초과 시 대체로 30일 경과까지 기능이 제한되며 추가 사용량 구매는 지원하지 않습니다. 유료 플랜·유료 부가 기능·도메인은 별도 비용 조건을 확인해야 합니다. 무료 조건은 변경될 수 있으므로 재연결 전에 공식 문서와 계정 Usage를 확인합니다.
+
+| 설정 | 검토 환경 값 |
+|---|---|
+| 프로젝트 | `nadeulirang-review` |
+| Framework Preset | Next.js, 현재 저장소 버전 16.4.3 |
+| Root Directory | `frontend` |
+| Node.js Version | `24.x` |
+| Install / Build Command | `npm ci` / `npm run build` |
+| Output Directory | Next.js 기본값, 별도 덮어쓰기 없음 |
+| `SITE_INDEXABLE` | Preview·Production 모두 `false` |
+| `SITE_URL` | 검토 중 미설정, 공개 대표 주소를 지정하지 않음 |
+| `BACKEND_URL` | 외부 Spring의 HTTPS 원점을 확보한 뒤 필요한 배포 환경에만 설정 |
+
+[빌드 설정](https://vercel.com/docs/builds/configure-a-build)을 따르며 Root Directory가 이미 frontend이므로 빌드 명령에 `--prefix frontend`를 추가하지 않습니다. 이 앱은 SSR·동일 출처 API 중계가 필요하므로 정적 export나 `out` 디렉터리를 사용하지 않습니다. Vercel의 Production 표시는 이 검토 프로젝트의 배포 분류이며 서비스의 공개 운영 완료를 뜻하지 않습니다.
+
+검토 주소: [나들이랑 Vercel 검토](https://nadeulirang-review-kimseongchwis-projects.vercel.app/). Vercel Authentication 보호를 유지하므로 소유자의 Vercel 로그인 권한이 필요합니다. noindex는 검색 제외이고 접근 인증을 대신하지 않습니다. 주소를 확인하려고 임시 공유 링크나 보호 우회 토큰을 자동 생성하지 않습니다.
+
+Vercel 함수의 localhost는 Vercel 실행 환경입니다. `BACKEND_URL`을 비우면 현재 코드의 로컬 기본값으로 조회가 실패하며, 로컬 PC의 데이터를 볼 수 없습니다. 이 단계의 성공은 프론트 빌드·HTTPS 주소·실패/재시도 화면·noindex 확인입니다. 외부 백엔드·DB와 실제 데이터가 연결되어야 홈·검색·상세의 정상 조회를 완료했다고 판단합니다. 연결 순서는 [백엔드 검토 환경](../backend/README.md#외부-springpostgresql-검토-환경-p15)을 따릅니다.
+
+`BACKEND_URL`은 서버 전용이며 `NEXT_PUBLIC_`로 만들지 않습니다. DB/원천 키·OAuth·로컬 `.env`·홈 공통 설정을 Vercel로 복사하지 않습니다. 로그인은 이번 검토에서 검증하지 않으며 인증 환경변수도 추가하지 않습니다. 서버 주소나 색인 설정을 변경하면 재배포하고 실제 주소에서 다음을 확인합니다.
+
+1. 홈·검색·공개 상세의 SSR 내용/사진·간단 보기 중계와 페이지 이동·뒤로가기 복귀.
+2. 정상 0건과 없는 상세 404, 백엔드 장애 시 HTML 200/noindex·재시도와 `/api/outings/:id` 503 구분.
+3. 메타태그·`X-Robots-Tag`의 noindex, 검토 사이트맵의 빈 목록, 비로그인 요청의 Vercel 접근 보호.
+4. 절전 뒤 첫 실패와 백엔드 기동 후 재시도 성공. 느린 기동을 정상 0건으로 표시하지 않음.
+
 ## 서버와 브라우저
 
 서버 페이지는 api-server.ts를 통해 Spring을 조회합니다. 간단 보기의 브라우저 요청은 같은 출처 /api/outings/:id로 중계해 서버 전용 BACKEND_URL을 사용합니다. 양쪽은 api-request.ts의 응답/실패 검사와 api-contract.ts를 공유합니다. 정상 0건·400·404·503을 구분하고 장애를 표본으로 채우지 않습니다.

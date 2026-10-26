@@ -123,6 +123,31 @@ Spring 서버 실행 후 `http://localhost:8080`에서 아래 읽기 전용 API�
 
 오류 본문은 `code`·한국어 `message`·`retryable`만 제공하며 DB/SQL 오류 원문은 공개하지 않습니다. API 파일은 `src/main/java/kr/nadeulirang/backend/outing/`, HTTP·실제 DB 테스트는 `src/test/java/kr/nadeulirang/backend/outing/OutingApiTests.java`에 있습니다. 개념·호출 흐름은 [학습 문서](../docs/LEARNING.md#목록상세-http-조회와-공개-경계)를 참고합니다.
 
+## 외부 Spring·PostgreSQL 검토 환경 (P15)
+
+Vercel은 Next.js만 실행하며 로컬 PC의 `127.0.0.1:8080`·PostgreSQL에는 접속할 수 없습니다. 현재 외부 Spring·DB가 이 검토 프로젝트에 연결되어 있지 않습니다. 무료 후보는 2026-10-26 공식 조건 기준이며 계정 생성·약관 동의·유료 전환 없이 후보와 다음 단계를 정리합니다.
+
+| 후보 | 무료 조건·이용 제한 |
+|---|---|
+| [Render Free Web Service](https://render.com/docs/free) + Spring | 워크스페이스 월 750시간, 15분 무요청 시 절전·재기동 약 1분. 임시 파일은 재시작/배포/절전 때 소실, 영구 디스크·SSH·one-off job 없음. 외부 DB 등 과도한 발신 트래픽으로 정지 가능. 대역폭/빌드 포함량 초과는 결제수단이 있으면 추가 과금될 수 있고 없으면 서비스/새 빌드 제한 |
+| [Neon Free](https://neon.com/pricing) + PostgreSQL | 카드 없이 $0, 프로젝트당 저장 1GB·월 100 CU-hours·공용 전송 5GB, 5분 비활성 시 절전. CU/전송 초과 시 다음 기간까지 compute 정지, 저장 한도 초과 시 용량 증가 작업 실패. 자동 유료 전환을 선택하지 않음 |
+| Render Free Postgres | 1GB·워크스페이스 하나, 생성 30일 뒤 만료·추가 14일 뒤 삭제, 백업 없음. 장기 보존할 검토 DB에는 부적합 |
+
+Render 무료 환경은 운영용 보장이 없고 언제든 재시작될 수 있습니다. Java는 [Docker 배포](https://render.com/docs/docker)가 필요하며 무료 인스턴스의 512MB 메모리에서 JVM·Spring 기동을 실측해야 합니다. [Render DB](https://render.com/docs/postgresql-creating-connecting)는 13~18, [Neon](https://neon.com/docs/reference/compatibility)은 14~18을 지원하므로 기존 로컬 PostgreSQL 18과 같은 메이저를 선택할 수 있습니다. 실제 제공 마이너·리전·연결 한도는 생성 화면에서 재확인합니다. Render Web은 HTTPS 주소, Neon DB는 TLS 접속을 사용합니다.
+
+[Neon 한도·복구 조건](https://neon.com/docs/introduction/plans)에 따르면 무료 복구 이력은 최대 6시간/변경량 1GB이고 예약 백업은 없습니다. 장기 백업을 대신하지 않으며 별도 검토 DB의 수동 백업·복구 검증이 필요합니다. 유료 업그레이드 후에는 사용량 과금 조건이 달라집니다. Render와 Neon의 개인 검토 적합성을 조사한 것이며 광고·수익화 이용 조건을 확정하지 않습니다.
+
+전체 연결의 다음 순서는 다음과 같습니다.
+
+1. 사용자 계정에서 무료 플랜·무결제수단 상태·약관을 직접 확인하고 별도 검토 DB를 생성합니다. 기존 로컬 DB를 초기화하거나 통째로 업로드하지 않습니다. 필요한 공개 자료·원문 근거·사진 이용허락의 범위를 먼저 결정하고, 회원·인증·세션 자료는 제외한 제한적 이관 또는 별도 원천 수집을 준비합니다. 현재 로컬 자료는 계속 보존합니다.
+2. Spring용 Java 21 Docker 빌드를 준비합니다. Maven Wrapper로 `verify` 후 JAR를 만들고 `java -jar`로 실행합니다. Render의 `PORT`를 `SERVER_PORT`로 연결하고 `/actuator/health`가 실제 DB 연결 시 200/UP인지 확인합니다. 아직 Docker 설정·외부 기동은 검증하지 않았습니다.
+3. 새 검토 DB의 `DB_URL`(JDBC+TLS)·`DB_USERNAME`·`DB_PASSWORD`만 Spring 서버의 비밀 환경변수로 입력합니다. 비밀번호를 URL/명령 출력에 넣지 않습니다. Flyway는 별도 DB에 기존 버전 순서로 적용하고 `ddl-auto=validate`·`clean-disabled=true`를 유지합니다. 로컬 DB/홈 설정·OAuth/원천 키를 자동 복사하지 않습니다.
+4. 외부 DB의 절전을 방해하지 않도록 검토 배포에서만 Hikari의 `SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=0`·`SPRING_DATASOURCE_HIKARI_KEEPALIVE_TIME=0`과 idle timeout/health 주기를 검토합니다. 상시 keepalive·주기적인 DB health로 무료 compute를 계속 소모하지 않는지 관찰합니다. 이는 배포 시 검증할 후보 설정이며 로컬 기본 설정은 바꾸지 않습니다.
+5. 외부 Spring HTTPS 주소를 Vercel 서버 전용 `BACKEND_URL`에 입력하고 재배포합니다. 브라우저는 Next의 동일 출처 중계를 사용합니다. 목록/상세 API·사진·공개 차단과 장애/재시도를 실제 검토 주소에서 확인합니다.
+6. Render 재기동 약 1분은 프론트의 API 제한 8초보다 길 수 있습니다. health가 UP이 된 뒤 재시도로 회복하는지 확인하며, timeout 연장이나 절전 방지 호출을 먼저 도입하지 않습니다. 백업 복원·중단 복구와 월 사용량을 확인하기 전에는 전체 서비스 검증 완료로 표시하지 않습니다.
+
+계정 생성·약관/권한 동의가 필요한 화면은 사용자가 직접 처리합니다. 도메인·수익화·로그인/회원·북마크·AI·광고·웹뷰·방문 날짜 필터는 이번 연결 시험의 대상이 아닙니다. 프론트 빌드·서버 변수·검토 주소는 [Vercel 검토 배포](../frontend/README.md#vercel-개인-검토-배포-p15)를 따릅니다.
+
 ## 최초 환경 준비
 
 저장소 루트의 PowerShell에서 수행합니다. 기존 환경에서는 [일상 실행](../README.md#빠른-실행)만 사용합니다.
