@@ -191,6 +191,10 @@ CollectionRunner는 수동 seed·batch·supplement를 조율한다. 커서는 �
 
 [local-settings.mjs](../scripts/local-settings.mjs)·[local-settings.ps1](../scripts/local-settings.ps1)·CollectionRunner.readKeys는 공통 설정을 먼저 읽고 폴더별 비어 있지 않은 값만 덮어쓴다. 파일을 명령으로 평가하지 않아 비밀번호의 $()도 문자로 읽는다. 공통 설정은 같은 PC에서 유지하는 로컬 파일이며 배포 비밀 설정과 구분한다.
 
+Docker는 앱과 Java 실행 환경을 이미지로 묶는다. [Dockerfile](../backend/Dockerfile)의 JDK 단계가 Maven Wrapper로 JAR를 만들고 JRE 단계는 비root 계정으로 `java -jar`를 실행한다. DB 데이터나 로컬 설정은 이미지에 넣지 않으며 Render의 실행 환경변수로만 새 검토 DB를 연결한다. 실행 시 `review` 프로필이 Render의 PORT와 작은 연결 풀을 적용하고 Flyway → Hibernate 검증 → 웹 서버 준비 흐름은 유지한다.
+
+health는 검사 대상에 따라 의미가 다르다. [review 설정](../backend/src/main/resources/application-review.properties)의 readiness는 Spring Boot가 관리하는 서버 준비 상태만 읽고 DB를 빌리지 않는다. Render의 반복 검사 때문에 절전 DB가 계속 켜지는 것을 막기 위해서다. 반면 `/actuator/health`와 실제 조회 API는 DB를 사용한다. 최소 유휴 연결 0·keepalive 0·유휴 연결 회수와 JDBC 세션 예약 정리 중단을 함께 적용해야 주기적인 SQL을 줄일 수 있다. 설정은 Spring Boot가 프로필 로딩/자동 구성 때 해석하는 속성이며 Java 문법이나 새 어노테이션이 아니다. 사용법·무료 한도는 [검토 배포 안내](../backend/README.md#외부-springpostgresql-검토-환경-p15)를 따른다.
+
 ## 테스트와 개발 도구
 
 백엔드 테스트는 실행마다 UUID 스키마에서 실제 PostgreSQL의 제약·마이그레이션·잠금·롤백·API를 검증한다. 테스트 초기화는 앱 스키마에 접근하지 않는다. 순수 정책 테스트는 날짜·요금·분류·원천 응답을 빠르게 확인한다.

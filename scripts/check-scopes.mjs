@@ -11,6 +11,8 @@ const backendEnvironment = (file) =>
     "scripts/local-db.ps1",
     "scripts/local-settings.ps1",
     "scripts/save-local-settings.ps1",
+    "scripts/export-review-data.ps1",
+    "scripts/export-review-data.sql",
   ].includes(file);
 
 export function checkScopes(paths) {
