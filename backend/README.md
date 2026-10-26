@@ -151,6 +151,8 @@ Render 무료 환경은 운영용 보장이 없고 언제든 재시작될 수 �
 
 [Dockerfile](Dockerfile)은 Java 21 JDK에서 Maven Wrapper로 JAR를 만들고 비root Java 21 JRE로 실행합니다. 이미지 빌드에는 DB 값이 필요 없습니다. DB 회귀·패키징은 먼저 루트 `commit:checked`와 CI에서 실행하고 이미지 빌드는 테스트를 반복하지 않습니다. 512MB에서 기동 가능 여부는 실제 Render 결과로 판단합니다. JVM은 heap 256MB·SerialGC·프로세서 1개·제한한 metaspace/code cache/direct memory를 사용하며 전체 RSS는 heap보다 큽니다.
 
+빌드 단계에만 `unzip`을 설치해 Wrapper가 등록된 ZIP과 SHA-256을 그대로 사용하게 합니다. `unzip`이 없으면 Wrapper는 tar.gz를 받으면서 ZIP 해시로 검사하여 실패합니다. 검증을 끄거나 다른 파일의 해시로 바꾸지 않으며 runtime 이미지에는 압축 도구를 추가하지 않습니다.
+
 [review 프로필](src/main/resources/application-review.properties)은 Docker에서만 기본 활성화됩니다. `PORT`를 Spring 포트로 사용하고 Hikari는 최대 3개·최소 유휴 0개·유휴 60초·keepalive 0·연결 대기 5초입니다. 매분 JDBC 세션 정리도 끕니다. 로그인 제외 검토용 선택이며 향후 인증 도입 시 세션 정리/용량 정책을 다시 마련해야 합니다. 기존 로컬 기본 설정과 Flyway V1~V8·`ddl-auto=validate`·`clean-disabled=true`는 유지합니다.
 
 Render의 주기적 readiness는 `readinessState`만 확인하여 DB를 깨우지 않습니다. `/actuator/health`는 DB를 포함하므로 수동 연결/장애 검사 때만 호출합니다. readiness 200은 서버 준비 완료이며 DB 성공의 증거가 아닙니다. 실제 API 성공까지 확인해야 서비스 연결 성공입니다. 외부 uptime 감시·절전 방지 ping은 등록하지 않습니다.
