@@ -54,8 +54,9 @@ WITH selected_outings AS (
       AND r.license = 'TOUR_DATA' AND b.record_id = r.id
       AND b.raw_row->>'cpyrhtDivCd' = 'Type1'
 )
-SELECT format('INSERT INTO %I SELECT * FROM jsonb_populate_recordset(NULL::%I, %L::jsonb);',
-              name, name, rows::text)
+-- SQL 편집기의 E 문자열 분할 차이를 피하고 DB에서 같은 UTF-8 원문을 복원한다.
+SELECT format('INSERT INTO %I SELECT * FROM jsonb_populate_recordset(NULL::%I, convert_from(decode(%L, ''base64''), ''UTF8'')::jsonb);',
+              name, name, encode(convert_to(rows::text, 'UTF8'), 'base64'))
 FROM rows_to_export ORDER BY seq;
 
 SELECT 'COMMIT;';
