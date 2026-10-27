@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { NavigationProvider } from "@/providers/navigation-provider";
 import { SiteShell } from "@/components/layout/site-shell";
+import { SiteAnalytics } from "@/components/analytics";
 import { seoulDate } from "@/features/outings/model";
 import { pageMetadata } from "@/config/seo";
 import "./globals.css";
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <NavigationProvider today={seoulDate()}>
           <SiteShell>{children}</SiteShell>
         </NavigationProvider>
+        {process.env.VERCEL_ENV === "production" && <SiteAnalytics />}
       </body>
     </html>
   );

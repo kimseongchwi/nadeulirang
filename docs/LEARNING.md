@@ -50,6 +50,10 @@ Next.js `Link`는 production에서 화면에 들어온 링크의 경로를 미�
 
 [OutingCard](../frontend/src/features/outings/outing-card.tsx)의 선택 입력 `previewId`는 간단 보기의 URL hash와 Dialog의 DOM ID를 구분한다. 기본값은 자료 ID이며, 같은 자료를 한 가이드에서 여러 번 표시할 때 광고 위치 미리보기만 별도 접두부를 사용해 시트가 동시에 열리거나 HTML ID가 중복되는 것을 막는다. 상세 API 조회와 상세 링크는 원래 자료 ID를 그대로 사용한다.
 
+### 방문 분석의 서버·브라우저 경계
+
+방문 분석은 브라우저의 최초 방문과 앱 안의 페이지 이동을 집계하는 기능이다. 서버에서 조회한 목록 데이터나 회원 정보를 분석 서버에 복사할 필요가 없다. [루트 layout](../frontend/src/app/layout.tsx)은 Vercel Production에서만 [SiteAnalytics](../frontend/src/components/analytics.tsx)를 렌더링하고, 이 클라이언트 컴포넌트가 공식 SDK의 `beforeSend` 콜백으로 [URL 필터](../frontend/src/config/analytics.ts)를 호출한다. 콜백은 전송 전 검사이며 `null`은 해당 조회 제외를 뜻한다. 예를 들어 `/search?q=검색어#preview`는 `/search`로 집계한다. 로컬/Preview·허용하지 않은 경로는 제외하며 SDK가 비동기로 실행되므로 페이지 본문 API 응답을 기다리는 새 의존 관계는 만들지 않는다.
+
 ### 로그인 없는 안내 페이지
 
 [내정보 화면](../frontend/src/app/mypage/mypage-screen.tsx)은 `/mypage`에서 로그인·공지사항·FAQ·설정을 연결한다. [설정 화면](../frontend/src/app/settings/settings-screen.tsx)은 `PolicyLinks`의 목록 형태로 기존 정책 시트를 열고 직접 접속의 뒤로가기는 내정보로 복귀한다. 로그인이나 개인 계정 조회 없이 서버가 안내 본문을 렌더링하고 링크 이동은 기존 `NavigationLink`를 사용해 포커스·스크롤/조건 복귀를 유지한다. 햄버거 보조 메뉴는 제거했고 검색은 헤더 아이콘, 홈·내정보는 로고와 하단 메뉴로 이동한다. 정책·출처 시트는 기존 `Dialog`를 계속 사용한다. 로그인은 /login으로 연결하고 북마크는 비활성 자리로 유지한다.
