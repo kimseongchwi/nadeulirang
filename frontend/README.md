@@ -91,6 +91,8 @@ Vercel 프로젝트의 Analytics에서 **Web Analytics on Hobby / Included in yo
 
 2026-10-27 [공식 무료 한도](https://vercel.com/docs/analytics/limits-and-pricing)와 활성화 화면 기준으로 월 50,000 events와 30일 조회 이력을 포함한다. Hobby는 추가 이벤트 구매를 지원하지 않고 한도 도달 시 유예 후 수집을 제한한다. Pro·Plus·Speed Insights 유료 기능·체험·결제수단 등록은 진행하지 않는다. 기본 통계의 유입 경로·국가/기기 정보 처리는 [공식 개인정보 안내](https://vercel.com/docs/analytics/privacy-policy)를 따르며 앱의 URL 정제와 구분한다. Analytics 대시보드에서 방문/페이지 조회가 증가하는지 확인하고 개발/Preview는 수집되지 않는지 확인한다.
 
+2026-10-27 Hobby 활성화와 main 배포에서 SDK script의 defer 로딩·noindex 유지, 최초 개인정보 페이지와 클라이언트 이동 FAQ의 실제 집계를 대시보드/API로 확인했다. 중간 내정보 이동과 정책 모달 열기/닫기는 집계되지 않았으며 로컬·Preview는 script 미삽입을 확인했다. 이 점검은 방문 분석 연결 검증이며 응답 속도 측정이나 전체 공개 정책 확정을 뜻하지 않는다.
+
 ## 서버와 브라우저
 
 서버 페이지는 api-server.ts를 통해 Spring을 조회합니다. 간단 보기의 브라우저 요청은 같은 출처 /api/outings/:id로 중계해 서버 전용 BACKEND_URL을 사용합니다. 양쪽은 api-request.ts의 응답/실패 검사와 api-contract.ts를 공유합니다. 정상 0건·400·404·503을 구분하고 장애를 표본으로 채우지 않습니다.
