@@ -2,6 +2,7 @@ import { cache } from "react";
 import type { ApiResult, Detail, Home, Options, Page } from "./api-types";
 import { isDetail, isHome, isOptions, isPage } from "./api-contract";
 import { queryFailure, requestJson } from "./api-request";
+import { backendQuery, independentQuery, type SearchParameters } from "./api-query";
 
 // 페이지와 서버 라우트에서만 백엔드 주소를 읽는다.
 async function request<T>(
@@ -28,4 +29,14 @@ export function getPage(query: URLSearchParams) {
 }
 export function getHome(query: URLSearchParams) {
   return requestHome(query.toString());
+}
+export function preloadHome(input: SearchParameters) {
+  const query = independentQuery(input, true);
+  if (!query) return;
+  query.set("days", "14");
+  return getHome(query);
+}
+export function preloadPage(input: SearchParameters) {
+  const query = independentQuery(input);
+  if (query) return getPage(backendQuery(query));
 }

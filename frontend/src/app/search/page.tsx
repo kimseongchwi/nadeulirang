@@ -1,5 +1,5 @@
 import { SearchScreen } from "./search-screen";
-import { getOptions, getPage } from "@/features/outings/api-server";
+import { getOptions, getPage, preloadPage } from "@/features/outings/api-server";
 import { backendQuery, parameters, queryParameters } from "@/features/outings/api-query";
 import { QueryFeedback } from "@/features/outings/query-feedback";
 import { pageMetadata } from "@/config/seo";
@@ -7,6 +7,7 @@ import { kindNames } from "@/features/outings/model";
 
 export async function generateMetadata({ searchParams }: PageProps<"/search">) {
   const input = await searchParams;
+  const page = preloadPage(input);
   const options = await getOptions();
   if (!options.ok)
     return pageMetadata(
@@ -17,7 +18,7 @@ export async function generateMetadata({ searchParams }: PageProps<"/search">) {
     );
   try {
     const query = queryParameters(parameters(input), options.data);
-    const result = await getPage(backendQuery(query));
+    const result = await (page || getPage(backendQuery(query)));
     if (!result.ok)
       return pageMetadata(
         undefined,
@@ -45,6 +46,7 @@ export async function generateMetadata({ searchParams }: PageProps<"/search">) {
 }
 export default async function SearchPage({ searchParams }: PageProps<"/search">) {
   const input = await searchParams;
+  const page = preloadPage(input);
   const options = await getOptions();
   if (!options.ok)
     return (
@@ -64,7 +66,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
       />
     );
   }
-  const result = await getPage(backendQuery(query));
+  const result = await (page || getPage(backendQuery(query)));
   return result.ok ? (
     <SearchScreen
       data={result.data}

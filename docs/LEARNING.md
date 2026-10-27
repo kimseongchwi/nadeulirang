@@ -42,6 +42,8 @@ UI 가이드도 실제 공유 UI의 사용처다. 독립 표본을 나누면 요
 
 간단 보기는 열릴 때 /api/outings/:id의 Next route를 요청한다. 서버 전용 백엔드 주소와 같은 출처·검증/오류 계약을 유지하는 중계다. 공통 [api-request.ts](../frontend/src/features/outings/api-request.ts)는 HTTP/연결/본문 실패를 구분하고 시간 제한·캐시 제외·리다이렉트 차단을 적용한다. 닫기/항목 변경은 AbortController로 취소해 늦은 응답이 화면을 덮지 않게 한다. 가이드 표본은 실제 조회 실패의 대체값으로 사용하지 않는다.
 
+독립적인 비동기 요청은 먼저 시작하면 서로의 응답 시간을 더하지 않아도 된다. [api-server.ts](../frontend/src/features/outings/api-server.ts)의 `preloadHome`·`preloadPage`는 [independentQuery](../frontend/src/features/outings/api-query.ts)가 전체/숫자 지역 코드를 확인한 경우 본문 요청을 먼저 시작하고 페이지는 옵션 요청을 기다린다. 지역 이름은 옵션으로 코드 변환이 필요하므로 기존 순서를 유지한다. 같은 요청의 메타데이터와 본문은 React `cache`가 같은 Promise를 공유하지만 다음 HTTP 요청에는 새로 조회한다. 요청 간 공유 캐시를 추가하지 않아 상세의 공개 여부·실패·자료 확인 시각을 그대로 검증한다. 서버 사이의 통신 거리도 응답 시간에 영향을 주므로 검토 배포는 [프론트 설정](../frontend/README.md#vercel-개인-검토-배포-p15)의 Singapore 리전을 사용한다.
+
 다가오는 구간은 화면에 숫자를 반복하지 않고 내부 조회에서 내일부터 14일로 고정한다. [홈 서버 페이지](../frontend/src/app/page.tsx)는 메타데이터와 본문 조회에 같은 값을 보내며, [검색 조건 처리](../frontend/src/features/outings/api-query.ts)는 이전 7/30일 검토 URL과 폼도 14일로 통일하고 이름·지역·종류·페이지·정렬은 보존한다. 잘못된 구간은 기존 오류로 구분한다. 비교 UI를 제거했으므로 NavigationProvider는 기간 값을 관리하지 않고 기존 필터·이력/스크롤 상태만 유지한다.
 
 [OutingCard](../frontend/src/features/outings/outing-card.tsx)의 선택 입력 `previewId`는 간단 보기의 URL hash와 Dialog의 DOM ID를 구분한다. 기본값은 자료 ID이며, 같은 자료를 한 가이드에서 여러 번 표시할 때 광고 위치 미리보기만 별도 접두부를 사용해 시트가 동시에 열리거나 HTML ID가 중복되는 것을 막는다. 상세 API 조회와 상세 링크는 원래 자료 ID를 그대로 사용한다.
