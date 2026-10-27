@@ -1,5 +1,5 @@
 import { HomeScreen } from "./home-screen";
-import { getHome, getOptions } from "@/features/outings/api-server";
+import { getHome, getOptions, preloadHome } from "@/features/outings/api-server";
 import { parameters, queryParameters } from "@/features/outings/api-query";
 import { QueryFeedback } from "@/features/outings/query-feedback";
 import { pageMetadata } from "@/config/seo";
@@ -7,6 +7,7 @@ import { kindNames } from "@/features/outings/model";
 
 export async function generateMetadata({ searchParams }: PageProps<"/">) {
   const input = await searchParams;
+  const home = preloadHome(input);
   const options = await getOptions();
   if (!options.ok)
     return pageMetadata(
@@ -20,7 +21,7 @@ export async function generateMetadata({ searchParams }: PageProps<"/">) {
     const query = queryParameters(parsed, options.data, true);
     const request = new URLSearchParams(query);
     request.set("days", "14");
-    const result = await getHome(request);
+    const result = await (home || getHome(request));
     if (!result.ok)
       return pageMetadata(
         undefined,
@@ -49,6 +50,7 @@ export async function generateMetadata({ searchParams }: PageProps<"/">) {
 
 export default async function HomePage({ searchParams }: PageProps<"/">) {
   const input = await searchParams;
+  const home = preloadHome(input);
   const options = await getOptions();
   if (!options.ok)
     return (
@@ -71,7 +73,7 @@ export default async function HomePage({ searchParams }: PageProps<"/">) {
   }
   const request = new URLSearchParams(query);
   request.set("days", "14");
-  const result = await getHome(request);
+  const result = await (home || getHome(request));
   return result.ok ? (
     <HomeScreen
       data={result.data}

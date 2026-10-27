@@ -1,11 +1,27 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { backendQuery, orderedNotes, parameters, previewLocation, queryParameters, safeUrl, searchFormQuery, windowDays } from "../src/features/outings/api-query.ts";
+import { backendQuery, independentQuery, orderedNotes, parameters, previewLocation, queryParameters, safeUrl, searchFormQuery, windowDays } from "../src/features/outings/api-query.ts";
 import { isDetail, isOptions, isPage, isPhoto, isSummary } from "../src/features/outings/api-contract.ts";
 import { badgeInfo, outingSummary, regionLabel } from "../src/features/outings/model.ts";
 import { detailContent } from "../src/features/outings/detail-content.ts";
 
 const options = { regions: [{ code: "11", name: "서울특별시", count: 2 }], kinds: [{ code: "MUSEUM", count: 2 }], total: 2, asOfDate: "2026-10-05" };
+test("전체·지역 코드만 독립 조회하고 지역 이름·잘못된 입력은 기존 검증을 기다린다", () => {
+  assert.equal(independentQuery({}).toString(), "");
+  const input = Object.freeze({ region: " 11 ", kind: "MUSEUM", page: "2", q: " 박물관 " });
+  const query = independentQuery(input);
+  assert.equal(query.get("region"), "11");
+  assert.equal(query.get("q"), "박물관");
+  assert.equal(query.get("page"), "2");
+  assert.equal(input.region, " 11 ");
+  assert.equal(independentQuery({ region: "서울특별시" }), null);
+  assert.equal(queryParameters(parameters({ region: "서울특별시" }), options).get("region"), "11");
+  for (const input of [{ page: "0" }, { kind: "INVALID" }, { q: ["a", "b"] }, { scope: "upcoming", days: "15" }]) {
+    assert.equal(independentQuery(input), null);
+    assert.throws(() => queryParameters(parameters(input), options));
+  }
+  assert.equal(independentQuery({ kind: "MUSEUM", page: "0" }, true).toString(), "kind=MUSEUM");
+});
 test("검색 범위 변경은 구간·페이지를 정리하고 이름·지역·종류·정렬을 보존한다", () => {
   const form = new URLSearchParams({ q: " 꽃 ", region: "48", kind: "FESTIVAL", sort: "NAME", scope: "upcoming", days: "30", page: "3" });
   const original = form.toString();

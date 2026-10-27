@@ -30,6 +30,59 @@ page.tsx는 URL 조건·서버 데이터·제목을 처리하고 옆 화면 파�
 
 상세는 `detail-data.ts`를 layout·메타데이터·page가 공유합니다. layout이 `loading.tsx` 바깥에서 존재 여부를 먼저 확인해 직접 HTTP 요청의 404를 보존합니다. 메타데이터 스트리밍도 비활성화해 브라우저/크롤러의 제목·검색 설정을 응답 전에 결정합니다. 최초 HTML은 공개 조회를 기다리며, 앱 안의 이동에는 기존 공통 로딩을 유지합니다. 같은 서버 렌더의 동일 조회는 React cache로 재사용하고 요청을 넘어 실패 결과를 저장하지 않습니다. HTML 조회 실패 화면은 200/noindex·재시도이며 `/api/outings/:id`와 사이트맵의 조회 실패는 503입니다.
 
+## Vercel 개인 검토 배포 (P15)
+
+`vercel.json`의 `regions: ["sin1"]`으로 Next 서버 페이지와 API 중계를 Render·Neon과 같은 Singapore에 배치한다. Hobby의 단일 리전 범위이며 유료/다중 리전·상시 깨우기 설정은 추가하지 않는다. [공식 리전 설정](https://vercel.com/docs/functions/configuring-functions/region)에 따라 다음 배포부터 적용되므로 기존 배포의 실행 위치와 구분한다.
+
+홈·검색은 전체/숫자 지역 코드 조건의 본문 조회를 필터 옵션과 함께 시작한다. 지역 이름 URL은 옵션의 코드 변환 후 조회하며, 같은 요청 안의 메타데이터/본문 호출은 React `cache`로 공유한다. 요청 사이에 목록·상세·인증 데이터를 저장하지 않고 기존 `no-store`·오류/404·재시도 계약을 유지한다. 모달과 상세 페이지는 각각 공개 여부를 조회하므로 모달에서 읽은 상세가 다음 페이지 요청의 캐시가 되지는 않는다.
+
+공통 `NavigationLink`는 기본 `prefetch={false}`로 화면에 보인 링크만으로 서버 조회를 시작하지 않는다. 홈 종류 탭·검색·카드 상세의 자동 사전 준비가 작은 무료 백엔드에 겹치는 것을 피하며, 실제 클릭 때의 클라이언트 이동·이력/스크롤 복귀는 유지한다. 사전 준비가 필요한 링크는 근거를 확인한 뒤 개별 지정한다. 상세 layout의 공개 여부/404 검사는 그대로 두고 자동 조회를 줄인다.
+
+2026-10-26 공식 조건 확인 기준입니다. [Hobby](https://vercel.com/docs/plans/hobby)는 개인 비상업 용도에 한정되며 [공정 이용 기준](https://vercel.com/docs/limits/fair-use-guidelines)은 광고도 상업 이용으로 분류합니다. 이번 연결은 광고 없는 개인 검토이며 공개 수익화 환경의 선정이 아닙니다. 유료 전환·Pro 체험·결제수단 등록·도메인 구매·유료 부가 기능을 진행하지 않습니다.
+
+Hobby 포함량은 데이터 전송 100GB, 원본 전송 10GB, 함수 호출 100만 회, Active CPU 4시간, Provisioned Memory 360GB-hours입니다. 한도 초과 시 대체로 30일 경과까지 기능이 제한되며 추가 사용량 구매는 지원하지 않습니다. 유료 플랜·유료 부가 기능·도메인은 별도 비용 조건을 확인해야 합니다. 무료 조건은 변경될 수 있으므로 재연결 전에 공식 문서와 계정 Usage를 확인합니다.
+
+| 설정 | 검토 환경 값 |
+|---|---|
+| 프로젝트 | `nadeulirang` |
+| Production Branch | `main`, 작업 브랜치 푸시는 Preview로 검토 |
+| Framework Preset | Next.js, 현재 저장소 버전 16.4.3 |
+| Root Directory | `frontend` |
+| Node.js Version | `24.x` |
+| Install / Build Command | `npm ci` / `npm run build` |
+| Output Directory | Next.js 기본값, 별도 덮어쓰기 없음 |
+| `SITE_INDEXABLE` | Preview·Production 모두 `false` |
+| `SITE_URL` | 검토 중 미설정, 공개 대표 주소를 지정하지 않음 |
+| `BACKEND_URL` | Preview·Production의 서버 전용 `https://nadeulirang-review-api.onrender.com` |
+
+[빌드 설정](https://vercel.com/docs/builds/configure-a-build)을 따르며 Root Directory가 이미 frontend이므로 빌드 명령에 `--prefix frontend`를 추가하지 않습니다. 이 앱은 SSR·동일 출처 API 중계가 필요하므로 정적 export나 `out` 디렉터리를 사용하지 않습니다. Vercel의 Production 표시는 이 검토 프로젝트의 배포 분류이며 서비스의 공개 운영 완료를 뜻하지 않습니다.
+
+대표 접속 주소: [나들이랑](https://nadeulirang.vercel.app/). 프로젝트 이름과 무료 주소에서 `review`를 제거했으며, 이름 변경을 공개 운영 준비 완료로 취급하지 않고 현재 noindex를 유지합니다. 대표 도메인은 비로그인 접속이 가능하고, Preview·개별 배포에는 기존 Vercel Authentication 보호를 유지합니다. noindex는 검색 제외이고 접근 인증을 대신하지 않습니다. 임시 공유 링크나 보호 우회 토큰을 자동 생성하지 않습니다.
+
+일반 접속에는 위 대표 주소를 사용하고, 작업 검토에는 해당 브랜치의 최신 Preview 주소를 사용합니다. 별도 `staging` 브랜치는 현재 만들지 않습니다. Preview도 현재 같은 Render API·Neon DB를 사용하므로 데이터까지 격리된 테스트 환경은 아닙니다. DB 변경·수집 검증이 필요하면 P15에서 별도 환경을 먼저 준비합니다. 개별 배포 주소는 생성 당시 코드·환경변수를 유지하므로 예전 주소를 최신 배포로 취급하지 않습니다. 2026-10-27 명칭 정리 시점 연결은 다음과 같습니다.
+
+| 주소 | 배포 구분·코드 | 연결 판단 |
+|---|---|---|
+| 대표 주소 `nadeulirang.vercel.app` | 프로젝트 `nadeulirang`의 Production, `main` 푸시로 갱신 | 앞으로 사용할 접속 주소 |
+| `nadeulirang-review-gm3d5akok-kimseongchwis-projects.vercel.app` | 과거 수동 Production·`d302538`·Singapore | main 반영 전 검증한 속도 개선 배포, 과거 주소 보존 |
+| `nadeulirang-review-rbvn13k5l-kimseongchwis-projects.vercel.app` | 과거 Production·`b45adae`·미국 | `BACKEND_URL` 설정 후 생성된 이전 연결 배포, 속도 비교에만 사용 |
+| `nadeulirang-review-ge67mp1e5-kimseongchwis-projects.vercel.app` | Preview·`676bd92` | `BACKEND_URL` 설정 전 배포. Spring 기동 후에도 실패하므로 검토에 사용하지 않음 |
+
+기존 보호 설정을 바꾸지 않은 상태에서 새 대표 주소와 이전 짧은 주소는 비로그인 접속, 이전 긴 별칭·개별 배포는 비로그인 302를 확인했습니다. 이전 주소는 기존 링크와 배포 이력을 보존하기 위해 남겨 두며 새 안내에는 사용하지 않습니다. 대표 주소의 공개 범위·색인/수익화는 P15에서 별도로 확인하고, 보호 해제·우회 링크/토큰·유료 설정은 추가하지 않습니다.
+
+서버 조회 실패를 모두 절전으로 판단하지 않습니다. 브라우저 URL → 프로젝트/별칭/배포 커밋 → 해당 대상의 서버 환경변수와 변경 후 배포 여부 → Render 기동 로그 → readiness → DB 포함 health → 실제 API/SSR/간단 보기 순서로 대조합니다. 대표 주소도 Render가 절전에서 기동하는 동안 8초 조회 제한으로 실패할 수 있습니다. 이번 재확인에서는 Spring 기동 131.4초 뒤 같은 재시도 버튼으로 정상 홈을 확인했습니다. 이전 주소의 설정 누락과 이 일시 실패는 별개입니다. timeout을 늘리거나 자동 무한 재시도·절전 방지 ping을 추가하지 않습니다.
+
+Vercel 함수의 localhost는 Vercel 실행 환경입니다. `BACKEND_URL`을 비우면 로컬 기본값으로 조회가 실패하며, 로컬 PC의 데이터를 볼 수 없습니다. 현재는 Render Spring·Neon의 별도 검토 DB를 연결해 홈·검색 51건/3페이지·간단 보기·상세·사진과 정상 빈 결과·없는 상세 안내·페이지/뒤로가기 복귀를 실제 주소에서 확인했습니다. 프론트 배포 성공·Spring readiness·DB 포함 health·실제 자료 조회 성공을 구분합니다. 무료 조건·이관/복원·절전 설정과 수집 후속은 [백엔드 검토 환경](../backend/README.md#외부-springpostgresql-검토-환경-p15)을 따릅니다.
+
+`BACKEND_URL`은 서버 전용이며 `NEXT_PUBLIC_`로 만들지 않습니다. DB/원천 키·OAuth·로컬 `.env`·홈 공통 설정을 Vercel로 복사하지 않습니다. 로그인은 이번 검토에서 검증하지 않으며 인증 환경변수도 추가하지 않습니다. 서버 주소나 색인 설정을 변경하면 재배포하고 실제 주소에서 다음을 확인합니다.
+
+1. 홈·검색·공개 상세의 SSR 내용/사진·간단 보기 중계와 페이지 이동·뒤로가기 복귀.
+2. 정상 0건과 없는 상세 404, 백엔드 장애 시 HTML 200/noindex·재시도와 `/api/outings/:id` 503 구분.
+3. 메타태그·`X-Robots-Tag`의 noindex, 검토 사이트맵의 빈 목록, 비로그인 요청의 Vercel 접근 보호.
+4. 절전 뒤 첫 실패와 백엔드 기동 후 재시도 성공. 느린 기동을 정상 0건으로 표시하지 않음.
+
+2026-10-26 실제 검토 DB의 일시 조회 실패에서 API 503·Vercel 조회 실패/noindex·재시도를 확인했고, 복구 후 같은 재시도 버튼으로 정상 홈을 확인했습니다. 이 검증은 새 검토 DB에서만 수행했으며 로컬 DB·저장 원문은 변경하지 않았습니다. 무료 Spring은 최초 141초·실제 절전 복귀 140초로 8초 요청 제한을 넘었습니다. Render 유휴 종료 뒤 첫 실패 안내와 기동 후 같은 버튼의 정상 홈 회복도 확인했습니다. 첫 접속이 실패하면 기동을 기다린 뒤 재시도하며 상시 깨우기 호출을 등록하지 않습니다.
+
 ## 서버와 브라우저
 
 서버 페이지는 api-server.ts를 통해 Spring을 조회합니다. 간단 보기의 브라우저 요청은 같은 출처 /api/outings/:id로 중계해 서버 전용 BACKEND_URL을 사용합니다. 양쪽은 api-request.ts의 응답/실패 검사와 api-contract.ts를 공유합니다. 정상 0건·400·404·503을 구분하고 장애를 표본으로 채우지 않습니다.

@@ -16,6 +16,17 @@ export function parameters(input: SearchParameters) {
   }
   return result;
 }
+// 지역 이름은 options로 코드 변환이 필요하다. 코드/전체 조회만 먼저 시작한다.
+export function independentQuery(input: SearchParameters, home = false) {
+  try {
+    const query = queryParameters(parameters(input), null, home);
+    const region = query.get("region");
+    return !region || /^\d+$/.test(region) ? query : null;
+  } catch {
+    // 기존 페이지가 옵션 조회 결과와 입력 오류를 순서대로 처리한다.
+    return null;
+  }
+}
 export function queryParameters(input: URLSearchParams, options: Options | null, home = false) {
   const result = new URLSearchParams();
   const region = input.get("region")?.trim() || "";

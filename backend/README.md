@@ -123,6 +123,101 @@ Spring 서버 실행 후 `http://localhost:8080`에서 아래 읽기 전용 API�
 
 오류 본문은 `code`·한국어 `message`·`retryable`만 제공하며 DB/SQL 오류 원문은 공개하지 않습니다. API 파일은 `src/main/java/kr/nadeulirang/backend/outing/`, HTTP·실제 DB 테스트는 `src/test/java/kr/nadeulirang/backend/outing/OutingApiTests.java`에 있습니다. 개념·호출 흐름은 [학습 문서](../docs/LEARNING.md#목록상세-http-조회와-공개-경계)를 참고합니다.
 
+## 외부 Spring·PostgreSQL 검토 환경 (P15)
+
+Vercel은 Next.js만 실행하며 로컬 PC의 `127.0.0.1:8080`·PostgreSQL에는 접속할 수 없습니다. 2026-10-26 공식 조건을 확인하고 Neon·Render의 별도 무료 검토 환경을 준비합니다. 계정 로그인·약관·GitHub 권한 동의는 사용자가 직접 처리하며 카드 등록·유료 체험·유료 전환·도메인 구매는 하지 않습니다.
+
+| 후보 | 무료 조건·이용 제한 |
+|---|---|
+| [Render Free Web Service](https://render.com/docs/free) + Spring | 0.1 CPU·512MB, 워크스페이스 월 750시간, 15분 무요청 시 절전·재기동 약 1분. [Hobby 포함량](https://render.com/articles/how-much-does-cloud-application-hosting-cost-for-small-businesses)은 월 발신 5GB·빌드 500분. 임시 파일은 재시작/배포/절전 때 소실, 영구 디스크·SSH·one-off job 없음. 외부 DB 등 과도한 발신 트래픽으로 정지 가능. 카드가 있으면 대역폭/빌드 초과 추가 과금 가능, 카드가 없으면 남은 월의 서비스/새 빌드 제한 |
+| [Neon Free](https://neon.com/pricing) + PostgreSQL | 카드 없이 $0, 프로젝트당 저장 1GB·월 100 CU-hours·공용 전송 5GB, 5분 비활성 시 절전. CU/전송 초과 시 다음 기간까지 compute 정지, 저장 한도 초과 시 용량 증가 작업 실패. 자동 유료 전환을 선택하지 않음 |
+| Render Free Postgres | 1GB·워크스페이스 하나, 생성 30일 뒤 만료·추가 14일 뒤 삭제, 백업 없음. 장기 보존할 검토 DB에는 부적합 |
+
+Render 무료 환경은 운영용 보장이 없고 언제든 재시작될 수 있습니다. Java는 [Docker 배포](https://render.com/docs/docker)가 필요하며 무료 인스턴스의 512MB 메모리에서 JVM·Spring 기동을 실측해야 합니다. [Render DB](https://render.com/docs/postgresql-creating-connecting)는 13~18, [Neon](https://neon.com/docs/reference/compatibility)은 14~18을 지원하므로 기존 로컬 PostgreSQL 18과 같은 메이저를 선택할 수 있습니다. 실제 제공 마이너·리전·연결 한도는 생성 화면에서 재확인합니다. Render Web은 HTTPS 주소, Neon DB는 TLS 접속을 사용합니다.
+
+[Neon 한도·복구 조건](https://neon.com/docs/introduction/plans)에 따르면 무료 복구 이력은 최대 6시간/변경량 1GB이고 수동 snapshot 1개·모니터링 이력 1일이며 예약 백업은 없습니다. 저장은 프로젝트당 1GB·계정 합계 20GB, 전송은 프로젝트당 월 5GB입니다. 복구 이력은 장기 백업을 대신하지 않으며 별도 검토 DB의 백업·복원 검증이 필요합니다. 유료 업그레이드 후에는 사용량 과금 조건이 달라집니다. 개인 검토 적합성과 광고·수익화 이용 조건의 확정은 구분합니다.
+
+### 검토 배포 설정
+
+| 항목 | 검토 환경 |
+|---|---|
+| Neon 조직·프로젝트 / DB | 조직·프로젝트 표시 이름 `nadeulirang` / 기존 DB `nadeulirang_review`, 실제 PostgreSQL 18.6·AWS Singapore·Free·0.25 CU 고정 |
+| Render 서비스 | `nadeulirang-api`, Web Service·Docker·Singapore·Free |
+| Git / Root Directory | `main` / `backend` |
+| Dockerfile / Build Context | Root Directory 기준 `./Dockerfile` / `.` |
+| Health Check Path | `/actuator/health/readiness` |
+| Auto-Deploy | Off, 검증한 커밋을 수동 배포 |
+| 비밀 환경변수 | `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`만 Render에 설정. 홈/로컬 설정·OAuth·원천 키를 복사하지 않음 |
+
+Spring 주소는 [기존 API 연결](https://nadeulirang-review-api.onrender.com/actuator/health)이며 Vercel의 실제 화면은 [나들이랑](https://nadeulirang.vercel.app/)입니다. Render 표시 이름을 바꿔도 생성 시의 기본 API 주소는 유지됐습니다. 주소의 문자열을 바꾸기 위한 서비스 재생성·데이터 재이관은 하지 않으며 내부 DB 이름·JDBC 연결·`review` 실행 프로필도 보존합니다. 이 프로필은 무료 실행 자원/절전 설정의 이름이며 화면의 서비스 이름과 별개입니다. 2026-10-26 기존 연결에서 Docker 빌드·512MB 기동·Flyway V1~V8·TLS DB health·실제 API와 Vercel 표시를 확인했습니다. 최초 Spring 기동은 141초, 실제 유휴 종료 뒤 재기동은 140초였고 절전 후 같은 재시도 버튼의 정상 홈·검색 회복을 확인했습니다. 명칭/main 연결 변경만으로 무료 절전과 기동 지연이 사라지지는 않습니다.
+
+Render의 월 750시간은 무료 Web Service들이 실제 실행된 시간을 워크스페이스 전체에서 합산한 한도입니다. 절전 시간은 제외하고 매월 새 한도로 초기화하며 남은 시간은 이월되지 않습니다. 서버 1개가 30일 계속 실행되면 720시간, 31일이면 744시간이고 2개는 실행 시간이 합산됩니다. 한도 소진 시 남은 월의 무료 서비스가 중지됩니다. [공식 무료 한도](https://render.com/docs/free#free-instance-hours)를 따르며 절전 방지 ping·유료 전환을 추가하지 않습니다.
+
+[Dockerfile](Dockerfile)은 Java 21 JDK에서 Maven Wrapper로 JAR를 만들고 비root Java 21 JRE로 실행합니다. 이미지 빌드에는 DB 값이 필요 없습니다. DB 회귀·패키징은 먼저 루트 `commit:checked`와 CI에서 실행하고 이미지 빌드는 테스트를 반복하지 않습니다. 512MB에서 기동 가능 여부는 실제 Render 결과로 판단합니다. JVM은 heap 256MB·SerialGC·프로세서 1개·제한한 metaspace/code cache/direct memory를 사용하며 전체 RSS는 heap보다 큽니다.
+
+빌드 단계에만 `unzip`을 설치해 Wrapper가 등록된 ZIP과 SHA-256을 그대로 사용하게 합니다. `unzip`이 없으면 Wrapper는 tar.gz를 받으면서 ZIP 해시로 검사하여 실패합니다. 검증을 끄거나 다른 파일의 해시로 바꾸지 않으며 runtime 이미지에는 압축 도구를 추가하지 않습니다.
+
+[review 프로필](src/main/resources/application-review.properties)은 Docker에서만 기본 활성화됩니다. `PORT`를 Spring 포트로 사용하고 Hikari는 최대 3개·최소 유휴 0개·유휴 60초·keepalive 0·연결 대기 5초입니다. 매분 JDBC 세션 정리도 끕니다. 로그인 제외 검토용 선택이며 향후 인증 도입 시 세션 정리/용량 정책을 다시 마련해야 합니다. 기존 로컬 기본 설정과 Flyway V1~V8·`ddl-auto=validate`·`clean-disabled=true`는 유지합니다.
+
+Render의 주기적 readiness는 `readinessState`만 확인하여 DB를 깨우지 않습니다. `/actuator/health`는 DB를 포함하므로 수동 연결/장애 검사 때만 호출합니다. readiness 200은 서버 준비 완료이며 DB 성공의 증거가 아닙니다. 실제 API 성공까지 확인해야 서비스 연결 성공입니다. 외부 uptime 감시·절전 방지 ping은 등록하지 않습니다.
+
+`DB_URL`은 비밀번호 없는 직접 연결 JDBC 주소에 `sslmode=verify-full&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory&connectTimeout=10&socketTimeout=15`를 사용합니다. [pgJDBC TLS](https://jdbc.postgresql.org/documentation/ssl/)의 Java 신뢰 저장소·호스트 검증을 이용하며 별도 인증서 파일을 복제하지 않습니다. 자격정보는 Render 비밀 환경변수에만 저장하고 Vercel에는 Spring HTTPS 원점의 서버 전용 `BACKEND_URL`만 설정합니다.
+
+### 공개 자료의 제한 이관
+
+기존 로컬 DB는 읽기 전용으로 조회합니다. [내보내기 도구](../scripts/export-review-data.ps1)는 공개 후보 최대 100건과 허용 라이선스의 원천 연결·원문 관측·근거·공개 검토·Type1 활성 사진만 `.local/review/public-import.sql`에 만듭니다. 회원·인증·세션·커서·연결 이력은 제외합니다. `source_call`의 전체 응답 payload는 다른 비공개 항목을 포함할 수 있어 제외하고 query도 빈 객체로 제한합니다. 선택한 항목의 원문은 `source_observation.raw_row` 그대로 보존합니다. 사진 바이너리는 복제하지 않습니다.
+
+~~~powershell
+./scripts/export-review-data.ps1
+~~~
+
+기존 검토본이 있으면 덮어쓰지 않습니다. 원문과 이용허락을 검토한 뒤 새 검토 DB에서 Spring의 Flyway 적용을 먼저 확인하고 이관 SQL을 실행합니다. 대상에 항목/원천/호출/회원/세션이 있으면 중단하며 전체 삽입은 한 트랜잭션입니다. 로컬 DB 전체 dump를 외부로 복원하지 않습니다. 로컬 검토본·로그는 Git 제외이며 일반 배포 이미지에 넣지 않습니다.
+
+SQL의 원문 JSON은 UTF-8 Base64로 전달하고 DB에서 복원하여 편집기의 `E'...'` 문자열 분할 차이를 피합니다. 대용량 편집기 전송은 작은 구간으로 나누되 실행 전 전체 검토본과 정확히 일치하는지 확인합니다. 편집기 오류는 해당 트랜잭션을 ROLLBACK한 뒤 대상이 비었는지 확인하고 재시도합니다.
+
+이번 제한 이관은 공개 후보 72건·원천 연결 74건·원문 관측 359건·근거 6,381건·허락 사진 35건입니다. 회원/세션 0건·원문 지문 일치를 확인했고 이관 직후 DB는 11,730,944바이트(약 11.2MiB)였습니다. 검색 51건과 과거/다른 기간의 공개 후보 수는 구분합니다. 무료 수동 snapshot 1개를 만들고 별도 분기로 복원해 건수·원문 지문·회원 0건을 재확인했으며 원래 연결을 전환하지 않았습니다. 복원 검증 분기는 원본/스냅샷과 함께 보존하고 프로젝트 전체 CU/저장 포함량을 공유하므로 이후 사용량 확인에 포함합니다. snapshot은 그 시점의 복구점이며 이후 수집의 자동 백업을 대신하지 않습니다.
+
+연결 후에는 홈·검색·간단 보기·상세·사진·빈 결과·404·페이지/뒤로가기 복귀, HTML 실패 200/noindex·중계 503·재시도, DB 절전과 Render 15분 절전 후 회복을 실제 주소에서 구분해 검증합니다. Render 재기동 약 1분은 프론트 8초 제한보다 길 수 있으므로 첫 실패를 0건으로 해석하지 않고 기동 후 재시도로 확인합니다. 프론트 timeout 연장이나 절전 방지 호출을 먼저 추가하지 않습니다.
+
+### 수동 수집·일일 예약의 다음 단계
+
+연결 재확인 후 추가 수집은 사용자가 요청한 운영계정·이용 조건 확인을 선행하며 보류합니다. 실제 크론·관리자 화면도 등록/구현하지 않습니다. 개발계정의 호출 자격과 저장 자료의 이용허락은 별개이고, 기존 로컬 자료 일부를 Neon으로 이관한 사실을 새로운 운영계정 수집으로 표시하지 않습니다. 개발 키로 수집했다는 이유만으로 기존 원문을 삭제하거나 전량 재수집하지 않습니다. 계정별 실제 승인·기간·한도·잔량은 [원천 기준](../docs/DATA_SOURCES.md#승인-계정과-호출-제한)을 확인합니다.
+
+재개할 때는 저장 원문부터 대조해 부족한 대상/오퍼레이션을 결정합니다. 로컬 DB를 갱신할 때는 기존 [수집 실행](#데이터-수집-p11p38)의 `batch -MaxItems 20` 또는 검토 대상의 `supplement`를 수동 실행하고 공개 심사를 거칩니다. `collect-data.ps1`은 로컬 DB 설정을 적용하므로 외부 DB 갱신 명령으로 그대로 사용하지 않습니다.
+
+외부 DB 수동 실행은 별도 실행 프로세스의 DB 비밀 환경변수와 원천 키 전용 파일을 준비한 뒤 같은 JAR를 `--collection.run=true --collection.mode=batch --collection.max-items=20 --collection.campaign=<검토한-캠페인> --collection.env-file=<원천-키-전용-경로> --spring.main.web-application-type=none`으로 실행하는 방식입니다. 기존 DB/홈 설정을 업로드하지 않고 승인된 새 환경값만 주입합니다. `batch`는 기본 월별 커서부터 이어가며, 매일 기존 항목을 다시 검증하는 전체 갱신 작업을 대신하지 않습니다. 기존 공개 대상의 `seed`·부족한 필드의 `supplement` 범위와 원천 일일 한도·예산·실패 보존을 먼저 검토해야 합니다.
+
+일일 예약은 이 수동 실행이 반복 가능해진 다음 별도 작업으로 진행합니다. 서울 기준 실행 시각·최대 건수·원천 예산·중복 실행 잠금·실패 시 재개/알림·갱신 후 공개 심사·백업 복원을 정하고 스케줄러의 무료 한도와 비밀 관리부터 확인합니다. Render Free는 cron/one-off 실행을 제공하지 않으며 Render Cron은 [최소 월 $1](https://render.com/articles/how-much-does-cloud-application-hosting-cost-for-small-businesses)이므로 이번 무료 범위에 등록하지 않습니다. 로컬 작업 스케줄러는 PC 기동이 필요하고, GitHub Actions는 저장소 공개 여부·포함 실행량·비밀 사용 범위를 확인한 뒤 별도 선택할 수 있습니다.
+
+2026-10-26 공식 조건을 대조한 예약 검토안이며 실행 설정은 아직 없습니다.
+
+| 실행 위치 | 무료 조건·제약 | 선택 전 확인 |
+|---|---|---|
+| [Windows 작업 스케줄러](https://learn.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-start-page) | 기존 PC에서 실행, 별도 호스팅 요금 없음. PC·네트워크 기동 필요 | 누락 실행 처리·동시 실행 금지·종료 코드/로그 알림·별도 검토 DB 실행 환경 |
+| [GitHub Actions](https://docs.github.com/en/billing/concepts/product-billing/github-actions) | 공개 저장소의 표준 호스팅 runner 무료. 비공개 GitHub Free는 월 2,000분·artifact 500MB, 캐시 10GB 포함. 큰 runner는 별도 과금 | 저장소 공개 여부·계정 잔량·추가 지출 차단·검토 전용 Secrets/권한 확인. DB 백업과 비밀 파일을 공개 artifact에 올리지 않음 |
+
+[Actions 예약](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)은 기본 브랜치의 workflow만 실행하고 혼잡 시 지연/누락될 수 있으며 공개 저장소는 60일 무활동 시 예약이 비활성화됩니다. 이번 요청은 main 반영을 제외하므로 작업 브랜치만으로 실제 예약을 완료할 수 없습니다. 기본 UTC 또는 `Asia/Seoul` 시간대를 명시할 수 있고 정각을 피한 서울 06:17을 검토 시각으로 제안합니다. 등록·시각 확정은 별도입니다.
+
+예약 범위도 다음을 충족한 뒤 확정합니다.
+
+1. 신규 후보는 별도 campaign의 `batch` 커서로 최대 20개만 검토 대기 저장합니다. 기존 공개 갱신은 변경 목록·기간 행사 7일/시설 30일 및 적용 기간의 재검토 대상을 별도 선정합니다. `batch` 커서 재개를 일일 갱신 완료로 표시하지 않습니다. 첫 수동 실행은 신규/갱신을 합해 최대 20개로 제한합니다.
+2. TourAPI 24시간 800회·표준 원천별 8,000회 자체 상한과 직렬 요청·최소 1초 간격을 유지하며 계정 잔량이 더 적으면 그 안으로 축소합니다. 첫 재개는 대상/오퍼레이션별 예상 호출을 계산해 작은 실행 예산을 정하고 이미지 API는 기본 0회로 둡니다.
+3. 실행 위치의 동시 실행 금지와 기존 DB advisory lock·호출 예약을 함께 사용합니다. 부분 완료는 저장 커서/호출 결과로 재개하며 인증·기간·한도 오류는 중단하고 실패/빈 응답으로 기존 값을 지우지 않습니다. 신규 공개와 명시 취소/삭제는 심사 대상으로 남깁니다.
+4. 실패·예산 중단·미실행을 정상 0건과 구분해 로컬 종료 코드 또는 Actions 실패 알림으로 전달합니다. 수신 위치와 알림 설정은 사용자가 선택하며 아직 외부 알림을 발송/등록하지 않습니다.
+5. 변경 전 복구점과 건수/원문 지문을 확인하고, 검토 전용 암호화 백업을 별도 보관하는 방식을 정합니다. 회원/세션을 포함하지 않고 별도 분기/격리 DB에서 복원을 검증한 뒤에만 연결 전환을 검토합니다. 현재 수동 snapshot 1개는 그대로 보존하며 재수집 때 자동 갱신되는 백업으로 취급하지 않습니다.
+
+장기 무료 용량은 단일 DB의 현재 크기만으로 보장하지 않습니다. 이관 직후와 수동 수집 전후 `SELECT pg_database_size(current_database());` 및 `pg_total_relation_size`로 원문/근거/인덱스별 증가량을 기록하고, Neon Usage의 저장·history·CU-hours·전송과 Render Billing의 시간·빌드·전송을 함께 확인합니다. `최근 증가량 / 경과일`로 일일 증가를 추정해 1GB까지 남은 기간을 계산하되 전체 수집량·사진 메타데이터·인덱스·원문 갱신 누적을 포함합니다. 미사용 브랜치도 저장/연산량에 영향을 줍니다. 한도 접근 시 수집을 멈추고 보존/백업 범위를 검토하며 자동 유료 전환이나 원문 삭제로 대응하지 않습니다.
+
+~~~sql
+SELECT pg_database_size(current_database()) AS database_bytes;
+SELECT relname, pg_total_relation_size(relid) AS total_bytes
+FROM pg_stat_user_tables
+WHERE schemaname = 'nadeulirang'
+ORDER BY total_bytes DESC;
+~~~
+
+계정 생성·약관/권한 동의가 필요한 화면은 사용자가 직접 처리합니다. 도메인·수익화·로그인/회원·북마크·AI·광고·웹뷰·방문 날짜 필터는 이번 연결 시험의 대상이 아닙니다. 프론트 빌드·서버 변수·검토 주소는 [Vercel 검토 배포](../frontend/README.md#vercel-개인-검토-배포-p15)를 따릅니다.
+
 ## 최초 환경 준비
 
 저장소 루트의 PowerShell에서 수행합니다. 기존 환경에서는 [일상 실행](../README.md#빠른-실행)만 사용합니다.

@@ -36,6 +36,10 @@ P30의 [소셜 로그인](http://localhost:3000/login)는 동일 출처 `/api/au
 
 처음 준비하는 PC는 [JDK·PostgreSQL·앱 계정 준비](backend/README.md#최초-환경-준비)를 따릅니다. 기존 `.local/postgres-data`와 설정은 초기화하거나 삭제하지 않습니다. DB는 `scripts/local-db.ps1 status|start|stop`으로 관리합니다.
 
+## 무료 검토 환경 연결 (P15)
+
+광고 없는 개인 검토용 Vercel 연결·빌드·서버 환경변수와 접속 주소는 [프론트 검토 배포](frontend/README.md#vercel-개인-검토-배포-p15)를 따릅니다. Vercel에서 로컬 PC의 Spring·DB에는 접속할 수 없으며, 프론트 배포와 전체 서비스 동작을 구분합니다. 외부 Spring·PostgreSQL 준비 순서와 무료 후보 제약은 [백엔드 검토 환경](backend/README.md#외부-springpostgresql-검토-환경-p15)을 참고합니다. 검토 주소는 noindex와 Vercel 접근 보호를 유지합니다.
+
 ## 작업 폴더 사이의 로컬 설정 유지 (P22)
 
 같은 PC의 공통 원천 키·DB 설정을 보관할 때만 [로컬 설정 유지](backend/README.md#작업-폴더-사이의-로컬-설정-유지-p22)를 사용합니다. 소셜 인증 설정은 작업 폴더에만 두며 배포 환경으로 자동 복사하지 않습니다.

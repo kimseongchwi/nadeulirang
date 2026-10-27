@@ -51,6 +51,8 @@ test("공통 설정·훅·CI와 DB 실행 도구가 필수 검사를 빠뜨리�
     "scripts/check-backend.mjs",
     "scripts/local-settings.ps1",
     "scripts/save-local-settings.ps1",
+    "scripts/export-review-data.ps1",
+    "scripts/export-review-data.sql",
   ]) {
     assert.deepEqual(checkScopes([file]), { frontend: false, backend: true, tooling: true }, file);
   }

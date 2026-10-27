@@ -42,6 +42,10 @@ UI 가이드도 실제 공유 UI의 사용처다. 독립 표본을 나누면 요
 
 간단 보기는 열릴 때 /api/outings/:id의 Next route를 요청한다. 서버 전용 백엔드 주소와 같은 출처·검증/오류 계약을 유지하는 중계다. 공통 [api-request.ts](../frontend/src/features/outings/api-request.ts)는 HTTP/연결/본문 실패를 구분하고 시간 제한·캐시 제외·리다이렉트 차단을 적용한다. 닫기/항목 변경은 AbortController로 취소해 늦은 응답이 화면을 덮지 않게 한다. 가이드 표본은 실제 조회 실패의 대체값으로 사용하지 않는다.
 
+독립적인 비동기 요청은 먼저 시작하면 서로의 응답 시간을 더하지 않아도 된다. [api-server.ts](../frontend/src/features/outings/api-server.ts)의 `preloadHome`·`preloadPage`는 [independentQuery](../frontend/src/features/outings/api-query.ts)가 전체/숫자 지역 코드를 확인한 경우 본문 요청을 먼저 시작하고 페이지는 옵션 요청을 기다린다. 지역 이름은 옵션으로 코드 변환이 필요하므로 기존 순서를 유지한다. 같은 요청의 메타데이터와 본문은 React `cache`가 같은 Promise를 공유하지만 다음 HTTP 요청에는 새로 조회한다. 요청 간 공유 캐시를 추가하지 않아 상세의 공개 여부·실패·자료 확인 시각을 그대로 검증한다. 서버 사이의 통신 거리도 응답 시간에 영향을 주므로 검토 배포는 [프론트 설정](../frontend/README.md#vercel-개인-검토-배포-p15)의 Singapore 리전을 사용한다.
+
+Next.js `Link`는 production에서 화면에 들어온 링크의 경로를 미리 요청한다. 이 앱은 서버 화면이 API를 조회하고 상세 layout도 공개 여부를 검사하므로, 여러 링크의 사전 준비가 실제 백엔드 조회로 이어진다. [NavigationLink](../frontend/src/providers/navigation-provider.tsx)는 `prefetch`의 기본값을 `false`로 전달해 클릭 전 조회를 막는다. 이는 네트워크 요청의 시작 시점을 바꾸는 Next 컴포넌트 속성이고, 브라우저 이동·복귀를 직접 구현하는 새 라우터나 데이터 캐시는 아니다.
+
 다가오는 구간은 화면에 숫자를 반복하지 않고 내부 조회에서 내일부터 14일로 고정한다. [홈 서버 페이지](../frontend/src/app/page.tsx)는 메타데이터와 본문 조회에 같은 값을 보내며, [검색 조건 처리](../frontend/src/features/outings/api-query.ts)는 이전 7/30일 검토 URL과 폼도 14일로 통일하고 이름·지역·종류·페이지·정렬은 보존한다. 잘못된 구간은 기존 오류로 구분한다. 비교 UI를 제거했으므로 NavigationProvider는 기간 값을 관리하지 않고 기존 필터·이력/스크롤 상태만 유지한다.
 
 [OutingCard](../frontend/src/features/outings/outing-card.tsx)의 선택 입력 `previewId`는 간단 보기의 URL hash와 Dialog의 DOM ID를 구분한다. 기본값은 자료 ID이며, 같은 자료를 한 가이드에서 여러 번 표시할 때 광고 위치 미리보기만 별도 접두부를 사용해 시트가 동시에 열리거나 HTML ID가 중복되는 것을 막는다. 상세 API 조회와 상세 링크는 원래 자료 ID를 그대로 사용한다.
@@ -190,6 +194,12 @@ CollectionRunner는 수동 seed·batch·supplement를 조율한다. 커서는 �
 [use-local-env.ps1](../scripts/use-local-env.ps1)은 현재 PowerShell의 JAVA_HOME·PATH·DB와 작업 폴더의 인증 환경 변수를 준비한다. 인증 설정은 [use-auth-env.ps1](../scripts/use-auth-env.ps1)의 허용 목록으로만 읽으며 홈 공통 설정에 복사하지 않는다. [local-db.ps1](../scripts/local-db.ps1)의 DB 시작은 별도 동작이다. 다른 터미널은 이 프로세스의 환경을 자동 공유하지 않는다.
 
 [local-settings.mjs](../scripts/local-settings.mjs)·[local-settings.ps1](../scripts/local-settings.ps1)·CollectionRunner.readKeys는 공통 설정을 먼저 읽고 폴더별 비어 있지 않은 값만 덮어쓴다. 파일을 명령으로 평가하지 않아 비밀번호의 $()도 문자로 읽는다. 공통 설정은 같은 PC에서 유지하는 로컬 파일이며 배포 비밀 설정과 구분한다.
+
+Docker는 앱과 Java 실행 환경을 이미지로 묶는다. [Dockerfile](../backend/Dockerfile)의 JDK 단계가 Maven Wrapper로 JAR를 만들고 JRE 단계는 비root 계정으로 `java -jar`를 실행한다. DB 데이터나 로컬 설정은 이미지에 넣지 않으며 Render의 실행 환경변수로만 새 검토 DB를 연결한다. 실행 시 `review` 프로필이 Render의 PORT와 작은 연결 풀을 적용하고 Flyway → Hibernate 검증 → 웹 서버 준비 흐름은 유지한다.
+
+health는 검사 대상에 따라 의미가 다르다. [review 설정](../backend/src/main/resources/application-review.properties)의 readiness는 Spring Boot가 관리하는 서버 준비 상태만 읽고 DB를 빌리지 않는다. Render의 반복 검사 때문에 절전 DB가 계속 켜지는 것을 막기 위해서다. 반면 `/actuator/health`와 실제 조회 API는 DB를 사용한다. 최소 유휴 연결 0·keepalive 0·유휴 연결 회수와 JDBC 세션 예약 정리 중단을 함께 적용해야 주기적인 SQL을 줄일 수 있다. 설정은 Spring Boot가 프로필 로딩/자동 구성 때 해석하는 속성이며 Java 문법이나 새 어노테이션이 아니다. 사용법·무료 한도는 [검토 배포 안내](../backend/README.md#외부-springpostgresql-검토-환경-p15)를 따른다.
+
+검토 자료 이관은 전체 DB 복제가 아닌 허용한 관계의 부분 복사다. [export-review-data.ps1](../scripts/export-review-data.ps1) → [export-review-data.sql](../scripts/export-review-data.sql)의 조회 전용 스냅샷 → 공개 후보/허용 원천 → 연결된 관측/근거/사진 순서로 범위를 고른다. 전체 호출 payload와 회원/세션은 제외하고 선택한 `raw_row`를 유지해 자료 근거를 잃지 않는다. JSON을 UTF-8 Base64로 직렬화한 뒤 대상 PostgreSQL의 `decode` → `convert_from` → `jsonb_populate_recordset`으로 같은 테이블 타입의 행을 복원한다. 이 형식은 SQL 편집기의 문자열 분할 문제를 피하는 전송 표현이며 원문의 의미를 바꾸지 않는다. 대상의 빈 상태 검사와 하나의 트랜잭션은 부분 이관/기존 행 덮어쓰기를 막고, 원문 지문 비교는 복사 전후 같은 자료인지 확인한다.
 
 ## 테스트와 개발 도구
 
