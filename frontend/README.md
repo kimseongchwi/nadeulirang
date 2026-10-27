@@ -83,6 +83,14 @@ Vercel 함수의 localhost는 Vercel 실행 환경입니다. `BACKEND_URL`을 �
 
 2026-10-26 실제 검토 DB의 일시 조회 실패에서 API 503·Vercel 조회 실패/noindex·재시도를 확인했고, 복구 후 같은 재시도 버튼으로 정상 홈을 확인했습니다. 이 검증은 새 검토 DB에서만 수행했으며 로컬 DB·저장 원문은 변경하지 않았습니다. 무료 Spring은 최초 141초·실제 절전 복귀 140초로 8초 요청 제한을 넘었습니다. Render 유휴 종료 뒤 첫 실패 안내와 기동 후 같은 버튼의 정상 홈 회복도 확인했습니다. 첫 접속이 실패하면 기동을 기다린 뒤 재시도하며 상시 깨우기 호출을 등록하지 않습니다.
 
+## 무료 방문 분석 (P92)
+
+Vercel 프로젝트의 Analytics에서 **Web Analytics on Hobby / Included in your plan**으로 활성화한다. 공식 `@vercel/analytics`의 Next 컴포넌트를 루트 layout에 연결하며 별도 API 키·백엔드·DB 설정은 필요 없다. [공식 빠른 시작](https://vercel.com/docs/analytics/quickstart)처럼 활성화와 코드 배포가 모두 필요하다.
+
+서버 layout은 `VERCEL_ENV=production`일 때만 [SiteAnalytics](src/components/analytics.tsx)를 렌더링한다. SDK는 브라우저에서 최초 방문과 클라이언트 페이지 이동을 집계한다. [URL 필터](src/config/analytics.ts)는 `https://nadeulirang.vercel.app`의 홈·검색·UUID 상세·FAQ·공지·정책 경로만 허용하고 모든 쿼리와 해시를 제거한다. Preview·로컬·기존 review 별칭·로그인/개인 화면·API·가이드·알 수 없는 경로는 제외한다. 대표 도메인 변경 때 허용 원점도 명시적으로 갱신한다. 모달 클릭·회원 ID·검색어·사용자 정의 이벤트는 보내지 않으며 색인 허용과 분석 여부는 별도다.
+
+2026-10-27 [공식 무료 한도](https://vercel.com/docs/analytics/limits-and-pricing)와 활성화 화면 기준으로 월 50,000 events와 30일 조회 이력을 포함한다. Hobby는 추가 이벤트 구매를 지원하지 않고 한도 도달 시 유예 후 수집을 제한한다. Pro·Plus·Speed Insights 유료 기능·체험·결제수단 등록은 진행하지 않는다. 기본 통계의 유입 경로·국가/기기 정보 처리는 [공식 개인정보 안내](https://vercel.com/docs/analytics/privacy-policy)를 따르며 앱의 URL 정제와 구분한다. Analytics 대시보드에서 방문/페이지 조회가 증가하는지 확인하고 개발/Preview는 수집되지 않는지 확인한다.
+
 ## 서버와 브라우저
 
 서버 페이지는 api-server.ts를 통해 Spring을 조회합니다. 간단 보기의 브라우저 요청은 같은 출처 /api/outings/:id로 중계해 서버 전용 BACKEND_URL을 사용합니다. 양쪽은 api-request.ts의 응답/실패 검사와 api-contract.ts를 공유합니다. 정상 0건·400·404·503을 구분하고 장애를 표본으로 채우지 않습니다.
