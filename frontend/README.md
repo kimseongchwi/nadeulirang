@@ -44,7 +44,8 @@ Hobby 포함량은 데이터 전송 100GB, 원본 전송 10GB, 함수 호출 100
 
 | 설정 | 검토 환경 값 |
 |---|---|
-| 프로젝트 | `nadeulirang-review` |
+| 프로젝트 | `nadeulirang` |
+| Production Branch | `main`, 작업 브랜치 푸시는 Preview로 검토 |
 | Framework Preset | Next.js, 현재 저장소 버전 16.4.3 |
 | Root Directory | `frontend` |
 | Node.js Version | `24.x` |
@@ -56,18 +57,18 @@ Hobby 포함량은 데이터 전송 100GB, 원본 전송 10GB, 함수 호출 100
 
 [빌드 설정](https://vercel.com/docs/builds/configure-a-build)을 따르며 Root Directory가 이미 frontend이므로 빌드 명령에 `--prefix frontend`를 추가하지 않습니다. 이 앱은 SSR·동일 출처 API 중계가 필요하므로 정적 export나 `out` 디렉터리를 사용하지 않습니다. Vercel의 Production 표시는 이 검토 프로젝트의 배포 분류이며 서비스의 공개 운영 완료를 뜻하지 않습니다.
 
-검토 주소: [나들이랑 Vercel 검토](https://nadeulirang-review-kimseongchwis-projects.vercel.app/). Vercel Authentication 보호를 유지하므로 소유자의 Vercel 로그인 권한이 필요합니다. noindex는 검색 제외이고 접근 인증을 대신하지 않습니다. 주소를 확인하려고 임시 공유 링크나 보호 우회 토큰을 자동 생성하지 않습니다.
+대표 접속 주소: [나들이랑](https://nadeulirang.vercel.app/). 프로젝트 이름과 무료 주소에서 `review`를 제거했으며, 이름 변경을 공개 운영 준비 완료로 취급하지 않고 현재 noindex를 유지합니다. 대표 도메인은 비로그인 접속이 가능하고, Preview·개별 배포에는 기존 Vercel Authentication 보호를 유지합니다. noindex는 검색 제외이고 접근 인증을 대신하지 않습니다. 임시 공유 링크나 보호 우회 토큰을 자동 생성하지 않습니다.
 
-검토할 때는 위 보호된 대표 별칭을 사용합니다. 개별 배포 주소는 생성 당시 코드·환경변수를 유지하므로 프로젝트의 환경변수를 바꿔도 예전 배포가 함께 갱신되지 않습니다. 2026-10-27 속도 개선 배포 후 연결은 다음과 같습니다.
+일반 접속에는 위 대표 주소를 사용하고, 작업 검토에는 해당 브랜치의 최신 Preview 주소를 사용합니다. 별도 `staging` 브랜치는 현재 만들지 않습니다. Preview도 현재 같은 Render API·Neon DB를 사용하므로 데이터까지 격리된 테스트 환경은 아닙니다. DB 변경·수집 검증이 필요하면 P15에서 별도 환경을 먼저 준비합니다. 개별 배포 주소는 생성 당시 코드·환경변수를 유지하므로 예전 주소를 최신 배포로 취급하지 않습니다. 2026-10-27 명칭 정리 시점 연결은 다음과 같습니다.
 
 | 주소 | 배포 구분·코드 | 연결 판단 |
 |---|---|---|
-| 대표 별칭 `nadeulirang-review-kimseongchwis-projects.vercel.app` | 아래 Production 배포를 가리킴 | 앞으로 사용할 개인 검토 주소 |
-| `nadeulirang-review-gm3d5akok-kimseongchwis-projects.vercel.app` | Production·`d302538`·Singapore | 리전·홈/검색 병렬 조회·자동 사전 조회 축소를 반영한 배포 |
+| 대표 주소 `nadeulirang.vercel.app` | 프로젝트 `nadeulirang`의 Production, `main` 푸시로 갱신 | 앞으로 사용할 접속 주소 |
+| `nadeulirang-review-gm3d5akok-kimseongchwis-projects.vercel.app` | 과거 수동 Production·`d302538`·Singapore | main 반영 전 검증한 속도 개선 배포, 과거 주소 보존 |
 | `nadeulirang-review-rbvn13k5l-kimseongchwis-projects.vercel.app` | 과거 Production·`b45adae`·미국 | `BACKEND_URL` 설정 후 생성된 이전 연결 배포, 속도 비교에만 사용 |
 | `nadeulirang-review-ge67mp1e5-kimseongchwis-projects.vercel.app` | Preview·`676bd92` | `BACKEND_URL` 설정 전 배포. Spring 기동 후에도 실패하므로 검토에 사용하지 않음 |
 
-현재 보호 설정을 바꾸지 않은 상태에서 긴 대표 별칭/개별 배포는 비로그인 302, 짧은 `nadeulirang-review.vercel.app`은 비로그인 200을 확인했다. 둘 다 noindex이지만 짧은 별칭을 접근 보호된 주소로 안내하지 않는다. 짧은 별칭의 보호 범위 정리는 P15 후속이며 이번 속도 작업에서 보호 해제·우회 링크/토큰·유료 설정을 추가하지 않았다.
+기존 보호 설정을 바꾸지 않은 상태에서 새 대표 주소와 이전 짧은 주소는 비로그인 접속, 이전 긴 별칭·개별 배포는 비로그인 302를 확인했습니다. 이전 주소는 기존 링크와 배포 이력을 보존하기 위해 남겨 두며 새 안내에는 사용하지 않습니다. 대표 주소의 공개 범위·색인/수익화는 P15에서 별도로 확인하고, 보호 해제·우회 링크/토큰·유료 설정은 추가하지 않습니다.
 
 서버 조회 실패를 모두 절전으로 판단하지 않습니다. 브라우저 URL → 프로젝트/별칭/배포 커밋 → 해당 대상의 서버 환경변수와 변경 후 배포 여부 → Render 기동 로그 → readiness → DB 포함 health → 실제 API/SSR/간단 보기 순서로 대조합니다. 대표 주소도 Render가 절전에서 기동하는 동안 8초 조회 제한으로 실패할 수 있습니다. 이번 재확인에서는 Spring 기동 131.4초 뒤 같은 재시도 버튼으로 정상 홈을 확인했습니다. 이전 주소의 설정 누락과 이 일시 실패는 별개입니다. timeout을 늘리거나 자동 무한 재시도·절전 방지 ping을 추가하지 않습니다.
 

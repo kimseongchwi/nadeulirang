@@ -141,15 +141,17 @@ Render 무료 환경은 운영용 보장이 없고 언제든 재시작될 수 �
 
 | 항목 | 검토 환경 |
 |---|---|
-| Neon 조직·프로젝트 / DB | `nadeulirang-review` / `nadeulirang_review`, 실제 PostgreSQL 18.6·AWS Singapore·Free·0.25 CU 고정 |
-| Render 서비스 | `nadeulirang-review-api`, Web Service·Docker·Singapore·Free |
-| Git / Root Directory | `codex/vercel-review` / `backend` |
+| Neon 조직·프로젝트 / DB | 조직·프로젝트 표시 이름 `nadeulirang` / 기존 DB `nadeulirang_review`, 실제 PostgreSQL 18.6·AWS Singapore·Free·0.25 CU 고정 |
+| Render 서비스 | `nadeulirang-api`, Web Service·Docker·Singapore·Free |
+| Git / Root Directory | `main` / `backend` |
 | Dockerfile / Build Context | Root Directory 기준 `./Dockerfile` / `.` |
 | Health Check Path | `/actuator/health/readiness` |
 | Auto-Deploy | Off, 검증한 커밋을 수동 배포 |
 | 비밀 환경변수 | `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`만 Render에 설정. 홈/로컬 설정·OAuth·원천 키를 복사하지 않음 |
 
-Spring 주소는 [검토 API](https://nadeulirang-review-api.onrender.com/actuator/health)이며 Vercel의 실제 화면은 [프론트 검토 주소](https://nadeulirang-review-kimseongchwis-projects.vercel.app/)입니다. 2026-10-26 Render의 Docker 빌드·512MB 무료 인스턴스 기동·Flyway V1~V8·TLS DB health·홈/목록/상세 API와 Vercel 정상 표시를 확인했습니다. 최초 Spring 기동은 141초, 실제 유휴 종료 뒤 재기동은 140초였습니다. 절전 뒤 첫 Vercel 접속의 실패 안내와 기동 후 같은 재시도 버튼의 정상 홈·DB health UP·검색 51건 회복을 확인했으며 문서의 일반적인 약 1분보다 길 수 있습니다.
+Spring 주소는 [기존 API 연결](https://nadeulirang-review-api.onrender.com/actuator/health)이며 Vercel의 실제 화면은 [나들이랑](https://nadeulirang.vercel.app/)입니다. Render 표시 이름을 바꿔도 생성 시의 기본 API 주소는 유지됐습니다. 주소의 문자열을 바꾸기 위한 서비스 재생성·데이터 재이관은 하지 않으며 내부 DB 이름·JDBC 연결·`review` 실행 프로필도 보존합니다. 이 프로필은 무료 실행 자원/절전 설정의 이름이며 화면의 서비스 이름과 별개입니다. 2026-10-26 기존 연결에서 Docker 빌드·512MB 기동·Flyway V1~V8·TLS DB health·실제 API와 Vercel 표시를 확인했습니다. 최초 Spring 기동은 141초, 실제 유휴 종료 뒤 재기동은 140초였고 절전 후 같은 재시도 버튼의 정상 홈·검색 회복을 확인했습니다. 명칭/main 연결 변경만으로 무료 절전과 기동 지연이 사라지지는 않습니다.
+
+Render의 월 750시간은 무료 Web Service들이 실제 실행된 시간을 워크스페이스 전체에서 합산한 한도입니다. 절전 시간은 제외하고 매월 새 한도로 초기화하며 남은 시간은 이월되지 않습니다. 서버 1개가 30일 계속 실행되면 720시간, 31일이면 744시간이고 2개는 실행 시간이 합산됩니다. 한도 소진 시 남은 월의 무료 서비스가 중지됩니다. [공식 무료 한도](https://render.com/docs/free#free-instance-hours)를 따르며 절전 방지 ping·유료 전환을 추가하지 않습니다.
 
 [Dockerfile](Dockerfile)은 Java 21 JDK에서 Maven Wrapper로 JAR를 만들고 비root Java 21 JRE로 실행합니다. 이미지 빌드에는 DB 값이 필요 없습니다. DB 회귀·패키징은 먼저 루트 `commit:checked`와 CI에서 실행하고 이미지 빌드는 테스트를 반복하지 않습니다. 512MB에서 기동 가능 여부는 실제 Render 결과로 판단합니다. JVM은 heap 256MB·SerialGC·프로세서 1개·제한한 metaspace/code cache/direct memory를 사용하며 전체 RSS는 heap보다 큽니다.
 
