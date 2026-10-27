@@ -219,11 +219,17 @@ export function useNavigation() {
   if (!state) throw new Error("화면 이동 Provider가 필요합니다.");
   return state;
 }
-export function NavigationLink({ onNavigate, children, ...props }: ComponentProps<typeof Link>) {
+export function NavigationLink({
+  onNavigate,
+  children,
+  prefetch = false,
+  ...props
+}: ComponentProps<typeof Link>) {
   const { saveScroll, navigate } = useNavigation();
   return (
     <Link
       {...props}
+      prefetch={prefetch}
       scroll={false}
       onNavigate={(event) => {
         onNavigate?.(event);
