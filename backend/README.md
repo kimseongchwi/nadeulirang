@@ -125,7 +125,30 @@ Spring 서버 실행 후 `http://localhost:8080`에서 아래 읽기 전용 API�
 
 ## 외부 Spring·PostgreSQL 검토 환경 (P15)
 
-Vercel은 Next.js만 실행하며 로컬 PC의 `127.0.0.1:8080`·PostgreSQL에는 접속할 수 없습니다. 2026-10-26 공식 조건을 확인하고 Neon·Render의 별도 무료 검토 환경을 준비합니다. 계정 로그인·약관·GitHub 권한 동의는 사용자가 직접 처리하며 카드 등록·유료 체험·유료 전환·도메인 구매는 하지 않습니다.
+Vercel은 Next.js만 실행하며 로컬 PC의 `127.0.0.1:8080`·PostgreSQL에는 접속할 수 없습니다. 2026-10-26 Neon·Render를 연결한 뒤, 2026-10-28 사용자 요청으로 Spring만 Hostless Free에 연결해 비교 중입니다. 기존 Neon·자료·백업은 유지하고 Render는 복구용으로 남깁니다. 계정 로그인·약관·GitHub 권한 동의는 사용자가 직접 처리하며 카드 등록·유료 체험·유료 전환·도메인 구매는 하지 않습니다.
+
+### Hostless 무료 연결 시험
+
+| 항목 | 현재 설정 |
+|---|---|
+| 프로젝트 / 앱 | 표시 이름 `나들이랑` / `nadeulirang-api`, Free |
+| API 원점 | `https://nadeulirang-api.hostless.app` |
+| 소스 / 빌드 | `kimseongchwi/nadeulirang`의 `main` / 작업 폴더 `/backend`, Dockerfile `Dockerfile`, 컨텍스트는 작업 폴더 |
+| 런타임 | Standard 최대 0.5vCPU·1024MB, 최소/최대 복제본 1개, 볼륨 없음 |
+| 실행 설정 | 기존 Java 21 Docker·`review` 프로필·JVM 제한 유지, `PORT=10000` |
+| DB 비밀변수 | 기존 Neon의 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD` 세 값만 전달 |
+| 상태 검사 | HTTP `/actuator/health/readiness`, 10초 간격 |
+| 자동 기능 | Git push 자동 배포·Hostless Review apps 비활성화, worker·cron·별도 DB 없음 |
+
+[무료 한도](https://docs.hostless.cloud/plans/free-tier)는 계정 전체 공유 0.5vCPU·1GiB RAM·DB 저장 512MiB입니다. 이 앱 하나의 생성 전 월 $0 견적과 생성 후 Free 표시·현재 청구액 $0·결제수단 미등록을 확인했습니다. 실제 사용량은 처리 후 반영되므로 현재 청구액만으로 장기 비용을 보장하지 않습니다. 추가 자원·복제본·볼륨을 만들지 않으며, [한도 문서](https://docs.hostless.cloud/plans/limits)의 지출 한도는 기존 실행 자원의 청구를 멈추는 상한이 아닙니다. 빌드 화면의 4vCPU·8192MB는 런타임 사양과 다르고 최대 CPU도 예약 성능이 아닙니다.
+
+기존 앱과 같은 Neon JDBC/TLS 연결로 DB health와 실제 목록·상세 조회가 성공해 이 구성의 외부 DB 연결을 확인했습니다. 무료 App의 실제 리전은 생성 후 화면에서도 확인하지 못했으며 유료 VM 위치나 CDN 위치로 추정하지 않습니다. [상시 실행 안내](https://hostless.cloud/products/apps)는 재시작·장애 없음이나 현재 Spring의 응답 속도 보장이 아닙니다. 첫 표본의 빌드 중 404와 준비 후 성공을 구분하며, Spring 자체 기동 시간·장시간 유휴 후 응답·중지/회수 조건의 실제 적용은 미확인입니다.
+
+현재 연결은 사용자가 속도를 비교하기 위한 시험입니다. 반복 PC 요청에서 Hostless 목록은 약 3.1~4.5초로 이전 Render의 준비 후 표본보다 느렸고, Vercel 대표 주소의 홈·검색·상세 중계도 성공했으나 전체 속도 개선으로 판정하지 않았습니다. 배포·조회 검증 중 Hostless의 CPU throttling·높은 응답 시간 경고도 관측했습니다. CPU 상한이 일정 시간 실행을 제한했다는 플랫폼 경고이며 모든 지연의 원인이 확인됐다는 뜻은 아닙니다. 유료 확장이나 경고 수동 해제는 하지 않고 사용자 평가와 후속 관찰에 남깁니다. `review`는 작은 연결 풀·DB 절전 보존·세션 정리 중지·DB 없는 readiness를 묶은 Spring 설정이며, 프로젝트 표시명이나 PR별 서버를 만드는 Hostless Review apps와 별개입니다. 이름 때문에 기본 프로필로 되돌리거나 DB 이름·인증·원문을 바꾸지 않습니다.
+
+복구할 때는 Vercel Preview·Production의 서버 전용 `BACKEND_URL`을 `https://nadeulirang-review-api.onrender.com`으로 되돌리고 재배포한 뒤 Render readiness·DB health·실제 홈/검색/간단 보기를 확인합니다. Render가 절전 중이면 기동 시간이 필요합니다. 새 연결의 사용자 평가·유휴/반복 관찰·복구 확인 전에는 Render를 유지하며 영구 삭제는 정확한 대상에 대한 별도 승인 후 진행합니다. 삭제 후에는 이 Render 복구 경로가 사라집니다. 다음 운영키 준비에서는 원천 계정의 승인·기간·한도·이용 조건부터 확인하며 이번 연결을 수집·예약·인증·공개 운영 완료로 취급하지 않습니다.
+
+아래 Render 사양과 설정은 기존 연결·복구 기준입니다.
 
 | 후보 | 무료 조건·이용 제한 |
 |---|---|
