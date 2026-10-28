@@ -199,9 +199,9 @@ CollectionRunner는 수동 seed·batch·supplement를 조율한다. 커서는 �
 
 [local-settings.mjs](../scripts/local-settings.mjs)·[local-settings.ps1](../scripts/local-settings.ps1)·CollectionRunner.readKeys는 공통 설정을 먼저 읽고 폴더별 비어 있지 않은 값만 덮어쓴다. 파일을 명령으로 평가하지 않아 비밀번호의 $()도 문자로 읽는다. 공통 설정은 같은 PC에서 유지하는 로컬 파일이며 배포 비밀 설정과 구분한다.
 
-Docker는 앱과 Java 실행 환경을 이미지로 묶는다. [Dockerfile](../backend/Dockerfile)의 JDK 단계가 Maven Wrapper로 JAR를 만들고 JRE 단계는 비root 계정으로 `java -jar`를 실행한다. DB 데이터나 로컬 설정은 이미지에 넣지 않으며 Render의 실행 환경변수로만 새 검토 DB를 연결한다. 실행 시 `review` 프로필이 Render의 PORT와 작은 연결 풀을 적용하고 Flyway → Hibernate 검증 → 웹 서버 준비 흐름은 유지한다.
+Docker는 앱과 Java 실행 환경을 이미지로 묶는다. [Dockerfile](../backend/Dockerfile)의 JDK 단계가 Maven Wrapper로 JAR를 만들고 JRE 단계는 비root 계정으로 `java -jar`를 실행한다. DB 데이터나 로컬 설정은 이미지에 넣지 않으며 Hostless의 실행 환경변수 세 개로 기존 Neon 검토 DB를 연결한다. 실행 시 `review` 프로필이 플랫폼의 PORT와 작은 연결 풀을 적용하고 Flyway → Hibernate 검증 → 웹 서버 준비 흐름은 유지한다.
 
-health는 검사 대상에 따라 의미가 다르다. [review 설정](../backend/src/main/resources/application-review.properties)의 readiness는 Spring Boot가 관리하는 서버 준비 상태만 읽고 DB를 빌리지 않는다. Render의 반복 검사 때문에 절전 DB가 계속 켜지는 것을 막기 위해서다. 반면 `/actuator/health`와 실제 조회 API는 DB를 사용한다. 최소 유휴 연결 0·keepalive 0·유휴 연결 회수와 JDBC 세션 예약 정리 중단을 함께 적용해야 주기적인 SQL을 줄일 수 있다. 설정은 Spring Boot가 프로필 로딩/자동 구성 때 해석하는 속성이며 Java 문법이나 새 어노테이션이 아니다. 사용법·무료 한도는 [검토 배포 안내](../backend/README.md#외부-springpostgresql-검토-환경-p15)를 따른다.
+health는 검사 대상에 따라 의미가 다르다. [review 설정](../backend/src/main/resources/application-review.properties)의 readiness는 Spring Boot가 관리하는 서버 준비 상태만 읽고 DB를 빌리지 않는다. 플랫폼의 반복 검사 때문에 절전 DB가 계속 켜지는 것을 막기 위해서다. 반면 `/actuator/health`와 실제 조회 API는 DB를 사용한다. 최소 유휴 연결 0·keepalive 0·유휴 연결 회수와 JDBC 세션 예약 정리 중단을 함께 적용해야 주기적인 SQL을 줄일 수 있다. 설정은 Spring Boot가 프로필 로딩/자동 구성 때 해석하는 속성이며 Java 문법이나 새 어노테이션이 아니다. 사용법·무료 한도는 [검토 배포 안내](../backend/README.md#외부-springpostgresql-검토-환경-p15)를 따른다.
 
 검토 자료 이관은 전체 DB 복제가 아닌 허용한 관계의 부분 복사다. [export-review-data.ps1](../scripts/export-review-data.ps1) → [export-review-data.sql](../scripts/export-review-data.sql)의 조회 전용 스냅샷 → 공개 후보/허용 원천 → 연결된 관측/근거/사진 순서로 범위를 고른다. 전체 호출 payload와 회원/세션은 제외하고 선택한 `raw_row`를 유지해 자료 근거를 잃지 않는다. JSON을 UTF-8 Base64로 직렬화한 뒤 대상 PostgreSQL의 `decode` → `convert_from` → `jsonb_populate_recordset`으로 같은 테이블 타입의 행을 복원한다. 이 형식은 SQL 편집기의 문자열 분할 문제를 피하는 전송 표현이며 원문의 의미를 바꾸지 않는다. 대상의 빈 상태 검사와 하나의 트랜잭션은 부분 이관/기존 행 덮어쓰기를 막고, 원문 지문 비교는 복사 전후 같은 자료인지 확인한다.
 
