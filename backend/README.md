@@ -125,7 +125,7 @@ Spring 서버 실행 후 `http://localhost:8080`에서 아래 읽기 전용 API�
 
 ## 외부 Spring·PostgreSQL 검토 환경 (P15)
 
-Vercel은 Next.js만 실행하며 로컬 PC의 `127.0.0.1:8080`·PostgreSQL에는 접속할 수 없습니다. 2026-10-26 Neon·Render를 연결한 뒤, 2026-10-28 사용자 요청으로 Spring만 Hostless Free에 연결해 비교 중입니다. 기존 Neon·자료·백업은 유지하고 Render는 복구용으로 남깁니다. 계정 로그인·약관·GitHub 권한 동의는 사용자가 직접 처리하며 카드 등록·유료 체험·유료 전환·도메인 구매는 하지 않습니다.
+Vercel은 Next.js만 실행하며 로컬 PC의 `127.0.0.1:8080`·PostgreSQL에는 접속할 수 없습니다. 2026-10-26 Neon·Render를 연결한 뒤, 2026-10-28 사용자 결정으로 Spring 호스트를 Hostless Free로 바꾸고 승인받은 기존 Render 서비스·프로젝트·개인 계정을 삭제했습니다. 기존 Neon·자료·원문·백업은 유지합니다. 계정 로그인·약관·GitHub 권한 동의는 사용자가 직접 처리하며 카드 등록·유료 체험·유료 전환·도메인 구매는 하지 않습니다.
 
 ### Hostless 무료 연결 시험
 
@@ -135,56 +135,42 @@ Vercel은 Next.js만 실행하며 로컬 PC의 `127.0.0.1:8080`·PostgreSQL에�
 | API 원점 | `https://nadeulirang-api.hostless.app` |
 | 소스 / 빌드 | `kimseongchwi/nadeulirang`의 `main` / 작업 폴더 `/backend`, Dockerfile `Dockerfile`, 컨텍스트는 작업 폴더 |
 | 런타임 | Standard 최대 0.5vCPU·1024MB, 최소/최대 복제본 1개, 볼륨 없음 |
-| 실행 설정 | 기존 Java 21 Docker·`review` 프로필·JVM 제한 유지, `PORT=10000` |
+| 실행 설정 | 기존 Java 21 Docker·`review` 프로필·JVM 제한 유지, 플랫폼의 `PORT` 사용(실제 로그 8000) |
 | DB 비밀변수 | 기존 Neon의 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD` 세 값만 전달 |
 | 상태 검사 | HTTP `/actuator/health/readiness`, 10초 간격 |
 | 자동 기능 | Git push 자동 배포·Hostless Review apps 비활성화, worker·cron·별도 DB 없음 |
 
 [무료 한도](https://docs.hostless.cloud/plans/free-tier)는 계정 전체 공유 0.5vCPU·1GiB RAM·DB 저장 512MiB입니다. 이 앱 하나의 생성 전 월 $0 견적과 생성 후 Free 표시·현재 청구액 $0·결제수단 미등록을 확인했습니다. 실제 사용량은 처리 후 반영되므로 현재 청구액만으로 장기 비용을 보장하지 않습니다. 추가 자원·복제본·볼륨을 만들지 않으며, [한도 문서](https://docs.hostless.cloud/plans/limits)의 지출 한도는 기존 실행 자원의 청구를 멈추는 상한이 아닙니다. 빌드 화면의 4vCPU·8192MB는 런타임 사양과 다르고 최대 CPU도 예약 성능이 아닙니다.
 
-기존 앱과 같은 Neon JDBC/TLS 연결로 DB health와 실제 목록·상세 조회가 성공해 이 구성의 외부 DB 연결을 확인했습니다. 무료 App의 실제 리전은 생성 후 화면에서도 확인하지 못했으며 유료 VM 위치나 CDN 위치로 추정하지 않습니다. [상시 실행 안내](https://hostless.cloud/products/apps)는 재시작·장애 없음이나 현재 Spring의 응답 속도 보장이 아닙니다. 첫 표본의 빌드 중 404와 준비 후 성공을 구분하며, Spring 자체 기동 시간·장시간 유휴 후 응답·중지/회수 조건의 실제 적용은 미확인입니다.
+기존 앱과 같은 Neon JDBC/TLS 연결로 DB health와 실제 목록·상세 조회가 성공해 이 구성의 외부 DB 연결을 확인했습니다. 무료 App의 실제 리전은 생성 후 화면에서도 확인하지 못했으며 유료 VM 위치나 CDN 위치로 추정하지 않습니다. [상시 실행 안내](https://hostless.cloud/products/apps)는 재시작·장애 없음이나 현재 Spring의 응답 속도 보장이 아닙니다. 첫 표본의 빌드 중 404와 준비 후 성공을 구분하며, 후속 배포 로그에서 Spring 기동 73.359초·프로세스 78.688초를 확인했으며 한 배포의 표본으로 구분합니다. 생성 양식에 입력한 PORT 10000과 달리 실제 Tomcat 실행 포트는 플랫폼이 제공한 8000이었습니다. 장시간 유휴 후 응답·중지/회수 조건의 실제 적용은 미확인입니다.
 
-현재 연결은 사용자가 속도를 비교하기 위한 시험입니다. 반복 PC 요청에서 Hostless 목록은 약 3.1~4.5초로 이전 Render의 준비 후 표본보다 느렸고, Vercel 대표 주소의 홈·검색·상세 중계도 성공했으나 전체 속도 개선으로 판정하지 않았습니다. 배포·조회 검증 중 Hostless의 CPU throttling·높은 응답 시간 경고도 관측했습니다. CPU 상한이 일정 시간 실행을 제한했다는 플랫폼 경고이며 모든 지연의 원인이 확인됐다는 뜻은 아닙니다. 유료 확장이나 경고 수동 해제는 하지 않고 사용자 평가와 후속 관찰에 남깁니다. `review`는 작은 연결 풀·DB 절전 보존·세션 정리 중지·DB 없는 readiness를 묶은 Spring 설정이며, 프로젝트 표시명이나 PR별 서버를 만드는 Hostless Review apps와 별개입니다. 이름 때문에 기본 프로필로 되돌리거나 DB 이름·인증·원문을 바꾸지 않습니다.
+현재 개인 검토용 Spring 호스트는 사용자 결정에 따라 Hostless입니다. 이 선택과 공개 운영 준비 완료·장기 성능 검증은 구분합니다. 반복 PC 요청에서 Hostless 목록은 약 3.1~4.5초로 이전 Render의 준비 후 표본보다 느렸고, Vercel 대표 주소의 홈·검색·상세 중계도 성공했으나 전체 속도 개선으로 판정하지 않았습니다. 배포·조회 검증 중 Hostless의 CPU throttling·높은 응답 시간 경고도 관측했습니다. CPU 상한이 일정 시간 실행을 제한했다는 플랫폼 경고이며 모든 지연의 원인이 확인됐다는 뜻은 아닙니다. 유료 확장이나 경고 수동 해제는 하지 않고 사용자 평가와 후속 관찰에 남깁니다. `review`는 작은 연결 풀·DB 절전 보존·세션 정리 중지·DB 없는 readiness를 묶은 Spring 설정이며, 프로젝트 표시명이나 PR별 서버를 만드는 Hostless Review apps와 별개입니다. 이름 때문에 기본 프로필로 되돌리거나 DB 이름·인증·원문을 바꾸지 않습니다.
 
-복구할 때는 Vercel Preview·Production의 서버 전용 `BACKEND_URL`을 `https://nadeulirang-review-api.onrender.com`으로 되돌리고 재배포한 뒤 Render readiness·DB health·실제 홈/검색/간단 보기를 확인합니다. Render가 절전 중이면 기동 시간이 필요합니다. 새 연결의 사용자 평가·유휴/반복 관찰·복구 확인 전에는 Render를 유지하며 영구 삭제는 정확한 대상에 대한 별도 승인 후 진행합니다. 삭제 후에는 이 Render 복구 경로가 사라집니다. 다음 운영키 준비에서는 원천 계정의 승인·기간·한도·이용 조건부터 확인하며 이번 연결을 수집·예약·인증·공개 운영 완료로 취급하지 않습니다.
+후속 조회에서 홈의 일시 실패와 재조회 회복을 확인했습니다. 서버 로그에는 Render 삭제 전후 모두 Hikari가 5초 안에 연결을 얻지 못한 오류가 남았습니다. 이는 실행 중 연결 풀 대기 실패의 증거이며, CPU 제한·Neon 절전 복귀·통신 위치 중 무엇이 연결 생성/사용을 지연시켰는지까지 확정하지 않습니다. 따라서 Spring의 15분 유휴 종료가 없다는 안내와 모든 첫 조회가 성공한다는 보장은 구분합니다. 연결 풀·DB 연결 지연 보완은 기존 P15 미완료 범위에 남기며 이번 정리에서 대기 제한·keepalive·프론트 timeout을 바꾸지 않습니다.
 
-아래 Render 사양과 설정은 기존 연결·복구 기준입니다.
+2026-10-28 사용자에게 영구 삭제 대상을 확인받은 뒤 기존 Render의 `nadeulirang-api` 서비스와 빈 `My project`를 삭제하고 Render 계정 탈퇴를 실행했습니다. GitHub의 Render 앱 설치와 별도 사용자 인증 권한도 제거했으며 Hostless App·Vercel·Neon 권한은 유지했습니다. 기존 `nadeulirang-review-api.onrender.com` 원점은 폐기됐습니다. 과거 Render 환경변수를 담은 Vercel 개별 배포는 재배포 전까지 조회에 실패할 수 있으므로 현재 대표 주소를 사용합니다.
 
-| 후보 | 무료 조건·이용 제한 |
-|---|---|
-| [Render Free Web Service](https://render.com/docs/free) + Spring | 0.1 CPU·512MB, 워크스페이스 월 750시간, 15분 무요청 시 절전·재기동 약 1분. [Hobby 포함량](https://render.com/articles/how-much-does-cloud-application-hosting-cost-for-small-businesses)은 월 발신 5GB·빌드 500분. 임시 파일은 재시작/배포/절전 때 소실, 영구 디스크·SSH·one-off job 없음. 외부 DB 등 과도한 발신 트래픽으로 정지 가능. 카드가 있으면 대역폭/빌드 초과 추가 과금 가능, 카드가 없으면 남은 월의 서비스/새 빌드 제한 |
-| [Neon Free](https://neon.com/pricing) + PostgreSQL | 카드 없이 $0, 프로젝트당 저장 1GB·월 100 CU-hours·공용 전송 5GB, 5분 비활성 시 절전. CU/전송 초과 시 다음 기간까지 compute 정지, 저장 한도 초과 시 용량 증가 작업 실패. 자동 유료 전환을 선택하지 않음 |
-| Render Free Postgres | 1GB·워크스페이스 하나, 생성 30일 뒤 만료·추가 14일 뒤 삭제, 백업 없음. 장기 보존할 검토 DB에는 부적합 |
+Render는 더 이상 복구 대상이 아닙니다. `BACKEND_URL`을 과거 원점으로 되돌리는 복구는 사용할 수 없습니다. 앱 배포 문제는 Hostless에서 이전 정상 배포로 되돌리고 readiness·DB health·실제 조회를 확인합니다. 다른 호스팅으로 옮겨야 한다면 별도로 승인한 새 실행 환경에 같은 Java 21 Docker와 기존 Neon의 DB 세 값을 연결하고, 새 원점 검증 후 Vercel 서버 전용 `BACKEND_URL` 변경·재배포로 전환합니다. DB 초기화·원문 삭제·재이관으로 서버 장애를 복구하지 않습니다.
 
-Render 무료 환경은 운영용 보장이 없고 언제든 재시작될 수 있습니다. Java는 [Docker 배포](https://render.com/docs/docker)가 필요하며 무료 인스턴스의 512MB 메모리에서 JVM·Spring 기동을 실측해야 합니다. [Render DB](https://render.com/docs/postgresql-creating-connecting)는 13~18, [Neon](https://neon.com/docs/reference/compatibility)은 14~18을 지원하므로 기존 로컬 PostgreSQL 18과 같은 메이저를 선택할 수 있습니다. 실제 제공 마이너·리전·연결 한도는 생성 화면에서 재확인합니다. Render Web은 HTTPS 주소, Neon DB는 TLS 접속을 사용합니다.
-
-[Neon 한도·복구 조건](https://neon.com/docs/introduction/plans)에 따르면 무료 복구 이력은 최대 6시간/변경량 1GB이고 수동 snapshot 1개·모니터링 이력 1일이며 예약 백업은 없습니다. 저장은 프로젝트당 1GB·계정 합계 20GB, 전송은 프로젝트당 월 5GB입니다. 복구 이력은 장기 백업을 대신하지 않으며 별도 검토 DB의 백업·복원 검증이 필요합니다. 유료 업그레이드 후에는 사용량 과금 조건이 달라집니다. 개인 검토 적합성과 광고·수익화 이용 조건의 확정은 구분합니다.
+다음 운영키 준비에서는 원천 계정의 승인·기간·한도·이용 조건부터 확인합니다. 이번 호스트 변경·Render 탈퇴를 수집·예약·인증·공개 운영 완료로 취급하지 않으며 원천 키와 홈 설정을 자동으로 Hostless에 복사하지 않습니다.
 
 ### 검토 배포 설정
 
-| 항목 | 검토 환경 |
-|---|---|
-| Neon 조직·프로젝트 / DB | 조직·프로젝트 표시 이름 `nadeulirang` / 기존 DB `nadeulirang_review`, 실제 PostgreSQL 18.6·AWS Singapore·Free·0.25 CU 고정 |
-| Render 서비스 | `nadeulirang-api`, Web Service·Docker·Singapore·Free |
-| Git / Root Directory | `main` / `backend` |
-| Dockerfile / Build Context | Root Directory 기준 `./Dockerfile` / `.` |
-| Health Check Path | `/actuator/health/readiness` |
-| Auto-Deploy | Off, 검증한 커밋을 수동 배포 |
-| 비밀 환경변수 | `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`만 Render에 설정. 홈/로컬 설정·OAuth·원천 키를 복사하지 않음 |
+Vercel의 화면·서버 중계 → Hostless Spring → 기존 Neon DB 순서로 요청합니다. 대표 접속 주소는 [나들이랑](https://nadeulirang.vercel.app/), 현재 Spring 원점은 `https://nadeulirang-api.hostless.app`입니다. Neon 조직·프로젝트 표시 이름은 `nadeulirang`, 내부 DB는 기존 `nadeulirang_review`이며 PostgreSQL 18.6·AWS Singapore·Free·0.25 CU 고정 설정을 보존합니다.
 
-Spring 주소는 [기존 API 연결](https://nadeulirang-review-api.onrender.com/actuator/health)이며 Vercel의 실제 화면은 [나들이랑](https://nadeulirang.vercel.app/)입니다. Render 표시 이름을 바꿔도 생성 시의 기본 API 주소는 유지됐습니다. 주소의 문자열을 바꾸기 위한 서비스 재생성·데이터 재이관은 하지 않으며 내부 DB 이름·JDBC 연결·`review` 실행 프로필도 보존합니다. 이 프로필은 무료 실행 자원/절전 설정의 이름이며 화면의 서비스 이름과 별개입니다. 2026-10-26 기존 연결에서 Docker 빌드·512MB 기동·Flyway V1~V8·TLS DB health·실제 API와 Vercel 표시를 확인했습니다. 최초 Spring 기동은 141초, 실제 유휴 종료 뒤 재기동은 140초였고 절전 후 같은 재시도 버튼의 정상 홈·검색 회복을 확인했습니다. 명칭/main 연결 변경만으로 무료 절전과 기동 지연이 사라지지는 않습니다.
+[Neon Free](https://neon.com/pricing)의 2026-10-26 확인 조건은 프로젝트당 저장 1GB·월 100 CU-hours·공용 전송 5GB·5분 비활성 절전입니다. CU/전송 초과 시 다음 기간까지 compute 정지, 저장 한도 초과 시 용량 증가 작업 실패로 구분하며 자동 유료 전환을 선택하지 않습니다. [한도·복구 조건](https://neon.com/docs/introduction/plans)에 따른 무료 복구 이력은 최대 6시간/변경량 1GB, 수동 snapshot 1개·모니터링 이력 1일이며 예약 백업은 없습니다. 저장은 계정 합계 20GB, 전송은 프로젝트당 월 5GB입니다. 복구 이력은 장기 백업을 대신하지 않으며 기존 별도 분기 복원 검증·원문과 백업을 보존합니다. 실제 무료 조건과 사용량은 추가 실행 전에 확인합니다.
 
-Render의 월 750시간은 무료 Web Service들이 실제 실행된 시간을 워크스페이스 전체에서 합산한 한도입니다. 절전 시간은 제외하고 매월 새 한도로 초기화하며 남은 시간은 이월되지 않습니다. 서버 1개가 30일 계속 실행되면 720시간, 31일이면 744시간이고 2개는 실행 시간이 합산됩니다. 한도 소진 시 남은 월의 무료 서비스가 중지됩니다. [공식 무료 한도](https://render.com/docs/free#free-instance-hours)를 따르며 절전 방지 ping·유료 전환을 추가하지 않습니다.
+이전 Render는 Singapore의 Free 0.1CPU·512MB였고 15분 유휴 뒤 Spring 재기동이 약 140초 걸렸습니다. 유휴 재기동을 피하려는 사용자의 선택으로 교체했으며, 실행 중 속도까지 항상 개선된다는 근거로 사용하지 않습니다.
 
-[Dockerfile](Dockerfile)은 Java 21 JDK에서 Maven Wrapper로 JAR를 만들고 비root Java 21 JRE로 실행합니다. 이미지 빌드에는 DB 값이 필요 없습니다. DB 회귀·패키징은 먼저 루트 `commit:checked`와 CI에서 실행하고 이미지 빌드는 테스트를 반복하지 않습니다. 512MB에서 기동 가능 여부는 실제 Render 결과로 판단합니다. JVM은 heap 256MB·SerialGC·프로세서 1개·제한한 metaspace/code cache/direct memory를 사용하며 전체 RSS는 heap보다 큽니다.
+[Dockerfile](Dockerfile)은 Java 21 JDK에서 Maven Wrapper로 JAR를 만들고 비root Java 21 JRE로 실행합니다. 이미지 빌드에는 DB 값이 필요 없습니다. DB 회귀·패키징은 먼저 루트 `commit:checked`와 CI에서 실행하고 이미지 빌드는 테스트를 반복하지 않습니다. 현재 배포에서도 기존 JVM 제한을 유지하며 플랫폼 메모리 상한과 실제 프로세스 사용량을 구분합니다. JVM은 heap 256MB·SerialGC·프로세서 1개·제한한 metaspace/code cache/direct memory를 사용하며 전체 RSS는 heap보다 큽니다.
 
 빌드 단계에만 `unzip`을 설치해 Wrapper가 등록된 ZIP과 SHA-256을 그대로 사용하게 합니다. `unzip`이 없으면 Wrapper는 tar.gz를 받으면서 ZIP 해시로 검사하여 실패합니다. 검증을 끄거나 다른 파일의 해시로 바꾸지 않으며 runtime 이미지에는 압축 도구를 추가하지 않습니다.
 
 [review 프로필](src/main/resources/application-review.properties)은 Docker에서만 기본 활성화됩니다. `PORT`를 Spring 포트로 사용하고 Hikari는 최대 3개·최소 유휴 0개·유휴 60초·keepalive 0·연결 대기 5초입니다. 매분 JDBC 세션 정리도 끕니다. 로그인 제외 검토용 선택이며 향후 인증 도입 시 세션 정리/용량 정책을 다시 마련해야 합니다. 기존 로컬 기본 설정과 Flyway V1~V8·`ddl-auto=validate`·`clean-disabled=true`는 유지합니다.
 
-Render의 주기적 readiness는 `readinessState`만 확인하여 DB를 깨우지 않습니다. `/actuator/health`는 DB를 포함하므로 수동 연결/장애 검사 때만 호출합니다. readiness 200은 서버 준비 완료이며 DB 성공의 증거가 아닙니다. 실제 API 성공까지 확인해야 서비스 연결 성공입니다. 외부 uptime 감시·절전 방지 ping은 등록하지 않습니다.
+Hostless의 주기적 readiness는 `readinessState`만 확인하여 DB를 깨우지 않습니다. `/actuator/health`는 DB를 포함하므로 수동 연결/장애 검사 때만 호출합니다. readiness 200은 서버 준비 완료이며 DB 성공의 증거가 아닙니다. 실제 API 성공까지 확인해야 서비스 연결 성공입니다. 외부 uptime 감시·절전 방지 ping은 등록하지 않습니다.
 
-`DB_URL`은 비밀번호 없는 직접 연결 JDBC 주소에 `sslmode=verify-full&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory&connectTimeout=10&socketTimeout=15`를 사용합니다. [pgJDBC TLS](https://jdbc.postgresql.org/documentation/ssl/)의 Java 신뢰 저장소·호스트 검증을 이용하며 별도 인증서 파일을 복제하지 않습니다. 자격정보는 Render 비밀 환경변수에만 저장하고 Vercel에는 Spring HTTPS 원점의 서버 전용 `BACKEND_URL`만 설정합니다.
+`DB_URL`은 비밀번호 없는 직접 연결 JDBC 주소에 `sslmode=verify-full&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory&connectTimeout=10&socketTimeout=15`를 사용합니다. [pgJDBC TLS](https://jdbc.postgresql.org/documentation/ssl/)의 Java 신뢰 저장소·호스트 검증을 이용하며 별도 인증서 파일을 복제하지 않습니다. DB 세 값은 Hostless 비밀 환경변수에만 설정하고 Vercel에는 Spring HTTPS 원점의 서버 전용 `BACKEND_URL`만 설정합니다.
 
 ### 공개 자료의 제한 이관
 
@@ -229,7 +215,7 @@ SQL의 원문 JSON은 UTF-8 Base64로 전달하고 DB에서 복원하여 편집�
 4. 실패·예산 중단·미실행을 정상 0건과 구분해 로컬 종료 코드 또는 Actions 실패 알림으로 전달합니다. 수신 위치와 알림 설정은 사용자가 선택하며 아직 외부 알림을 발송/등록하지 않습니다.
 5. 변경 전 복구점과 건수/원문 지문을 확인하고, 검토 전용 암호화 백업을 별도 보관하는 방식을 정합니다. 회원/세션을 포함하지 않고 별도 분기/격리 DB에서 복원을 검증한 뒤에만 연결 전환을 검토합니다. 현재 수동 snapshot 1개는 그대로 보존하며 재수집 때 자동 갱신되는 백업으로 취급하지 않습니다.
 
-장기 무료 용량은 단일 DB의 현재 크기만으로 보장하지 않습니다. 이관 직후와 수동 수집 전후 `SELECT pg_database_size(current_database());` 및 `pg_total_relation_size`로 원문/근거/인덱스별 증가량을 기록하고, Neon Usage의 저장·history·CU-hours·전송과 Render Billing의 시간·빌드·전송을 함께 확인합니다. `최근 증가량 / 경과일`로 일일 증가를 추정해 1GB까지 남은 기간을 계산하되 전체 수집량·사진 메타데이터·인덱스·원문 갱신 누적을 포함합니다. 미사용 브랜치도 저장/연산량에 영향을 줍니다. 한도 접근 시 수집을 멈추고 보존/백업 범위를 검토하며 자동 유료 전환이나 원문 삭제로 대응하지 않습니다.
+장기 무료 용량은 단일 DB의 현재 크기만으로 보장하지 않습니다. 이관 직후와 수동 수집 전후 `SELECT pg_database_size(current_database());` 및 `pg_total_relation_size`로 원문/근거/인덱스별 증가량을 기록하고, Neon Usage의 저장·history·CU-hours·전송과 Hostless Billing의 계정 공유 자원·비용을 함께 확인합니다. `최근 증가량 / 경과일`로 일일 증가를 추정해 1GB까지 남은 기간을 계산하되 전체 수집량·사진 메타데이터·인덱스·원문 갱신 누적을 포함합니다. 미사용 브랜치도 저장/연산량에 영향을 줍니다. 한도 접근 시 수집을 멈추고 보존/백업 범위를 검토하며 자동 유료 전환이나 원문 삭제로 대응하지 않습니다.
 
 ~~~sql
 SELECT pg_database_size(current_database()) AS database_bytes;

@@ -32,7 +32,7 @@ page.tsx는 URL 조건·서버 데이터·제목을 처리하고 옆 화면 파�
 
 ## Vercel 개인 검토 배포 (P15)
 
-`vercel.json`의 `regions: ["sin1"]`으로 Next 서버 페이지와 API 중계를 Neon과 같은 Singapore에 배치한다. 현재 연결 시험 중인 Hostless App의 실제 리전은 미확인이며 기존 Render는 Singapore이다. Hobby의 단일 리전 범위이며 유료/다중 리전·상시 깨우기 설정은 추가하지 않는다. [공식 리전 설정](https://vercel.com/docs/functions/configuring-functions/region)에 따라 다음 배포부터 적용되므로 기존 배포의 실행 위치와 구분한다.
+`vercel.json`의 `regions: ["sin1"]`으로 Next 서버 페이지와 API 중계를 Neon과 같은 Singapore에 배치한다. 현재 사용하는 Hostless App의 실제 리전은 미확인이다. Hobby의 단일 리전 범위이며 유료/다중 리전·상시 깨우기 설정은 추가하지 않는다. [공식 리전 설정](https://vercel.com/docs/functions/configuring-functions/region)에 따라 다음 배포부터 적용되므로 기존 배포의 실행 위치와 구분한다.
 
 홈·검색은 전체/숫자 지역 코드 조건의 본문 조회를 필터 옵션과 함께 시작한다. 지역 이름 URL은 옵션의 코드 변환 후 조회하며, 같은 요청 안의 메타데이터/본문 호출은 React `cache`로 공유한다. 요청 사이에 목록·상세·인증 데이터를 저장하지 않고 기존 `no-store`·오류/404·재시도 계약을 유지한다. 모달과 상세 페이지는 각각 공개 여부를 조회하므로 모달에서 읽은 상세가 다음 페이지 요청의 캐시가 되지는 않는다.
 
@@ -72,9 +72,9 @@ Hobby 포함량은 데이터 전송 100GB, 원본 전송 10GB, 함수 호출 100
 
 서버 조회 실패를 모두 절전으로 판단하지 않습니다. 브라우저 URL → 프로젝트/별칭/배포 커밋 → 해당 대상의 서버 환경변수와 변경 후 배포 여부 → 연결된 Spring의 기동 로그 → readiness → DB 포함 health → 실제 API/SSR/간단 보기 순서로 대조합니다. 이전 Render 연결에서는 절전 기동 중 8초 조회 제한에 도달했고 Spring 기동 131.4초 뒤 같은 재시도 버튼으로 정상 홈을 확인했습니다. 이전 주소의 설정 누락과 이 일시 실패는 별개입니다. timeout을 늘리거나 자동 무한 재시도·절전 방지 ping을 추가하지 않습니다.
 
-Vercel 함수의 localhost는 Vercel 실행 환경입니다. `BACKEND_URL`을 비우면 로컬 기본값으로 조회가 실패하며, 로컬 PC의 데이터를 볼 수 없습니다. 2026-10-28 사용자 요청으로 기존 `main`의 코드는 유지하고 Preview·Production의 원점을 Hostless로 바꾼 뒤 Production을 재배포했습니다. 대표 주소와 옛 짧은 별칭은 같은 새 Production에 연결됩니다. 기존 Neon의 자료와 `review` 실행 설정을 유지하고 홈·검색 51건/3페이지·간단 보기·상세·사진·정상 빈 결과·없는 상세 안내·페이지/복귀를 확인합니다. 프론트 배포 성공·Spring readiness·DB 포함 health·실제 자료 조회 성공은 구분합니다. 무료 조건·측정 한계·Render 복구 방법은 [Hostless 연결 시험](../backend/README.md#hostless-무료-연결-시험), 기존 이관/복원·수집 후속은 [백엔드 검토 환경](../backend/README.md#외부-springpostgresql-검토-환경-p15)을 따릅니다.
+Vercel 함수의 localhost는 Vercel 실행 환경입니다. `BACKEND_URL`을 비우면 로컬 기본값으로 조회가 실패하며, 로컬 PC의 데이터를 볼 수 없습니다. 2026-10-28 사용자 요청으로 기존 `main`의 코드는 유지하고 Preview·Production의 원점을 Hostless로 바꾼 뒤 Production을 재배포했습니다. 대표 주소와 옛 짧은 별칭은 같은 새 Production에 연결됩니다. 기존 Neon의 자료와 `review` 실행 설정을 유지하고 홈·검색 51건/3페이지·간단 보기·상세·사진·정상 빈 결과·없는 상세 안내·페이지/복귀를 확인합니다. 프론트 배포 성공·Spring readiness·DB 포함 health·실제 자료 조회 성공은 구분합니다. 무료 조건·측정 한계·현재 장애 복구 방법은 [Hostless 연결 시험](../backend/README.md#hostless-무료-연결-시험), 기존 이관/복원·수집 후속은 [백엔드 검토 환경](../backend/README.md#외부-springpostgresql-검토-환경-p15)을 따릅니다.
 
-현재 Hostless 연결은 사용자 비교 중이며 최종 선정이 아닙니다. Vercel HTTP 반복 표본은 홈 약 4.7~5.2초·검색 2.9~3.0초·상세 중계 4.1~4.6초였고, 준비된 Render보다 전반적으로 빠르다고 판정하지 않았습니다. noindex·빈 사이트맵·개별 배포의 Vercel Authentication 보호·기존 무료 방문 분석 설정을 유지하며 장시간 유휴 후 동작과 사용자 체감 평가는 남았습니다. Render 삭제나 로딩 UI·Spring 프로필 명칭 변경은 하지 않습니다.
+현재 개인 검토용 Spring 호스트는 사용자 결정으로 Hostless를 사용합니다. Vercel HTTP 반복 표본은 홈 약 4.7~5.2초·검색 2.9~3.0초·상세 중계 4.1~4.6초였고, 준비된 Render보다 전반적으로 빠르다고 판정하지 않았습니다. noindex·빈 사이트맵·개별 배포의 Vercel Authentication 보호·기존 무료 방문 분석 설정을 유지하며 장시간 유휴 후 동작과 사용자 체감 평가는 남았습니다. 2026-10-28 명시 승인으로 Render 서비스·프로젝트·개인 계정과 Render GitHub 권한을 정리했습니다. 과거 Render 원점으로의 복구는 사용할 수 없으며 이전 Render 연결을 담은 개별 배포는 조회 실패가 날 수 있습니다. 로딩 UI·Spring 프로필 명칭은 유지합니다. 삭제 후 확인에서도 홈 일시 조회 실패와 재조회 회복이 있었으며, 서버의 5초 DB 연결 풀 대기 실패는 Render 삭제 전후 로그에 모두 남아 있습니다. Hostless 상시 실행과 첫 조회 성공 보장은 구분하고 연결 지연 보완은 P15에 남깁니다.
 
 `BACKEND_URL`은 서버 전용이며 `NEXT_PUBLIC_`로 만들지 않습니다. DB/원천 키·OAuth·로컬 `.env`·홈 공통 설정을 Vercel로 복사하지 않습니다. 로그인은 이번 검토에서 검증하지 않으며 인증 환경변수도 추가하지 않습니다. 서버 주소나 색인 설정을 변경하면 재배포하고 실제 주소에서 다음을 확인합니다.
 
