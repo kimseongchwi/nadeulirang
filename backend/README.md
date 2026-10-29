@@ -138,9 +138,11 @@ Vercel은 Next.js만 실행하며 로컬 PC의 `127.0.0.1:8080`·PostgreSQL에�
 | 실행 설정 | 기존 Java 21 Docker·`review` 프로필·JVM 제한 유지, 플랫폼의 `PORT` 사용(실제 로그 8000) |
 | DB 비밀변수 | 기존 Neon의 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD` 세 값만 전달 |
 | 상태 검사 | HTTP `/actuator/health/readiness`, 10초 간격 |
-| 자동 기능 | Git push 자동 배포·Hostless Review apps 비활성화, worker·cron·별도 DB 없음 |
+| 자동 기능 | `main` Git push 자동 배포 활성화, Hostless Review apps 비활성화, worker·cron·별도 DB 없음 |
 
 [무료 한도](https://docs.hostless.cloud/plans/free-tier)는 계정 전체 공유 0.5vCPU·1GiB RAM·DB 저장 512MiB입니다. 이 앱 하나의 생성 전 월 $0 견적과 생성 후 Free 표시·현재 청구액 $0·결제수단 미등록을 확인했습니다. 실제 사용량은 처리 후 반영되므로 현재 청구액만으로 장기 비용을 보장하지 않습니다. 추가 자원·복제본·볼륨을 만들지 않으며, [한도 문서](https://docs.hostless.cloud/plans/limits)의 지출 한도는 기존 실행 자원의 청구를 멈추는 상한이 아닙니다. 빌드 화면의 4vCPU·8192MB는 런타임 사양과 다르고 최대 CPU도 예약 성능이 아닙니다.
+
+2026-10-28 사용자 요청으로 `Settings → General → Auto-deploy on push`를 활성화했습니다. Vercel은 프론트를, Hostless는 `/backend`의 Spring을 각각 배포하므로 Vercel 배포만으로 백엔드 변경이 반영되지는 않습니다. Hostless의 배포 브랜치는 `main`이며 작업 폴더 변경 필터를 따릅니다. [Git 배포와 빌드](https://docs.hostless.cloud/plans/free-tier)에는 별도 요금이 없으며 기존 무료 자원·복제본 1개·Review apps 비활성화를 유지합니다. 새 자원이나 무료 한도를 넘는 확장은 별도로 판단합니다. [배포 이력과 반영 상태](https://docs.hostless.cloud/app/deployments)는 Hostless에서 확인합니다.
 
 기존 앱과 같은 Neon JDBC/TLS 연결로 DB health와 실제 목록·상세 조회가 성공해 이 구성의 외부 DB 연결을 확인했습니다. 무료 App의 실제 리전은 생성 후 화면에서도 확인하지 못했으며 유료 VM 위치나 CDN 위치로 추정하지 않습니다. [상시 실행 안내](https://hostless.cloud/products/apps)는 재시작·장애 없음이나 현재 Spring의 응답 속도 보장이 아닙니다. 첫 표본의 빌드 중 404와 준비 후 성공을 구분하며, 후속 배포 로그에서 Spring 기동 73.359초·프로세스 78.688초를 확인했으며 한 배포의 표본으로 구분합니다. 생성 양식에 입력한 PORT 10000과 달리 실제 Tomcat 실행 포트는 플랫폼이 제공한 8000이었습니다. 장시간 유휴 후 응답·중지/회수 조건의 실제 적용은 미확인입니다.
 
