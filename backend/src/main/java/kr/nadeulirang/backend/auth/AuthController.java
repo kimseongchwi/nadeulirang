@@ -47,9 +47,9 @@ class AuthController {
                 "privacyVersion",
                 service.privacyVersion(),
                 "providers",
-                List.of("kakao", "naver", "google").stream()
-                        .filter(p -> registrations.findByRegistrationId(p) != null)
-                        .toList());
+                registrations.findByRegistrationId(OAuthConfiguration.KAKAO) == null
+                        ? List.of()
+                        : List.of(OAuthConfiguration.KAKAO));
     }
 
     @GetMapping("/me")
@@ -95,7 +95,7 @@ class AuthController {
             @PathVariable String provider,
             @RequestBody OAuthStart body,
             HttpServletRequest request) {
-        if (!List.of("kakao", "naver", "google").contains(provider)) throw AuthFailure.invalid();
+        if (!OAuthConfiguration.KAKAO.equals(provider)) throw AuthFailure.invalid();
         if (registrations.findByRegistrationId(provider) == null)
             throw new AuthFailure(503, "PROVIDER_UNAVAILABLE", "소셜 로그인 설정을 준비 중입니다.");
         if (body.mode() == null
@@ -117,6 +117,6 @@ class AuthController {
         session.setAttribute("OAUTH_TERMS", body.termsVersion() == null ? "" : body.termsVersion());
         session.setAttribute(
                 "OAUTH_PRIVACY", body.privacyVersion() == null ? "" : body.privacyVersion());
-        return Map.of("redirect", "/api/auth/oauth2/authorization/" + provider);
+        return Map.of("redirect", OAuthConfiguration.AUTHORIZATION_PATH);
     }
 }

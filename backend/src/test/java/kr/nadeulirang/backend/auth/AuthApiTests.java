@@ -46,19 +46,12 @@ class AuthApiTests {
 
     @LocalServerPort int port;
     private com.sun.net.httpserver.HttpServer providerServer;
-    private com.nimbusds.jose.jwk.RSAKey googleKey;
-    private final AtomicReference<String> googleNonce = new AtomicReference<>("");
-    private final AtomicReference<String> googleInvalidClaim = new AtomicReference<>("");
     private final AtomicReference<String> providerSubject = new AtomicReference<>("provider-id");
     private final java.util.concurrent.atomic.AtomicBoolean providerFailure =
-            new java.util.concurrent.atomic.AtomicBoolean();
-    private final java.util.concurrent.atomic.AtomicBoolean naverStateSent =
             new java.util.concurrent.atomic.AtomicBoolean();
 
     @BeforeAll
     void startProviderFixture() throws Exception {
-        googleKey =
-                new com.nimbusds.jose.jwk.gen.RSAKeyGenerator(2048).keyID("fixture-key").generate();
         providerServer =
                 com.sun.net.httpserver.HttpServer.create(
                         new java.net.InetSocketAddress("127.0.0.1", 0), 0);
@@ -67,38 +60,21 @@ class AuthApiTests {
                 exchange -> {
                     String body;
                     int status = 200;
-                    if (exchange.getRequestURI().getPath().endsWith("jwks")) {
-                        body = new com.nimbusds.jose.jwk.JWKSet(googleKey.toPublicJWK()).toString();
-                    } else if (exchange.getRequestURI().getPath().endsWith("token")) {
-                        String form =
-                                new String(
-                                        exchange.getRequestBody().readAllBytes(),
-                                        java.nio.charset.StandardCharsets.UTF_8);
-                        if (exchange.getRequestURI().getPath().contains("naver"))
-                            naverStateSent.set(form.contains("state="));
-                        body =
-                                "{\"access_token\":\"fixture-access\",\"token_type\":\"Bearer\",\"expires_in\":3600}";
-                        if (exchange.getRequestURI().getPath().contains("google"))
-                            body = googleToken();
-                        if (providerFailure.get()) {
-                            status = 400;
-                            body = "{\"error\":\"invalid_grant\"}";
-                        }
-                    } else if (exchange.getRequestURI().getPath().contains("naver")) {
+                    if (exchange.getRequestURI().getPath().equals("/token")) {
                         body =
                                 json.writeValueAsString(
                                         Map.of(
-                                                "resultcode",
-                                                "00",
-                                                "response",
-                                                Map.of(
-                                                        "id",
-                                                        providerSubject.get(),
-                                                        "email",
-                                                        "member@example.test")));
-                    } else if (exchange.getRequestURI().getPath().contains("google")) {
-                        body = json.writeValueAsString(Map.of("sub", providerSubject.get()));
-                    } else
+                                                "access_token",
+                                                "fixture-access",
+                                                "token_type",
+                                                "Bearer",
+                                                "expires_in",
+                                                3600));
+                        if (providerFailure.get()) {
+                            status = 400;
+                            body = json.writeValueAsString(Map.of("error", "invalid_grant"));
+                        }
+                    } else {
                         body =
                                 json.writeValueAsString(
                                         Map.of(
@@ -106,6 +82,7 @@ class AuthApiTests {
                                                 providerSubject.get(),
                                                 "kakao_account",
                                                 Map.of("email", "member@example.test")));
+                    }
                     byte[] bytes = body.getBytes(java.nio.charset.StandardCharsets.UTF_8);
                     exchange.getResponseHeaders().set("Content-Type", "application/json");
                     exchange.sendResponseHeaders(status, bytes.length);
@@ -129,11 +106,9 @@ class AuthApiTests {
     @BeforeEach
     void reset() {
         jdbc.execute("TRUNCATE app_user, spring_session, auth_rate_limit CASCADE");
-        googleInvalidClaim.set("");
         providerSubject.set("provider-id");
         providerFailure.set(false);
-        naverStateSent.set(false);
-        when(registrations.findByRegistrationId("kakao")).thenReturn(fixtureRegistration("kakao"));
+        when(registrations.findByRegistrationId("kakao")).thenReturn(fixtureRegistration());
     }
 
     @AfterAll
@@ -151,7 +126,7 @@ class AuthApiTests {
             var options = json.readTree(result.body());
             assertThat(options.path("termsVersion").asText()).isEqualTo("test-v1");
             assertThat(options.path("privacyVersion").asText()).isEqualTo("test-v1");
-            assertThat(options.path("providers").size()).isEqualTo(1);
+            assertThat(options.path("providers").toString()).isEqualTo("[\"kakao\"]");
             assertThat(send(browser, "POST", "token/consume", Map.of(), true).statusCode())
                     .isEqualTo(401);
             assertThat(send(browser, "POST", "oauth/kakao/start", Map.of(), true).statusCode())
@@ -263,23 +238,61 @@ class AuthApiTests {
     }
 
     @Test
-    @DisplayName("소셜 이메일로 자동 합치지 않고 기존 회원·새 수단 인증과 마지막 수단을 보호한다")
-    void linkingAndLastMethod() {
-        UUID existing = member("member@example.test");
-        var social = service.oauth("google", "social-id", "login", null, -1, "test-v1", "test-v1");
-        assertThat(social.id()).isNotEqualTo(existing);
+    @DisplayName("기존 소셜 연결은 보존하고 카카오가 연결된 회원만 기존 UUID로 로그인한다")
+    void legacyAccounts() throws Exception {
+        UUID linked = member("kakao-linked");
+        UUID legacyOnly = UUID.randomUUID();
+        jdbc.update("INSERT INTO app_user(id,nickname) VALUES (?,?)", legacyOnly, "기존 회원");
+        jdbc.update(
+                "INSERT INTO oauth_account(user_id,provider,subject) VALUES (?,'naver',?),(?,'google',?)",
+                linked,
+                "naver-linked",
+                legacyOnly,
+                "google-only");
+        try (var browser = browser()) {
+            login(browser, "kakao-linked");
+            for (String provider : java.util.List.of("naver", "google")) {
+                assertThat(
+                                send(
+                                                browser,
+                                                "POST",
+                                                "oauth/" + provider + "/start",
+                                                Map.of("mode", "login"),
+                                                true)
+                                        .statusCode())
+                        .isEqualTo(400);
+                for (String endpoint :
+                        java.util.List.of("oauth2/authorization/", "login/oauth2/code/"))
+                    assertThat(send(browser, "GET", endpoint + provider, null, false).statusCode())
+                            .isEqualTo(403);
+            }
+            var current = send(browser, "GET", "me", null, false);
+            assertThat(current.statusCode()).isEqualTo(200);
+            assertThat(json.readTree(current.body()).path("id").asText())
+                    .isEqualTo(linked.toString());
+            assertThat(current.body()).contains("naver");
+        }
+        var legacyWithoutLink =
+                service.oauth("kakao", "new-kakao-id", "login", null, -1, "test-v1", "test-v1");
+        assertThat(legacyWithoutLink.id()).isNotEqualTo(legacyOnly);
+        assertThat(service.methods(legacyOnly)).containsExactly(new AuthService.Method("google"));
+        assertThatThrownBy(() -> service.oauth("google", "google-only", "login", null, -1, "", ""))
+                .isInstanceOf(AuthFailure.class);
         assertThatThrownBy(
-                        () -> service.oauth("google", "social-id", "link", existing, 0, null, null))
+                        () ->
+                                service.oauth(
+                                        "kakao", "kakao-linked", "link", legacyOnly, 0, null, null))
                 .isInstanceOf(AuthFailure.class);
-        service.oauth("naver", "new-id", "link", existing, 0, null, null);
-        assertThat(service.methods(existing)).hasSize(2);
-        assertThatThrownBy(
-                        () -> service.oauth("naver", "other-id", "reauth", existing, 0, null, null))
-                .isInstanceOf(AuthFailure.class);
-        service.unlink(existing, "kakao");
-        assertThatThrownBy(() -> service.unlink(existing, "naver")).isInstanceOf(AuthFailure.class);
-        assertThatThrownBy(() -> service.oauth("kakao", "unused", "link", existing, 0, null, null))
-                .isInstanceOf(AuthFailure.class);
+        Runnable unexpectedRevoke = () -> fail("기존 연결이 남아 있으면 원격 연결을 해제하면 안 됩니다.");
+        assertThatThrownBy(() -> service.removeOAuth(linked, "kakao", false, unexpectedRevoke))
+                .isInstanceOfSatisfying(
+                        AuthFailure.class,
+                        failure -> assertThat(failure.code).isEqualTo("LAST_LOGIN_METHOD"));
+        assertThatThrownBy(() -> service.removeOAuth(linked, "kakao", true, unexpectedRevoke))
+                .isInstanceOfSatisfying(
+                        AuthFailure.class,
+                        failure -> assertThat(failure.code).isEqualTo("OAUTH_DISCONNECT_REQUIRED"));
+        assertThat(service.methods(linked)).hasSize(2);
     }
 
     @Test
@@ -299,11 +312,7 @@ class AuthApiTests {
                                             true)
                                     .statusCode())
                     .isEqualTo(403);
-            assertThat(
-                            callback(browser, "kakao", "reauth")
-                                    .headers()
-                                    .firstValue("location")
-                                    .orElseThrow())
+            assertThat(callback(browser, "reauth").headers().firstValue("location").orElseThrow())
                     .isEqualTo("/login#completed");
             service.removeOAuth(id, "kakao", true, () -> {});
             assertThat(send(browser, "GET", "me", null, false).statusCode()).isEqualTo(401);
@@ -338,15 +347,6 @@ class AuthApiTests {
                             send(browser, "POST", "oauth/kakao/start", Map.of("mode", "link"), true)
                                     .statusCode())
                     .isEqualTo(401);
-            assertThat(
-                            send(
-                                            browser,
-                                            "POST",
-                                            "oauth/naver/start",
-                                            Map.of("mode", "login"),
-                                            true)
-                                    .statusCode())
-                    .isEqualTo(503);
             assertThat(
                             send(
                                             browser,
@@ -386,38 +386,21 @@ class AuthApiTests {
     }
 
     @Test
-    @DisplayName("제공자 프로필은 고유 ID만 쓰며 누락·오류 응답과 이메일 합치기를 배제한다")
+    @DisplayName("카카오 프로필에서 고유 ID만 보존하고 ID 누락은 거부한다")
     void providerIdentity() {
         var user =
                 OAuthConfiguration.identity(
-                        "naver",
                         Map.of(
-                                "resultcode",
-                                "00",
-                                "response",
-                                Map.of("id", "provider-id", "email", "member@example.test")));
+                                "id",
+                                123456L,
+                                "kakao_account",
+                                Map.of("email", "member@example.test")));
         assertThat(user.getAttributes()).containsOnlyKeys("sub", "provider");
-        assertThatThrownBy(() -> OAuthConfiguration.identity("naver", Map.of("resultcode", "01")))
+        assertThat(user.getName()).isEqualTo("123456");
+        assertThatThrownBy(() -> OAuthConfiguration.identity(Map.of()))
                 .isInstanceOf(
                         org.springframework.security.oauth2.core.OAuth2AuthenticationException
                                 .class);
-        assertThatThrownBy(() -> OAuthConfiguration.identity("kakao", Map.of()))
-                .isInstanceOf(
-                        org.springframework.security.oauth2.core.OAuth2AuthenticationException
-                                .class);
-    }
-
-    @Test
-    @DisplayName("두 소셜 수단의 동시 해제는 하나만 성공하고 마지막 수단을 보존한다")
-    void concurrentChanges() throws Exception {
-        UUID id = member("member@example.test");
-        service.oauth("naver", "social-id", "link", id, 0, null, null);
-        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
-            var first = executor.submit(() -> attempt(() -> service.unlink(id, "kakao")));
-            var second = executor.submit(() -> attempt(() -> service.unlink(id, "naver")));
-            assertThat((first.get() ? 1 : 0) + (second.get() ? 1 : 0)).isEqualTo(1);
-            assertThat(service.methods(id)).hasSize(1);
-        }
     }
 
     @Test
@@ -470,16 +453,11 @@ class AuthApiTests {
     }
 
     @Test
-    @DisplayName("대체 제공자의 실제 HTTP 코드 교환·프로필 조회·콜백으로 소셜 가입·연결·재인증을 검증한다")
+    @DisplayName("대체 제공자의 실제 HTTP 코드 교환·프로필 조회·콜백으로 카카오 가입·재인증을 검증한다")
     void oauthCallbackFixture() throws Exception {
         UUID existing = member("member@example.test");
-        when(registrations.findByRegistrationId("naver")).thenReturn(fixtureRegistration("naver"));
         try (var browser = browser()) {
-            assertThat(
-                            callback(browser, "kakao", "login")
-                                    .headers()
-                                    .firstValue("location")
-                                    .orElseThrow())
+            assertThat(callback(browser, "login").headers().firstValue("location").orElseThrow())
                     .isEqualTo("/login#completed");
             UUID social =
                     UUID.fromString(
@@ -494,28 +472,19 @@ class AuthApiTests {
                                     Integer.class,
                                     social.toString()))
                     .isEqualTo(1);
+            var current = send(browser, "GET", "me", null, false);
+            assertThat(current.body()).doesNotContain("fixture-access", "email", "subject");
             assertThat(
-                            callback(browser, "naver", "link")
-                                    .headers()
-                                    .firstValue("location")
-                                    .orElseThrow())
-                    .isEqualTo("/login#completed");
-            assertThat(service.methods(social)).hasSize(2);
-            assertThat(naverStateSent.get()).isTrue();
-            assertThat(
-                            callback(browser, "naver", "reauth")
-                                    .headers()
-                                    .firstValue("location")
-                                    .orElseThrow())
+                            jdbc.queryForObject(
+                                    "SELECT count(*) FROM spring_session_attributes WHERE attribute_name LIKE '%AUTHORIZED_CLIENT%' OR encode(attribute_bytes, 'escape') LIKE '%fixture-access%'",
+                                    Integer.class))
+                    .isZero();
+            assertThat(callback(browser, "reauth").headers().firstValue("location").orElseThrow())
                     .isEqualTo("/login#completed");
             providerSubject.set("wrong-account");
-            assertThat(
-                            callback(browser, "naver", "reauth")
-                                    .headers()
-                                    .firstValue("location")
-                                    .orElseThrow())
+            assertThat(callback(browser, "reauth").headers().firstValue("location").orElseThrow())
                     .isEqualTo("/login#error");
-            assertThat(service.methods(social)).hasSize(2);
+            assertThat(service.methods(social)).hasSize(1);
         }
     }
 
@@ -524,29 +493,22 @@ class AuthApiTests {
     void oauthFailureAndRemoval() throws Exception {
         try (var browser = browser()) {
             providerFailure.set(true);
-            assertThat(
-                            callback(browser, "kakao", "login")
-                                    .headers()
-                                    .firstValue("location")
-                                    .orElseThrow())
+            assertThat(callback(browser, "login").headers().firstValue("location").orElseThrow())
                     .isEqualTo("/login#error");
             assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user", Integer.class))
                     .isZero();
         }
         UUID existing = member("member@example.test");
-        service.oauth("naver", "provider-id", "link", existing, 0, null, null);
         assertThatThrownBy(
                         () ->
                                 service.removeOAuth(
                                         existing,
-                                        "naver",
-                                        false,
+                                        "kakao",
+                                        true,
                                         () -> {
                                             throw new IllegalStateException("원격 연결 해제 실패");
                                         }))
                 .isInstanceOf(IllegalStateException.class);
-        assertThat(service.methods(existing)).hasSize(2);
-        service.removeOAuth(existing, "naver", false, () -> {});
         assertThat(service.methods(existing)).hasSize(1);
     }
 
@@ -578,52 +540,13 @@ class AuthApiTests {
     }
 
     @Test
-    @DisplayName("구글 OIDC는 서명·발급자·대상·nonce를 검증하고 서버 회원 세션만 저장한다")
-    void googleCallback() throws Exception {
-        when(registrations.findByRegistrationId("google"))
-                .thenReturn(fixtureRegistration("google"));
-        try (var browser = browser()) {
-            assertThat(
-                            callback(browser, "google", "login")
-                                    .headers()
-                                    .firstValue("location")
-                                    .orElseThrow())
-                    .isEqualTo("/login#completed");
-            var current = json.readTree(send(browser, "GET", "me", null, false).body());
-            assertThat(current.path("methods").get(0).path("provider").asText())
-                    .isEqualTo("google");
-            assertThat(current.toString()).doesNotContain("fixture-access", "email", "subject");
-            assertThat(
-                            jdbc.queryForObject(
-                                    "SELECT count(*) FROM spring_session_attributes WHERE attribute_name LIKE '%AUTHORIZED_CLIENT%' OR encode(attribute_bytes, 'escape') LIKE '%fixture-access%' OR encode(attribute_bytes, 'escape') LIKE '%eyJ%'",
-                                    Integer.class))
-                    .isZero();
-        }
-        for (String invalid :
-                java.util.List.of("issuer", "audience", "nonce", "signature", "expiry")) {
-            googleInvalidClaim.set(invalid);
-            try (var browser = browser()) {
-                assertThat(
-                                callback(browser, "google", "login")
-                                        .headers()
-                                        .firstValue("location")
-                                        .orElseThrow())
-                        .isEqualTo("/login#error");
-                assertThat(send(browser, "GET", "me", null, false).statusCode()).isEqualTo(401);
-            }
-        }
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user", Integer.class))
-                .isEqualTo(1);
-    }
-
-    @Test
     @DisplayName("소셜 신규 가입은 현재 동의를 요구하지만 기존 회원 로그인은 동의를 재요구하지 않는다")
     void socialConsent() {
-        assertThatThrownBy(() -> service.oauth("google", "new", "login", null, -1, "", ""))
+        assertThatThrownBy(() -> service.oauth("kakao", "new", "login", null, -1, "", ""))
                 .isInstanceOf(AuthFailure.class);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user", Integer.class)).isZero();
-        var member = service.oauth("google", "new", "login", null, -1, "test-v1", "test-v1");
-        assertThat(service.oauth("google", "new", "login", null, -1, "", "").id())
+        var member = service.oauth("kakao", "new", "login", null, -1, "test-v1", "test-v1");
+        assertThat(service.oauth("kakao", "new", "login", null, -1, "", "").id())
                 .isEqualTo(member.id());
         assertThat(jdbc.queryForObject("SELECT count(*) FROM user_consent", Integer.class))
                 .isEqualTo(2);
@@ -664,7 +587,7 @@ class AuthApiTests {
                     .isEqualTo("/login#error");
             assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user", Integer.class))
                     .isZero();
-            var completed = callback(browser, "kakao", "login");
+            var completed = callback(browser, "login");
             assertThat(completed.headers().firstValue("location").orElseThrow())
                     .isEqualTo("/login#completed");
             var replay =
@@ -696,59 +619,6 @@ class AuthApiTests {
         assertThatThrownBy(() -> unconfigured.agreements("", "")).isInstanceOf(AuthFailure.class);
     }
 
-    private String googleToken() {
-        try {
-            Instant now = Instant.now();
-            var claims =
-                    new com.nimbusds.jwt.JWTClaimsSet.Builder()
-                            .issuer(
-                                    googleInvalidClaim.get().equals("issuer")
-                                            ? "https://wrong.test"
-                                            : "https://accounts.google.com")
-                            .audience(
-                                    googleInvalidClaim.get().equals("audience")
-                                            ? "wrong-client"
-                                            : "fixture-client")
-                            .subject(providerSubject.get())
-                            .issueTime(java.util.Date.from(now.minusSeconds(600)))
-                            .expirationTime(
-                                    java.util.Date.from(
-                                            googleInvalidClaim.get().equals("expiry")
-                                                    ? now.minusSeconds(120)
-                                                    : now.plusSeconds(300)))
-                            .claim(
-                                    "nonce",
-                                    googleInvalidClaim.get().equals("nonce")
-                                            ? "wrong-nonce"
-                                            : googleNonce.get())
-                            .build();
-            var jwt =
-                    new com.nimbusds.jwt.SignedJWT(
-                            new com.nimbusds.jose.JWSHeader.Builder(
-                                            com.nimbusds.jose.JWSAlgorithm.RS256)
-                                    .keyID("fixture-key")
-                                    .build(),
-                            claims);
-            var key =
-                    googleInvalidClaim.get().equals("signature")
-                            ? new com.nimbusds.jose.jwk.gen.RSAKeyGenerator(2048).generate()
-                            : googleKey;
-            jwt.sign(new com.nimbusds.jose.crypto.RSASSASigner(key));
-            return json.writeValueAsString(
-                    Map.of(
-                            "access_token",
-                            "fixture-access",
-                            "token_type",
-                            "Bearer",
-                            "expires_in",
-                            3600,
-                            "id_token",
-                            jwt.serialize()));
-        } catch (Exception failure) {
-            throw new IllegalStateException("구글 대체 토큰 생성 실패", failure);
-        }
-    }
-
     private String query(String location, String name) {
         return java.net.URLDecoder.decode(
                 java.util.Arrays.stream(URI.create(location).getRawQuery().split("&"))
@@ -760,59 +630,32 @@ class AuthApiTests {
     }
 
     private org.springframework.security.oauth2.client.registration.ClientRegistration
-            fixtureRegistration(String provider) {
-        var builder =
-                org.springframework.security.oauth2.client.registration.ClientRegistration
-                        .withRegistrationId(provider)
-                        .clientId("fixture-client")
-                        .clientSecret("fixture-secret")
-                        .clientAuthenticationMethod(
-                                org.springframework.security.oauth2.core.ClientAuthenticationMethod
-                                        .CLIENT_SECRET_POST)
-                        .authorizationGrantType(
-                                org.springframework.security.oauth2.core.AuthorizationGrantType
-                                        .AUTHORIZATION_CODE)
-                        .authorizationUri(
-                                provider.equals("google")
-                                        ? "https://accounts.google.com/o/oauth2/v2/auth"
-                                        : provider.equals("kakao")
-                                                ? "https://kauth.kakao.com/oauth/authorize"
-                                                : "https://nid.naver.com/oauth2.0/authorize")
-                        .tokenUri(
-                                "http://127.0.0.1:"
-                                        + providerServer.getAddress().getPort()
-                                        + "/"
-                                        + provider
-                                        + "/token")
-                        .userInfoUri(
-                                "http://127.0.0.1:"
-                                        + providerServer.getAddress().getPort()
-                                        + "/"
-                                        + provider
-                                        + "/me")
-                        .userNameAttributeName(
-                                provider.equals("google")
-                                        ? "sub"
-                                        : provider.equals("kakao") ? "id" : "response")
-                        .redirectUri(
-                                "http://localhost:3000/api/auth/login/oauth2/code/" + provider);
-        if (provider.equals("google"))
-            builder.scope("openid")
-                    .issuerUri("https://accounts.google.com")
-                    .jwkSetUri(
-                            "http://127.0.0.1:"
-                                    + providerServer.getAddress().getPort()
-                                    + "/google/jwks");
-        return builder.build();
+            fixtureRegistration() {
+        String fixtureOrigin = "http://127.0.0.1:" + providerServer.getAddress().getPort();
+        return org.springframework.security.oauth2.client.registration.ClientRegistration
+                .withRegistrationId("kakao")
+                .clientId("fixture-client")
+                .clientSecret("fixture-secret")
+                .clientAuthenticationMethod(
+                        org.springframework.security.oauth2.core.ClientAuthenticationMethod
+                                .CLIENT_SECRET_POST)
+                .authorizationGrantType(
+                        org.springframework.security.oauth2.core.AuthorizationGrantType
+                                .AUTHORIZATION_CODE)
+                .authorizationUri("https://kauth.kakao.com/oauth/authorize")
+                .tokenUri(fixtureOrigin + "/token")
+                .userInfoUri(fixtureOrigin + "/me")
+                .userNameAttributeName("id")
+                .redirectUri("http://localhost:3000/api/auth/login/oauth2/code/kakao")
+                .build();
     }
 
-    private HttpResponse<String> callback(HttpClient browser, String provider, String mode)
-            throws Exception {
+    private HttpResponse<String> callback(HttpClient browser, String mode) throws Exception {
         assertThat(
                         send(
                                         browser,
                                         "POST",
-                                        "oauth/" + provider + "/start",
+                                        "oauth/kakao/start",
                                         Map.of(
                                                 "mode",
                                                 mode,
@@ -824,11 +667,10 @@ class AuthApiTests {
                                 .statusCode())
                 .isEqualTo(200);
         String location =
-                send(browser, "GET", "oauth2/authorization/" + provider, null, false)
+                send(browser, "GET", "oauth2/authorization/kakao", null, false)
                         .headers()
                         .firstValue("location")
                         .orElseThrow();
-        if (provider.equals("google")) googleNonce.set(query(location, "nonce"));
         String state =
                 java.util.Arrays.stream(URI.create(location).getRawQuery().split("&"))
                         .filter(pair -> pair.startsWith("state="))
@@ -839,22 +681,11 @@ class AuthApiTests {
                 HttpRequest.newBuilder(
                                 URI.create(
                                         base()
-                                                + "login/oauth2/code/"
-                                                + provider
-                                                + "?code=fixture-code&state="
+                                                + "login/oauth2/code/kakao?code=fixture-code&state="
                                                 + state))
                         .GET()
                         .build(),
                 HttpResponse.BodyHandlers.ofString());
-    }
-
-    private boolean attempt(Runnable action) {
-        try {
-            action.run();
-            return true;
-        } catch (AuthFailure failure) {
-            return false;
-        }
     }
 
     private UUID member(String subject) {
@@ -881,11 +712,7 @@ class AuthApiTests {
 
     private void login(HttpClient browser, String subject) throws Exception {
         providerSubject.set(subject);
-        assertThat(
-                        callback(browser, "kakao", "login")
-                                .headers()
-                                .firstValue("location")
-                                .orElseThrow())
+        assertThat(callback(browser, "login").headers().firstValue("location").orElseThrow())
                 .isEqualTo("/login#completed");
     }
 

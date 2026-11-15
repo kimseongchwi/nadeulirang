@@ -6,7 +6,7 @@ Spring Boot·Java 21·Spring Data JPA·Hibernate·PostgreSQL을 사용합니다.
 
 - collection/: 원천 HTTP 클라이언트·수동 실행기, 호출/원천/커서 JPA 모델과 Repository, 근거·충돌을 조율하는 CollectionStore.
 - outing/: 요청 조건·컨트롤러·SQL 조회·응답 record·오류 처리. 엔티티는 외부에 노출하지 않습니다.
-- auth/: 회원·소셜 OAuth2/OIDC·최근 재인증·DB 세션/권한 경계와 동일 출처 중계용 API.
+- auth/: 회원·카카오 OAuth2·최근 재인증·DB 세션/권한 경계와 동일 출처 중계용 API.
 - resources/db/migration/: Flyway V1~V8. 기존 적용 파일은 수정하지 않습니다. Hibernate ddl-auto=validate·open-in-view=false로 자동 DDL·요청 밖 추가 조회를 막습니다.
 - src/test/: UUID 격리 PostgreSQL의 API·수집·JPA/SQL 공동 트랜잭션 회귀와 순수 정책 테스트.
 
@@ -22,24 +22,24 @@ JPA는 원천 상태·호출 기록·커서의 단순 저장/조회를 담당합
 |---|---|
 | GET csrf / options | CSRF 토큰 / 설정된 제공자·정책 버전 |
 | GET me | UUID·닉네임·역할·상태·소셜 수단. 제공자 ID/토큰/이메일 제외 |
-| POST oauth/{provider}/start | kakao/naver/google·mode,termsVersion?,privacyVersion?; login/link/reauth/unlink/withdraw. 반환된 동일 출처 redirect로 이동 |
-| GET oauth2/authorization/{provider} / login/oauth2/code/{provider} | 시작 세션·5분·state 검증, 구글 OIDC의 서명·issuer·audience·nonce 검증 |
+| POST oauth/kakao/start | mode,termsVersion?,privacyVersion?; login/link/reauth/unlink/withdraw. 반환된 동일 출처 redirect로 이동 |
+| GET oauth2/authorization/kakao / login/oauth2/code/kakao | 시작 세션·5분·state 검증, 인가 코드 교환·카카오 고유 ID 확인 |
 | POST logout / sessions/end-all | 현재 / 전체 기기 세션 종료 |
 | PATCH admin/users/{UUID} | ADMIN 최근 재인증 + role/status; 기존 세션 회수. 관리자 화면은 후속 |
 
-이메일 가입/로그인·인증/재발급·비밀번호 변경/복구·자체 수단 연결/해제 API와 직접 DELETE me는 제공하지 않습니다. Next 중계는 기존 자체 경로를 404로 차단하고 Spring은 denyAll로 차단합니다(익명 401·인증 회원 403). 탈퇴는 소셜 인증 콜백으로만 수행합니다. V1~V7·기존 local_credential/auth_token 행은 보존하고 V8은 oauth_account 제공자 제약에 google만 추가합니다. 이전 자체 계정은 자동 소셜 연결/로그인하지 않습니다.
+이메일 가입/로그인·인증/재발급·비밀번호 변경/복구·자체 수단 연결/해제 API와 직접 DELETE me는 제공하지 않습니다. Next 중계는 기존 자체 경로를 404로 차단하고 Spring은 denyAll로 차단합니다(익명 401·인증 회원 403). 탈퇴는 소셜 인증 콜백으로만 수행합니다. 적용된 V1~V8과 기존 회원·연결·local_credential/auth_token 자료를 보존합니다. 이전 자체 계정은 자동 소셜 연결/로그인하지 않습니다.
 
 변경은 먼저 GET csrf에서 세션 쿠키/토큰을 받고 X-CSRF-TOKEN과 JSON을 보냅니다. Next는 AUTH_PUBLIC_ORIGIN과 요청 Origin 일치·허용 경로/제공자 이동·16KiB·세션 쿠키만 전달·수동 redirect를 검사합니다. 세션은 HttpOnly·SameSite=Lax·Path=/이며 HTTPS에서 Secure, 유휴 30분·최대 12시간입니다. 매 요청 회원 상태/역할/auth_version을 검사합니다. 소셜 시작은 백엔드 접속 주소 50회/15분으로 제한하며 중계 주소 공유 한도이고 실제 사용자 IP/WAF는 P15입니다.
 
-소셜 수단은 (provider,subject)·회원별 provider UNIQUE와 회원 행 잠금으로 중복/마지막 수단/동시 변경을 보호합니다. 연결/해제에는 기존 수단의 최근 인증과 제공자 인증을 요구합니다. 카카오는 prompt=login, 네이버는 auth_type=reauthenticate와 토큰 교환 state, 구글은 openid scope·select_account를 사용합니다. 이메일로 합치지 않으며 제공자 access/refresh/ID token은 DB 세션에 보관하지 않습니다. 원격 해제는 카카오 unlink·네이버 revoke·구글 revoke 성공 후 로컬 수단을 제거합니다. 여러 수단이 남은 탈퇴는 OAUTH_DISCONNECT_REQUIRED이며 원격 실패는 로컬 자료를 보존합니다. 원격 성공 뒤 DB 실패는 자동 롤백할 수 없어 재인증/재시도와 연결 상태 확인이 필요합니다.
+소셜 수단은 (provider,subject)·회원별 provider UNIQUE와 회원 행 잠금으로 보호합니다. 이메일로 합치지 않으며 제공자 토큰은 DB 세션에 보관하지 않습니다. 카카오는 prompt=login으로 인증을 요청합니다. 현재 로그인 가능한 수단은 카카오뿐이므로 unlink는 LAST_LOGIN_METHOD로 거부합니다. 탈퇴는 최근 재인증과 카카오 unlink 성공을 확인한 뒤 처리합니다. 이전 소셜 연결이 남아 있으면 OAUTH_DISCONNECT_REQUIRED로 보존합니다. 원격 오류에는 로컬 자료를 보존하고, 원격 성공 뒤 DB 실패 시에는 재인증/재시도와 연결 상태 확인이 필요합니다.
 
 주요 실패는 400 입력/동의, 401 인증/세션, 403 정지/권한/CSRF/최근 인증, 409 중복/마지막 수단/소셜 해제 필요, 429 한도, 503 제공자/정책/DB입니다. OAuth는 원문 없는 /login#error로 돌아옵니다. 최초 ADMIN은 운영자 확인 후 UUID의 role과 auth_version을 DB에서 변경하며 자동 관리자/기본 비밀번호는 없습니다.
 
 ### 외부 설정과 공식 조건
 
-카카오/네이버 공식 조건은 2026-10-11, 구글은 2026-10-13 확인했습니다. 실제 앱 생성·키 등록·심사·실제 제공자 로그인/해제는 미실행입니다. 작업 폴더 .env 양식과 루트 실행 절차를 사용하고 홈 .nadeulirang/.env는 수정하지 않습니다. SMTP·메일 환경은 사용하지 않습니다.
+로컬 실제 카카오 로그인/해제는 앱 키와 콜백 설정을 갖춘 뒤 확인합니다. 작업 폴더 .env 양식과 루트 실행 절차를 사용하고 홈 .nadeulirang/.env는 수정하지 않습니다. SMTP·메일 환경은 사용하지 않습니다.
 
-인증 기본 양식은 제공자 키 6개와 정책 버전 2개입니다. 로컬 기본 포트에서 불필요한 AUTH_PUBLIC_ORIGIN·AUTH_SECURE_COOKIE는 루트 .env 양식에서 제외했습니다. 아래 선택 설정은 필요한 환경에서만 직접 추가합니다. 빈 값은 use-auth-env.ps1이 현재 프로세스에 적용하지 않습니다. 별도로 설정한 프로세스 환경 변수가 없으면 코드 기본값을 사용합니다. 실제 값이 적용되는 시점은 README의 서버 실행 절차로 새 프로세스를 시작할 때입니다. 프론트/백엔드의 로컬 기본 주소는 같으므로 기본 포트에서는 별도 frontend/.env.local 생성이 필요하지 않습니다.
+인증 기본 양식은 카카오 키 2개와 정책 버전 2개입니다. 로컬 기본 포트에서 불필요한 AUTH_PUBLIC_ORIGIN·AUTH_SECURE_COOKIE는 루트 .env 양식에서 제외했습니다. 아래 선택 설정은 필요한 환경에서만 직접 추가합니다. 빈 값은 use-auth-env.ps1이 현재 프로세스에 적용하지 않습니다. 별도로 설정한 프로세스 환경 변수가 없으면 코드 기본값을 사용합니다. 실제 값이 적용되는 시점은 README의 서버 실행 절차로 새 프로세스를 시작할 때입니다. 프론트/백엔드의 로컬 기본 주소는 같으므로 기본 포트에서는 별도 frontend/.env.local 생성이 필요하지 않습니다.
 
 | 변수 | 역할·로컬 필요성 |
 |---|---|
@@ -48,18 +48,16 @@ JPA는 원천 상태·호출 기록·커서의 단순 저장/조회를 담당합
 | AUTH_TERMS_VERSION | 나들이랑 이용약관의 동의 버전. 소셜 최초 가입 시 user_consent에 기록하며 현재 구현은 빈 버전의 신규 가입을 차단 |
 | AUTH_PRIVACY_VERSION | 나들이랑 개인정보 고지의 동의 버전. 제공자 키/제공자 약관 버전과 별개이며 실제 검토한 서비스 문서의 버전을 설정 |
 
-소셜 전용 전환은 DB의 회원/수단 분리 구조를 유지합니다. app_user는 회원, oauth_account는 제공자 연결, user_consent는 버전별 동의, spring_session/attributes는 서버 세션, auth_rate_limit은 현재 소셜 시작 한도입니다. 이전 local_credential과 auth_token은 현재 코드에서 조회/생성하지 않지만 적용된 V7과 기존 자료 보존을 위해 남아 있습니다. 서버 코드를 제거해도 Flyway가 테이블을 자동 삭제하지 않으며, 이번 V8은 구글 제공자 제약만 추가했습니다.
+| 대상 | 필요한 설정·확인 |
+|---|---|
+| 카카오 앱 | 로그인 활성화, REST API 키와 Client Secret을 로컬 KAKAO_CLIENT_ID/SECRET에 설정, 기본 로컬 콜백 http://localhost:3000/api/auth/login/oauth2/code/kakao 등록 |
+| 최초 가입 | 검토한 서비스 정책의 카카오싱크 간편가입 등록과 서버의 동의 내역 확인이 필요합니다. 현재 브라우저 흐름은 P30의 간편가입 연동 전까지 신규 가입을 완료할 수 없습니다. |
 
-| 대상 | 필요한 설정·확인 | 현재 상태 |
-|---|---|---|
-| 공통 | 양쪽 AUTH_PUBLIC_ORIGIN 일치, 실제 정책 검토 후 AUTH_TERMS_VERSION/AUTH_PRIVACY_VERSION·HTTPS 쿠키 | 운영 정책 미확정, 미설정 신규 가입 차단 |
-| 카카오 | KAKAO_CLIENT_ID/SECRET·로그인 활성화·정확한 /api/auth/login/oauth2/code/kakao Redirect URI | 코드/대체 제공자 검증, 실연동 미실행 |
-| 네이버 | NAVER_CLIENT_ID/SECRET·Callback URL·테스터·공개 전 검수 | 코드/state 검증, 실제 테스터/검수 미실행 |
-| 구글 | GOOGLE_CLIENT_ID/SECRET·웹 OAuth 클라이언트·정확한 /api/auth/login/oauth2/code/google Redirect URI·동의 화면/테스트 사용자 설정 | openid만 요청, 코드/대체 OIDC 검증과 실연동 구분 |
+카카오 앱 준비는 [설정](https://developers.kakao.com/docs/ko/kakaologin/prerequisite)·[REST 명세](https://developers.kakao.com/docs/ko/kakaologin/rest-api)를 따릅니다.
 
-[카카오 설정](https://developers.kakao.com/docs/ko/kakaologin/prerequisite)·[REST 명세](https://developers.kakao.com/docs/ko/kakaologin/rest-api), [네이버 검수](https://developers.naver.com/docs/login/verify/verify.md)·[API](https://developers.naver.com/docs/login/api/api.md), [구글 서버 OAuth](https://developers.google.com/identity/protocols/oauth2/web-server)·[OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect)를 따릅니다. 구글의 이메일/profile 권한은 요청하지 않고 검증한 sub로 회원을 식별합니다.
+카카오가 이미 연결된 회원은 같은 UUID로 다시 로그인할 수 있습니다. 네이버·구글만 연결된 회원은 기존 세션으로 유효 기간까지 이용할 수 있지만 이후 해당 제공자로 로그인할 수 없습니다. 카카오 최초 로그인은 기존 계정과 합쳐지지 않으며 가입 동의 시 새 회원으로 처리됩니다. 반영 전 대상 환경에서 연결 건수를 확인하고, 영향이 있다면 기존 계정과 카카오 계정 양쪽의 소유권을 확인해 기존 UUID에 카카오를 연결하는 절차를 준비해야 합니다. 자동 전환은 제공하지 않습니다.
 
-인증 회귀는 실제 PostgreSQL의 UUID 격리 스키마와 대체 OAuth/OIDC 서버로 수행하며 실제 제공자 연동을 완료했다고 간주하지 않습니다. Spring 보안 근거는 [CSRF](https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html)·[세션](https://docs.spring.io/spring-security/reference/servlet/authentication/session-management.html)·[JDBC 세션](https://docs.spring.io/spring-session/reference/configuration/jdbc.html)입니다.
+인증 회귀는 실제 PostgreSQL의 UUID 격리 스키마와 대체 카카오 OAuth 서버로 수행하며 실제 제공자 연동을 완료했다고 간주하지 않습니다. Spring 보안 근거는 [CSRF](https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html)·[세션](https://docs.spring.io/spring-security/reference/servlet/authentication/session-management.html)·[JDBC 세션](https://docs.spring.io/spring-session/reference/configuration/jdbc.html)입니다.
 
 ## 목록·상세 조회 API
 

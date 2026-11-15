@@ -24,88 +24,57 @@ import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.client.RestClient;
 
 @Configuration
 class OAuthConfiguration {
+    static final String KAKAO = "kakao";
+    private static final String AUTHORIZATION_BASE = "/api/auth/oauth2/authorization";
+    static final String AUTHORIZATION_PATH = AUTHORIZATION_BASE + "/" + KAKAO;
+    static final String CALLBACK_PATH = "/api/auth/login/oauth2/code/" + KAKAO;
+
     @Bean
     ClientRegistrationRepository registrations(Environment env) {
-        var registrations = new java.util.HashMap<String, ClientRegistration>();
-        for (String provider : List.of("kakao", "naver", "google")) {
-            String id = env.getProperty("auth.oauth." + provider + ".client-id", "");
-            String secret = env.getProperty("auth.oauth." + provider + ".client-secret", "");
-            if (id.isBlank() || secret.isBlank()) continue;
-            if (provider.equals("google")) {
-                registrations.put(
-                        provider,
-                        ClientRegistration.withRegistrationId(provider)
-                                .clientId(id)
-                                .clientSecret(secret)
-                                .clientAuthenticationMethod(
-                                        ClientAuthenticationMethod.CLIENT_SECRET_POST)
-                                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                                .scope("openid")
-                                .redirectUri(
-                                        env.getProperty(
-                                                        "auth.public-origin",
-                                                        "http://localhost:3000")
-                                                + "/api/auth/login/oauth2/code/google")
-                                .authorizationUri("https://accounts.google.com/o/oauth2/v2/auth")
-                                .tokenUri("https://oauth2.googleapis.com/token")
-                                .jwkSetUri("https://www.googleapis.com/oauth2/v3/certs")
-                                .issuerUri("https://accounts.google.com")
-                                .userInfoUri("https://openidconnect.googleapis.com/v1/userinfo")
-                                .userNameAttributeName("sub")
-                                .clientName(provider)
-                                .build());
-                continue;
-            }
-            boolean kakao = provider.equals("kakao");
-            registrations.put(
-                    provider,
-                    ClientRegistration.withRegistrationId(provider)
-                            .clientId(id)
-                            .clientSecret(secret)
-                            .clientAuthenticationMethod(
-                                    ClientAuthenticationMethod.CLIENT_SECRET_POST)
-                            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                            .redirectUri(
-                                    env.getProperty("auth.public-origin", "http://localhost:3000")
-                                            + "/api/auth/login/oauth2/code/"
-                                            + provider)
-                            .authorizationUri(
-                                    kakao
-                                            ? "https://kauth.kakao.com/oauth/authorize"
-                                            : "https://nid.naver.com/oauth2.0/authorize")
-                            .tokenUri(
-                                    kakao
-                                            ? "https://kauth.kakao.com/oauth/token"
-                                            : "https://nid.naver.com/oauth2.0/token")
-                            .userInfoUri(
-                                    kakao
-                                            ? "https://kapi.kakao.com/v2/user/me"
-                                            : "https://openapi.naver.com/v1/nid/me")
-                            .userNameAttributeName(kakao ? "id" : "response")
-                            .clientName(provider)
-                            .build());
-        }
-        return registrations::get;
+        String id = env.getProperty("auth.oauth.kakao.client-id", "");
+        String secret = env.getProperty("auth.oauth.kakao.client-secret", "");
+        if (id.isBlank() || secret.isBlank()) return provider -> null;
+        var registration =
+                ClientRegistration.withRegistrationId(KAKAO)
+                        .clientId(id)
+                        .clientSecret(secret)
+                        .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
+                        .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                        .redirectUri(
+                                env.getProperty("auth.public-origin", "http://localhost:3000")
+                                        + CALLBACK_PATH)
+                        .authorizationUri("https://kauth.kakao.com/oauth/authorize")
+                        .tokenUri("https://kauth.kakao.com/oauth/token")
+                        .userInfoUri("https://kapi.kakao.com/v2/user/me")
+                        .userNameAttributeName("id")
+                        .clientName(KAKAO)
+                        .build();
+        return provider -> KAKAO.equals(provider) ? registration : null;
     }
 
     @Bean
     OAuth2AuthorizationRequestResolver authorizationResolver(
             ClientRegistrationRepository registrations) {
         var delegate =
-                new DefaultOAuth2AuthorizationRequestResolver(
-                        registrations, "/api/auth/oauth2/authorization");
+                new DefaultOAuth2AuthorizationRequestResolver(registrations, AUTHORIZATION_BASE);
+        var kakaoPath = PathPatternRequestMatcher.withDefaults().matcher(AUTHORIZATION_PATH);
         return new OAuth2AuthorizationRequestResolver() {
             @Override
             public OAuth2AuthorizationRequest resolve(HttpServletRequest request) {
+                if (!kakaoPath.matches(request)
+                        || registrations.findByRegistrationId(KAKAO) == null) return null;
                 return checked(request, delegate.resolve(request));
             }
 
             @Override
             public OAuth2AuthorizationRequest resolve(HttpServletRequest request, String id) {
+                if (!KAKAO.equals(id) || registrations.findByRegistrationId(KAKAO) == null)
+                    return null;
                 return checked(request, delegate.resolve(request, id));
             }
 
@@ -120,14 +89,7 @@ class OAuthConfiguration {
                         || created < Instant.now().minusSeconds(300).getEpochSecond())
                     throw new OAuth2AuthenticationException(new OAuth2Error("invalid_request"));
                 return OAuth2AuthorizationRequest.from(authorization)
-                        .additionalParameters(
-                                parameters -> {
-                                    // 새 수단 인증과 소셜 재인증에서 제공자의 기존 자동 로그인만으로 끝나지 않게 한다.
-                                    if (provider.equals("kakao")) parameters.put("prompt", "login");
-                                    else if (provider.equals("naver"))
-                                        parameters.put("auth_type", "reauthenticate");
-                                    else parameters.put("prompt", "select_account");
-                                })
+                        .additionalParameters(parameters -> parameters.put("prompt", "login"))
                         .build();
             }
         };
@@ -161,20 +123,14 @@ class OAuthConfiguration {
         };
     }
 
-    static OAuth2User identity(String provider, Map<String, Object> attributes) {
-        Object subject;
-        if (provider.equals("naver")) {
-            if (!"00".equals(attributes.get("resultcode"))
-                    || !(attributes.get("response") instanceof Map<?, ?> profile))
-                throw new OAuth2AuthenticationException(new OAuth2Error("invalid_user_info"));
-            subject = profile.get("id");
-        } else subject = attributes.get("id");
+    static OAuth2User identity(Map<String, Object> attributes) {
+        Object subject = attributes.get("id");
         if (subject == null || subject.toString().isBlank() || subject.toString().length() > 255)
             throw new OAuth2AuthenticationException(new OAuth2Error("invalid_user_info"));
         // 이메일·프로필 원문을 인증 주체와 세션에 남기지 않는다.
         return new DefaultOAuth2User(
                 List.of(new SimpleGrantedAuthority("ROLE_USER")),
-                Map.of("sub", subject.toString(), "provider", provider),
+                Map.of("sub", subject.toString(), "provider", KAKAO),
                 "sub");
     }
 
@@ -249,7 +205,6 @@ class OAuthConfiguration {
 
     private static void revokeProvider(OAuth2AuthorizedClient client) {
         if (client == null) throw AuthFailure.denied();
-        String provider = client.getClientRegistration().getRegistrationId();
         var factory =
                 new org.springframework.http.client.JdkClientHttpRequestFactory(
                         java.net.http.HttpClient.newBuilder()
@@ -257,34 +212,10 @@ class OAuthConfiguration {
                                 .build());
         factory.setReadTimeout(java.time.Duration.ofSeconds(10));
         var rest = RestClient.builder().requestFactory(factory).build();
-        if (provider.equals("kakao")) {
-            rest.post()
-                    .uri("https://kapi.kakao.com/v1/user/unlink")
-                    .header("Authorization", "Bearer " + client.getAccessToken().getTokenValue())
-                    .retrieve()
-                    .toBodilessEntity();
-        } else if (provider.equals("google")) {
-            var form = new org.springframework.util.LinkedMultiValueMap<String, String>();
-            form.add("token", client.getAccessToken().getTokenValue());
-            rest.post()
-                    .uri("https://oauth2.googleapis.com/revoke")
-                    .contentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED)
-                    .body(form)
-                    .retrieve()
-                    .toBodilessEntity();
-        } else {
-            var form = new org.springframework.util.LinkedMultiValueMap<String, String>();
-            form.add("client_id", client.getClientRegistration().getClientId());
-            form.add("client_secret", client.getClientRegistration().getClientSecret());
-            form.add("token", client.getAccessToken().getTokenValue());
-            form.add("token_type_hint", "access_token");
-            // 현재 공식 명세는 revoke 성공 시 빈 본문 HTTP 200을 반환한다.
-            rest.post()
-                    .uri("https://nid.naver.com/oauth2.0/revoke")
-                    .contentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED)
-                    .body(form)
-                    .retrieve()
-                    .toBodilessEntity();
-        }
+        rest.post()
+                .uri("https://kapi.kakao.com/v1/user/unlink")
+                .header("Authorization", "Bearer " + client.getAccessToken().getTokenValue())
+                .retrieve()
+                .toBodilessEntity();
     }
 }

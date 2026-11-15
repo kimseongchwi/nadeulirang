@@ -40,7 +40,7 @@ class AuthService {
             long version,
             String terms,
             String privacy) {
-        if (!List.of("kakao", "naver", "google").contains(provider)
+        if (!OAuthConfiguration.KAKAO.equals(provider)
                 || subject == null
                 || subject.isBlank()
                 || subject.length() > 255) throw AuthFailure.denied();
@@ -85,18 +85,6 @@ class AuthService {
     }
 
     @Transactional
-    public void unlink(UUID id, String provider) {
-        active(lock(id));
-        List<Method> methods = methods(id);
-        if (methods.stream().noneMatch(m -> m.provider().equals(provider)))
-            throw AuthFailure.invalid();
-        if (methods.stream().filter(m -> !m.provider().equals(provider)).findAny().isEmpty())
-            throw new AuthFailure(409, "LAST_LOGIN_METHOD", "마지막 로그인 수단은 해제할 수 없습니다.");
-        jdbc.update("DELETE FROM oauth_account WHERE user_id=? AND provider=?", id, provider);
-        revoke(id);
-    }
-
-    @Transactional
     public void withdraw(UUID id) {
         active(lock(id));
         revoke(id);
@@ -104,23 +92,15 @@ class AuthService {
     }
 
     @Transactional
-    public void prepareRemoval(UUID id, String provider, boolean withdrawal) {
-        active(lock(id));
-        var methods = methods(id);
-        if (withdrawal) {
-            if (methods.stream().anyMatch(m -> !m.provider().equals(provider)))
-                throw new AuthFailure(409, "OAUTH_DISCONNECT_REQUIRED", "다른 소셜 연결을 먼저 해제하세요.");
-        } else if (methods.stream().filter(m -> !m.provider().equals(provider)).findAny().isEmpty())
-            throw new AuthFailure(409, "LAST_LOGIN_METHOD", "마지막 로그인 수단은 해제할 수 없습니다.");
-    }
-
-    @Transactional
     public void removeOAuth(UUID id, String provider, boolean withdrawal, Runnable revokeProvider) {
-        // 원격 해제 도중 다른 수단이 동시에 해제되지 않도록 회원 행 잠금을 유지한다.
-        prepareRemoval(id, provider, withdrawal);
+        // 원격 해제와 회원 삭제가 끝날 때까지 로그인 수단을 추가할 수 없도록 잠근다.
+        active(lock(id));
+        if (!OAuthConfiguration.KAKAO.equals(provider)) throw AuthFailure.invalid();
+        if (!withdrawal) throw new AuthFailure(409, "LAST_LOGIN_METHOD", "마지막 로그인 수단은 해제할 수 없습니다.");
+        if (methods(id).stream().anyMatch(method -> !method.provider().equals(provider)))
+            throw new AuthFailure(409, "OAUTH_DISCONNECT_REQUIRED", "기존 소셜 연결의 전환이 필요합니다.");
         revokeProvider.run();
-        if (withdrawal) withdraw(id);
-        else unlink(id, provider);
+        withdraw(id);
     }
 
     @Transactional

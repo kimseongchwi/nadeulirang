@@ -14,15 +14,13 @@
 
 ### 로그인 화면 검토 — P30
 
-2026-10-13 후속 요청을 적용한 /login은 로그인 제목·짧은 설명·세 소셜 버튼·로그인 없이 둘러보기만 중심에 둔다. 제목 위 나들이랑, 준비 중/신규 가입/자동 가입 문구, 초기 인증 정보 조회 로딩/실패 안내와 다시 시도 버튼은 표시하지 않는다. 설정된 정책의 최초 동의와 사용자 로그인 요청/OAuth 콜백 실패 안내는 유지하고, 제공자 미설정은 버튼 disabled로 제한한다. 별도 계정 관리 화면과 진입 링크는 제거하며 로그인한 회원에게는 닉네임과 나들이 둘러보기를 표시한다.
+2026-11-15 요청을 적용한 /login은 로그인 제목·카카오 로그인 버튼·로그인 없이 둘러보기를 중심에 둔다. 카카오 버튼으로 카카오 인증을 시작하며 자체 동의 체크박스나 대화상자를 표시하지 않는다. 카카오 화면의 서비스 약관 동의는 P30의 간편가입 설정·연동에 따른다. 제목 위 나들이랑, 제목 아래 보조 설명, 준비 중/신규 가입/자동 가입 문구, 초기 인증 정보 조회 로딩/실패 안내와 다시 시도 버튼은 표시하지 않는다. 사용자 로그인 요청/OAuth 콜백 실패를 안내하고, 카카오 키 미설정은 버튼 disabled로 제한한다. 로그인한 회원에게는 닉네임과 나들이 둘러보기를 표시하며 별도 계정 관리 화면은 없다.
 
-버튼 영역은 최대 344px·버튼 높이 56px·간격 12px·모서리 12px이다. 상단 여백은 48~88px로 화면 높이에 맞추며 불필요한 세로 공간을 줄인다. 카카오 심볼은 공식 벡터 경로·형태/비율을 유지하고 가이드의 검정, 레이블은 검정 85%를 적용한다. 네이버는 공식 H56 축소형 PNG를 230×56px로 표시해 원본 N 로고 18px와 간격을 보존하고 바깥 배경만 같은 지정 녹색으로 확장한다. Google은 공식 컬러 G 원본과 Google Sans Medium 14px·20px 줄 높이·로고 옆 10px 간격을 사용한다. 원본 글꼴의 OFL은 public/fonts/google-sans-OFL.txt에 함께 보관한다. 실제/가이드에서 같은 페이지를 확인하며 새 로그인 시안 채택과 외부 실연동 완료를 구분한다.
+버튼 영역은 최대 344px·버튼 높이 56px·모서리 12px이다. 상단 여백은 48~88px로 화면 높이에 맞춘다. 카카오 심볼은 공식 벡터 경로·형태/비율을 유지하고 가이드의 검정, 레이블은 검정 85%를 적용한다. 실제 화면과 UI 가이드는 같은 로그인 페이지를 사용한다.
 
 | 제공자 | 적용 색상·리소스 | 공식 근거 |
 |---|---|---|
 | 카카오 | 배경 #FEE500·심볼 #000000·레이블 검정 85%, 공식 SVG의 심볼 경로 | [디자인 가이드](https://developers.kakao.com/docs/ko/kakaologin/design-guide)·[공식 SVG 원본](https://developers.kakao.com/tool/images/resource/preview/login-complete-ko.svg) |
-| 네이버 | 배경 #03A94D·흰 원본 N/레이블, NAVER_login_Light_KR_green_narrow_H56.png | [버튼 가이드](https://developers.naver.com/docs/login/bi/bi.md)·[국문 PNG 원본](https://developers.naver.com/inc/devcenter/downloads/bi/NAVER_login_KR.zip) |
-| Google | 흰 배경·#747775 선·#1F1F1F 글자·공식 컬러 G·지정 글꼴 | [브랜드 가이드](https://developers.google.com/identity/branding-guidelines)·[G 원본](https://developers.google.com/static/identity/images/g-logo.png) |
 
 ### 팔레트
 
