@@ -4,7 +4,7 @@ const fixedPaths = new Set(["csrf", "options", "me", "logout", "sessions/end-all
 export function allowedAuthPath(path: string): boolean {
   return (
     fixedPaths.has(path) ||
-    /^(?:oauth\/(?:kakao|naver|google)\/start|oauth2\/authorization\/(?:kakao|naver|google)|login\/oauth2\/code\/(?:kakao|naver|google)|admin\/users\/[0-9a-f-]{36})$/.test(
+    /^(?:oauth\/kakao\/start|oauth2\/authorization\/kakao|login\/oauth2\/code\/kakao|admin\/users\/[0-9a-f-]{36})$/.test(
       path,
     )
   );
@@ -19,9 +19,8 @@ export function allowedAuthRedirect(location: string): boolean {
       !url.username &&
       !url.password &&
       !url.port &&
-      ((url.hostname === "kauth.kakao.com" && url.pathname === "/oauth/authorize") ||
-        (url.hostname === "nid.naver.com" && url.pathname === "/oauth2.0/authorize") ||
-        (url.hostname === "accounts.google.com" && url.pathname === "/o/oauth2/v2/auth"))
+      url.hostname === "kauth.kakao.com" &&
+      url.pathname === "/oauth/authorize"
     );
   } catch {
     return false;

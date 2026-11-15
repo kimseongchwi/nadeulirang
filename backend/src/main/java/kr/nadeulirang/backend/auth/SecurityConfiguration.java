@@ -66,9 +66,6 @@ class SecurityConfiguration {
                                 .build());
         factory.setReadTimeout(java.time.Duration.ofSeconds(10));
         users.setRestOperations(new org.springframework.web.client.RestTemplate(factory));
-        var oidcUsers =
-                new org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService();
-        oidcUsers.setOauth2UserService(users);
         var tokens =
                 new org.springframework.security.oauth2.client.endpoint
                         .RestClientAuthorizationCodeTokenResponseClient();
@@ -90,18 +87,6 @@ class SecurityConfiguration {
                                 new org.springframework.security.oauth2.client.http
                                         .OAuth2ErrorResponseErrorHandler())
                         .build());
-        tokens.addParametersConverter(
-                grant -> {
-                    var parameters =
-                            new org.springframework.util.LinkedMultiValueMap<String, String>();
-                    if (grant.getClientRegistration().getRegistrationId().equals("naver"))
-                        parameters.add(
-                                "state",
-                                grant.getAuthorizationExchange()
-                                        .getAuthorizationRequest()
-                                        .getState());
-                    return parameters;
-                });
         http.securityContext(context -> context.securityContextRepository(sessions.contexts))
                 .requestCache(cache -> cache.disable())
                 .formLogin(form -> form.disable())
@@ -118,11 +103,13 @@ class SecurityConfiguration {
                                                 "/api/auth/csrf",
                                                 "/api/auth/options",
                                                 "/api/auth/oauth/*/start",
-                                                "/api/auth/oauth2/**",
-                                                "/api/auth/login/oauth2/**",
+                                                OAuthConfiguration.AUTHORIZATION_PATH,
+                                                OAuthConfiguration.CALLBACK_PATH,
                                                 "/api/auth/logout")
                                         .permitAll()
                                         .requestMatchers(
+                                                "/api/auth/oauth2/**",
+                                                "/api/auth/login/oauth2/**",
                                                 "/api/auth/register",
                                                 "/api/auth/login",
                                                 "/api/auth/email/**",
@@ -171,19 +158,15 @@ class SecurityConfiguration {
                                         .redirectionEndpoint(
                                                 endpoint ->
                                                         endpoint.baseUri(
-                                                                "/api/auth/login/oauth2/code/*"))
+                                                                OAuthConfiguration.CALLBACK_PATH))
                                         .userInfoEndpoint(
                                                 endpoint ->
-                                                        endpoint.oidcUserService(oidcUsers)
-                                                                .userService(
-                                                                        request ->
-                                                                                OAuthConfiguration
-                                                                                        .identity(
-                                                                                                request.getClientRegistration()
-                                                                                                        .getRegistrationId(),
-                                                                                                users.loadUser(
-                                                                                                                request)
-                                                                                                        .getAttributes())))
+                                                        endpoint.userService(
+                                                                request ->
+                                                                        OAuthConfiguration.identity(
+                                                                                users.loadUser(
+                                                                                                request)
+                                                                                        .getAttributes())))
                                         .successHandler(
                                                 (req, res, auth) ->
                                                         OAuthConfiguration.complete(

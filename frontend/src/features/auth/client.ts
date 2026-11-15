@@ -2,14 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-export const providers = ["kakao", "naver", "google"] as const;
-export type Provider = (typeof providers)[number];
-type Options = { termsVersion: string; privacyVersion: string; providers: Provider[] };
-type Member = { nickname: string; methods: { provider: Provider }[] };
+type Options = { termsVersion: string; privacyVersion: string; providers: "kakao"[] };
+type Member = { nickname: string };
 
-function isProvider(value: unknown): value is Provider {
-  return value === "kakao" || value === "naver" || value === "google";
-}
 function isOptions(value: unknown): value is Options {
   return (
     typeof value === "object" &&
@@ -20,7 +15,7 @@ function isOptions(value: unknown): value is Options {
     typeof value.privacyVersion === "string" &&
     "providers" in value &&
     Array.isArray(value.providers) &&
-    value.providers.every(isProvider)
+    value.providers.every((provider) => provider === "kakao")
   );
 }
 function isMember(value: unknown): value is Member {
@@ -28,16 +23,7 @@ function isMember(value: unknown): value is Member {
     typeof value === "object" &&
     value !== null &&
     "nickname" in value &&
-    typeof value.nickname === "string" &&
-    "methods" in value &&
-    Array.isArray(value.methods) &&
-    value.methods.every(
-      (method: unknown) =>
-        typeof method === "object" &&
-        method !== null &&
-        "provider" in method &&
-        isProvider(method.provider),
-    )
+    typeof value.nickname === "string"
   );
 }
 async function read(path: string): Promise<unknown> {
@@ -77,17 +63,15 @@ export async function mutate(path: string, body: Record<string, unknown> = {}): 
     );
   return value;
 }
-export async function startSocial(provider: Provider, mode: string, consent?: Options) {
-  const value = await mutate(`oauth/${provider}/start`, {
-    mode,
-    termsVersion: consent?.termsVersion ?? "",
-    privacyVersion: consent?.privacyVersion ?? "",
+export async function startKakaoLogin() {
+  const value = await mutate("oauth/kakao/start", {
+    mode: "login",
   });
   if (
     typeof value !== "object" ||
     value === null ||
     !("redirect" in value) ||
-    value.redirect !== `/api/auth/oauth2/authorization/${provider}`
+    value.redirect !== "/api/auth/oauth2/authorization/kakao"
   )
     throw new Error("인증 이동 주소를 확인하지 못했습니다.");
   window.location.assign(value.redirect);
