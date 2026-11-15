@@ -4,11 +4,13 @@ if ($env:OS -ne 'Windows_NT') { throw '이 저장 스크립트는 Windows용입�
 $projectRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'local-settings.ps1')
 $settings = Get-NadeulirangLocalSettings -ProjectRoot $projectRoot
-$names = @('TOURAPI_SERVICE_KEY', 'FESTIVAL_SERVICE_KEY', 'MUSEUM_SERVICE_KEY', 'DB_URL', 'DB_USERNAME', 'DB_PASSWORD')
+$names = @('FESTIVAL_SERVICE_KEY', 'MUSEUM_SERVICE_KEY', 'DB_URL', 'DB_USERNAME', 'DB_PASSWORD')
 if (@($names | Where-Object { -not $settings.ContainsKey($_) }).Count) {
-    throw '저장할 API 키 3개와 DB 설정 3개를 모두 준비하세요. 기존 공통 파일은 바꾸지 않았습니다.'
+    throw '축제·박물관 표준 키와 DB 설정 3개를 준비하세요. 기존 공통 파일은 바꾸지 않았습니다.'
 }
-if ($settings.ContainsKey('CULTURE_INFO_SERVICE_KEY')) { $names += 'CULTURE_INFO_SERVICE_KEY' }
+foreach ($name in @('TOURAPI_SERVICE_KEY', 'CULTURE_INFO_SERVICE_KEY')) {
+    if ($settings.ContainsKey($name)) { $names += $name }
+}
 $sharedDirectory = Join-Path $env:USERPROFILE '.nadeulirang'
 $sharedFile = Join-Path $sharedDirectory '.env'
 $null = New-Item -ItemType Directory -Path $sharedDirectory -Force

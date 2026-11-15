@@ -38,13 +38,18 @@ test("공통 비밀 설정은 폴더 이동·빈 입력에서도 유지하고 �
     const scripts = path.join(first, "scripts");
     mkdirSync(profile); mkdirSync(scripts);
     for (const name of ["save-local-settings.ps1", "local-settings.ps1"]) copyFileSync(path.resolve("scripts", name), path.join(scripts, name));
-    writeFileSync(path.join(first, ".env"), content);
     const save = () => spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path.join(scripts, "save-local-settings.ps1")], {
       // Node가 상속한 PowerShell 7 모듈을 Windows PowerShell 5에서 읽지 않도록 한다.
       encoding: "utf8", env: { ...process.env, USERPROFILE: profile,
         PSModulePath: path.join(process.env.SystemRoot, "System32", "WindowsPowerShell", "v1.0", "Modules") },
     });
     const commonFile = path.join(profile, ".nadeulirang", ".env");
+    writeFileSync(path.join(first, ".env"), content.replace(/^TOURAPI_SERVICE_KEY=.*\n/m, ""));
+    const withoutTour = save();
+    assert.equal(withoutTour.status, 0, withoutTour.stderr);
+    const { TOURAPI_SERVICE_KEY, ...otherSettings } = expected;
+    assert.deepEqual(loadLocalSettings(next, commonFile), otherSettings);
+    writeFileSync(path.join(first, ".env"), content);
     for (let i = 0; i < 2; i++) {
       const saved = save();
       assert.equal(saved.status, 0, saved.stderr);
