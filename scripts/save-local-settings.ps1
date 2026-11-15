@@ -4,9 +4,12 @@ if ($env:OS -ne 'Windows_NT') { throw '이 저장 스크립트는 Windows용입�
 $projectRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'local-settings.ps1')
 $settings = Get-NadeulirangLocalSettings -ProjectRoot $projectRoot
-$names = @('TOURAPI_SERVICE_KEY', 'FESTIVAL_SERVICE_KEY', 'MUSEUM_SERVICE_KEY', 'DB_URL', 'DB_USERNAME', 'DB_PASSWORD')
+$names = @('FESTIVAL_SERVICE_KEY', 'MUSEUM_SERVICE_KEY', 'DB_URL', 'DB_USERNAME', 'DB_PASSWORD')
 if (@($names | Where-Object { -not $settings.ContainsKey($_) }).Count) {
-    throw '저장할 API 키 3개와 DB 설정 3개를 모두 준비하세요. 기존 공통 파일은 바꾸지 않았습니다.'
+    throw '축제·박물관 표준 키와 DB 설정 3개를 준비하세요. 기존 공통 파일은 바꾸지 않았습니다.'
+}
+foreach ($name in @('TOURAPI_SERVICE_KEY', 'CULTURE_INFO_SERVICE_KEY')) {
+    if ($settings.ContainsKey($name)) { $names += $name }
 }
 $sharedDirectory = Join-Path $env:USERPROFILE '.nadeulirang'
 $sharedFile = Join-Path $sharedDirectory '.env'
@@ -36,7 +39,7 @@ try {
     # 기존 파일을 교체한 경우에도 폴더의 제한된 권한을 상속하도록 한다.
     & icacls.exe $sharedFile /reset | Out-Null
     if ($LASTEXITCODE -ne 0) { throw '공통 설정 파일의 접근 권한을 제한하지 못했습니다.' }
-    Write-Host 'API 키·DB 설정 6개를 사용자 홈의 .nadeulirang/.env에 보관했습니다. 값은 출력하지 않았습니다.'
+    Write-Host '로컬 원천 키와 DB 설정을 사용자 홈의 .nadeulirang/.env에 보관했습니다. 값은 출력하지 않았습니다.'
 } finally {
     if (Test-Path -LiteralPath $temporaryFile) { Remove-Item -LiteralPath $temporaryFile }
 }
