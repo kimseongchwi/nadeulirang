@@ -299,7 +299,7 @@ status의 종료 코드는 실행 중 0·중지 3입니다. 재부팅 뒤 자동
 
 ### 작업 폴더 사이의 로컬 설정 유지 (P22)
 
-사용자 홈 .nadeulirang/.env의 원천 키 3개와 DB 설정 3개를 읽고 폴더별 .env의 비어 있지 않은 값만 우선합니다. 파일을 코드로 실행하지 않으며 실제 값은 출력·커밋하지 않습니다. 루트 .env에 6개 항목을 준비한 뒤 필요한 경우에만 보관합니다.
+로컬 원천 키는 사용자 홈 `.nadeulirang/.env`에 둡니다. 작업 폴더 `.env`의 비어 있지 않은 값이 있으면 공통 값보다 우선합니다. 기존 수집 원천 키 3개와 DB 설정 3개를 공통 파일에 보관할 수 있고, 전시 표본 조회용 `CULTURE_INFO_SERVICE_KEY`는 선택 항목입니다. 승인된 운영 원천 키는 [별도 파일](#운영계정으로-기존-neon-자료-재조회갱신-p15)에 둡니다. 파일을 코드로 실행하지 않으며 실제 값은 출력·커밋하지 않습니다.
 
 ~~~powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/save-local-settings.ps1

@@ -2,7 +2,15 @@ import { readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-const names = new Set(["TOURAPI_SERVICE_KEY", "FESTIVAL_SERVICE_KEY", "MUSEUM_SERVICE_KEY", "DB_URL", "DB_USERNAME", "DB_PASSWORD"]);
+const names = new Set([
+  "TOURAPI_SERVICE_KEY",
+  "FESTIVAL_SERVICE_KEY",
+  "CULTURE_INFO_SERVICE_KEY",
+  "MUSEUM_SERVICE_KEY",
+  "DB_URL",
+  "DB_USERNAME",
+  "DB_PASSWORD",
+]);
 
 // 공통 설정을 기본값으로 사용한다. 폴더별 빈 값은 공통 값을 지우지 않는다.
 export function loadLocalSettings(projectRoot, sharedFile = path.join(os.homedir(), ".nadeulirang", ".env")) {

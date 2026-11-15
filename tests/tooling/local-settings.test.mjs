@@ -16,13 +16,14 @@ test("공통 비밀 설정은 폴더 이동·빈 입력에서도 유지하고 �
   const first = path.join(directory, "first");
   const next = path.join(directory, "next");
   mkdirSync(first); mkdirSync(next);
-  const content = 'TOURAPI_SERVICE_KEY=common-tour\nFESTIVAL_SERVICE_KEY=common-festival\nMUSEUM_SERVICE_KEY=common-museum\nDB_URL=common-db\nDB_USERNAME=common-user\nDB_PASSWORD=" common=$(literal)#password "\nOTHER_TOKEN=ignored\n';
+  const content = 'TOURAPI_SERVICE_KEY=common-tour\nFESTIVAL_SERVICE_KEY=common-festival\nMUSEUM_SERVICE_KEY=common-museum\nCULTURE_INFO_SERVICE_KEY=common-culture\nDB_URL=common-db\nDB_USERNAME=common-user\nDB_PASSWORD=" common=$(literal)#password "\nOTHER_TOKEN=ignored\n';
   writeFileSync(shared, content);
   writeFileSync(path.join(first, ".env"), "TOURAPI_SERVICE_KEY=\nFESTIVAL_SERVICE_KEY='folder-festival'\nDB_URL=folder-db\n");
   const expected = loadLocalSettings(next, shared);
   assert.equal(expected.TOURAPI_SERVICE_KEY, "common-tour");
   assert.equal(expected.DB_PASSWORD, " common=$(literal)#password ");
-  assert.equal(Object.keys(expected).length, 6);
+  assert.equal(expected.CULTURE_INFO_SERVICE_KEY, "common-culture");
+  assert.equal(Object.keys(expected).length, 7);
   assert.deepEqual(loadLocalSettings(first, shared), { ...expected, FESTIVAL_SERVICE_KEY: "folder-festival", DB_URL: "folder-db" });
   assert.equal(readFileSync(shared, "utf8"), content);
   assert.deepEqual(loadLocalSettings(next, path.join(directory, "missing.env")), {});
@@ -47,7 +48,7 @@ test("공통 비밀 설정은 폴더 이동·빈 입력에서도 유지하고 �
     for (let i = 0; i < 2; i++) {
       const saved = save();
       assert.equal(saved.status, 0, saved.stderr);
-      assert.ok(!saved.stdout.includes("common-tour") && !saved.stdout.includes("literal"));
+      assert.ok(!saved.stdout.includes("common-tour") && !saved.stdout.includes("common-culture") && !saved.stdout.includes("literal"));
       assert.deepEqual(loadLocalSettings(next, commonFile), expected);
     }
   }
