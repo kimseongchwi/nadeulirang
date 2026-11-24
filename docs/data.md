@@ -11,16 +11,18 @@
 | 한국관광공사 국문 관광정보 서비스_GW (TourAPI) | [15101578](https://www.data.go.kr/data/15101578/openapi.do) | `https://apis.data.go.kr/B551011/KorService2/{오퍼레이션}` | `TOURAPI_SERVICE_KEY` | 기본 원천(다섯 종류 모두) | 데이터는 이용허락 제한 없음. 사진은 유형별 확인 |
 | 전국문화축제표준데이터 | [15013104](https://www.data.go.kr/data/15013104/standard.do) | `https://api.data.go.kr/openapi/tn_pubr_public_cltur_fstvl_api` | `FESTIVAL_SERVICE_KEY` | 축제 보완 | 공공누리 제1유형 |
 | 전국박물관미술관정보표준데이터 | [15017323](https://www.data.go.kr/data/15017323/standard.do) | `https://api.data.go.kr/openapi/tn_pubr_public_museum_artgr_info_api` | `MUSEUM_SERVICE_KEY` | 시설 보완 | 공공누리 제1유형 |
-| 한국문화정보원 한눈에보는문화정보조회서비스 (후보) | 15138937 | 기록 없음. 다시 확인 | `CULTURE_INFO_SERVICE_KEY` | 기간 전시 후보 | 미확인 |
+| 한국문화정보원 한눈에보는문화정보조회서비스 | [15138937](https://www.data.go.kr/data/15138937/openapi.do) | `https://apis.data.go.kr/B553457/cultureinfo` (오퍼레이션 경로는 페이지에 없음. 다시 확인) | `CULTURE_INFO_SERVICE_KEY` | 기간 전시 | 이용허락범위 제한 없음. 사진 조건 미확인 |
 
-### 계정과 한도 (2026-10-29 확인)
+### 계정과 한도 (2026-10-29 확인, 2026-11-24 갱신)
 
 - data.go.kr는 계정마다 일반 인증키가 하나이고, 여러 API가 그 키를 함께 쓴다. 승인은 API마다 따로 받는다.
 - **Decoding 키**를 쓰고, 요청할 때 한 번만 URL 인코딩한다. 키에 이미 `%XX`가 있으면 Encoding 키이므로 거부한다.
 - **TourAPI**
   - 개발계정은 2026-10-03~2028-10-03, 기능별 하루 1,000건이다.
-  - 운영계정은 2026-10-29에 심의를 신청했고, 결과는 확인하지 않았다.
+  - 운영계정은 2026-10-29에 심의를 신청했다. 2026-11-24 활용신청 목록에는 아직 개발계정으로 나온다.
 - **표준데이터 2종:** 운영 승인을 받았다. 기간은 2026-10-29~2028-10-29, 하루 10,000,000건이다.
+- **한눈에보는문화정보:** 개발계정 2026-11-15~2028-11-15(2026-11-24 활용신청 목록). 운영계정은 신청할 예정이다.
+  - 공개 페이지(2026-11-24 확인)에 트래픽 한도는 없다. 데이터 형식은 XML이고 업데이트 주기는 실시간이다.
 - 초당 한도와 하루 집계가 초기화되는 시각은 안내되지 않았다.
 - 활용신청에 적은 서비스 URL `nadeulirang.vercel.app`은 삭제됐다. 공개할 때 변경 절차를 확인한다(재심사가 필요한지, 키가 유지되는지 미검증).
 - 키 값은 저장소에 두지 않는다. legacy에서는 사용자 홈 `~/.nadeulirang/.env`에 있었다.
