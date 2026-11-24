@@ -1,0 +1,22 @@
+# 비밀값·로컬 환경
+.env*
+!.env.example
+.local/
+*.pem
+*.key
+
+# 설치·빌드
+node_modules/
+.next/
+out/
+target/
+*.tsbuildinfo
+next-env.d.ts
+
+# 로그
+*.log
+
+# 편집기
+.idea/
+.vscode/
+.DS_Store
